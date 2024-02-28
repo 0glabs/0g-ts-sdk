@@ -57,20 +57,29 @@ export class NHProvider extends HttpProvider {
   }
 
   async getStatus(): Promise<Status> {
-    const res = await super.request({method: 'nrhv_getStatus'});
+    const res = await super.request({method: 'zgs_getStatus'});
     return res as Status;
   }
 
-  async uploadSegment(seg: SegmentWithProof): Promise<void> {
-    super.request({
-        method: 'nrhv_uploadSegment',
+  async uploadSegment(seg: SegmentWithProof): Promise<number> {
+    const res = await super.request({
+        method: 'zgs_uploadSegment',
         params: [seg],
     });
+    return res as number;
+  }
+
+  async uploadSegments(segs: SegmentWithProof[]): Promise<number> {
+    const res = await super.request({
+        method: 'zgs_uploadSegments',
+        params: [segs],
+    });
+    return res as number;
   }
 
   async downloadSegment(root: Hash, startIndex: number, endIndx: number): Promise<Segment> {
     const seg = await super.request({
-        method: 'nrhv_downloadSegment',
+        method: 'zgs_downloadSegment',
         params: [root, startIndex, endIndx],
     });
     return seg as Segment;
@@ -78,7 +87,7 @@ export class NHProvider extends HttpProvider {
 
   async downloadSegmentWithProof(root: Hash, index: number): Promise<SegmentWithProof> {
     const seg = await super.request({
-        method: 'nrhv_downloadSegmentWithProof',
+        method: 'zgs_downloadSegmentWithProof',
         params: [root, index],
     });
     return seg as SegmentWithProof;
@@ -86,7 +95,7 @@ export class NHProvider extends HttpProvider {
 
   async getFileInfo(root: Hash): Promise<FileInfo|null> {
     const info = await super.request({
-        method: 'nrhv_getFileInfo',
+        method: 'zgs_getFileInfo',
         params: [root],
     });
     return info as FileInfo|null;
@@ -94,7 +103,7 @@ export class NHProvider extends HttpProvider {
 
   async getFileInfoByTxSeq(txSeq: number): Promise<FileInfo|null> {
     const info = await super.request({
-        method: 'getFileInfoByTxSeq',
+        method: 'zgs_getFileInfoByTxSeq',
         params: [txSeq],
     });
     return info as FileInfo|null;

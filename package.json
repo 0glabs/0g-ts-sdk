@@ -1,7 +1,7 @@
 {
-  "name": "js-neurahive-sdk",
-  "version": "0.2.0",
-  "description": "JS SDK for Neurahive",
+  "name": "zerog-da-sdk",
+  "version": "0.1.0",
+  "description": "JS SDK for zerog DA",
   "main": "./lib.commonjs/index.js",
   "exports": {
     "require": "./lib.commonjs/index.js",
@@ -12,15 +12,15 @@
   "browser": {},
   "scripts": {
     "test": "jest",
-    "_build-dist": "rollup -c && uglifyjs ./dist/neurahive.esm.js -o ./dist/neurahive.esm.min.js && uglifyjs ./dist/neurahive.umd.js -o ./dist/neurahive.umd.min.js",
-    "_dist-stats": "gzip -k9f -S '.gz' ./dist/neurahive.esm.min.js && gzip -k9f -S '.gz' ./dist/neurahive.umd.min.js && du -hs ./dist/*.gz && echo '' && du -hs ./dist/*.js",
+    "_build-dist": "rollup -c && uglifyjs ./dist/zerogda.esm.js -o ./dist/zerogda.esm.min.js && uglifyjs ./dist/zerogda.umd.js -o ./dist/zerogda.umd.min.js",
+    "_dist-stats": "gzip -k9f -S '.gz' ./dist/zerogda.esm.min.js && gzip -k9f -S '.gz' ./dist/zerogda.umd.min.js && du -hs ./dist/*.gz && echo '' && du -hs ./dist/*.js",
     "clean": "rm -rf dist lib.esm lib.commonjs types",
     "build-dist": "npm run build-esm && npm run _build-dist && npm run _dist-stats",
     "build-esm": "tsc --project tsconfig.esm.json",
     "build-cjs": "tsc --project tsconfig.commonjs.json",
     "build-all": "npm run clean && tsc -b tsconfig.esm.json tsconfig.commonjs.json tsconfig.types.json",
     "gen-type-package-json": "echo '{\"type\": \"commonjs\"}' > ./lib.commonjs/package.json && echo '{\"type\": \"module\"}' > ./lib.esm/package.json",
-    "gen-contract-type-flow": "typechain --target ethers-v6 --node16-modules --out-dir src.ts/contracts/flow '../neurahive-contracts/artifacts/contracts/dataFlow/Flow.sol/Flow.json'",
+    "gen-contract-type-flow": "typechain --target ethers-v6 --node16-modules --out-dir src.ts/contracts/flow '../zerog-contracts/artifacts/contracts/dataFlow/Flow.sol/Flow.json'",
     "release": "npm run build-all && npm run gen-type-package-json && npm run build-dist"
   },
   "keywords": [],

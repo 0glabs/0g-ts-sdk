@@ -9,7 +9,7 @@ export default [
     {
         input: 'lib.esm/index.js',
         output: {
-            file: 'dist/neurahive.esm.js',
+            file: 'dist/zerogda.esm.js',
             format: 'esm'
         },
         treeshake: true,
@@ -21,9 +21,9 @@ export default [
     {
         input: 'lib.esm/index.js',
         output: {
-            file: 'dist/neurahive.umd.js',
+            file: 'dist/zerogda.umd.js',
             format: 'umd',
-            name: 'neurahive'
+            name: 'zerogda'
         },
         treeshake: true,
         plugins: [

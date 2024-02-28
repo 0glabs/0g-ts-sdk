@@ -37,7 +37,8 @@ export interface FileInfo {
 export declare class NHProvider extends HttpProvider {
     constructor(url: string);
     getStatus(): Promise<Status>;
-    uploadSegment(seg: SegmentWithProof): Promise<void>;
+    uploadSegment(seg: SegmentWithProof): Promise<number>;
+    uploadSegments(segs: SegmentWithProof[]): Promise<number>;
     downloadSegment(root: Hash, startIndex: number, endIndx: number): Promise<Segment>;
     downloadSegmentWithProof(root: Hash, index: number): Promise<SegmentWithProof>;
     getFileInfo(root: Hash): Promise<FileInfo | null>;
