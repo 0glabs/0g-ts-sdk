@@ -1,0 +1,11 @@
+import { keccak256 } from "@ethersproject/keccak256";
+export const TESTNET_FLOW_ADDRESS = '0xcb7afff6f048ec1fb033aa7b495ed0dd932c8656';
+export const TESTNET_USDT_ADDRESS = '0x7d682e65efc5c13bf4e394b8f376c48e6bae0355';
+export const DEFAULT_CHUNK_SIZE = 256; // bytes
+export const DEFAULT_SEGMENT_MAX_CHUNKS = 1024;
+export const DEFAULT_SEGMENT_SIZE = DEFAULT_CHUNK_SIZE * DEFAULT_SEGMENT_MAX_CHUNKS;
+export const EMPTY_CHUNK = new Uint8Array(DEFAULT_CHUNK_SIZE);
+export const EMPTY_CHUNK_HASH = keccak256(EMPTY_CHUNK);
+export const SMALL_FILE_SIZE_THRESHOLD = 256 * 1024;
+export const ZERO_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000';
+//# sourceMappingURL=constant.js.map
