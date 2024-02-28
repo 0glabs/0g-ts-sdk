@@ -2,7 +2,7 @@ const { exec } = require("child_process");
 const { NHFile } = require("../lib.commonjs/index.js");
 const { join } = require("path");
 
-test("NeurahiveFile", async () => {
+test("ZegogStorageFile", async () => {
     const file = await NHFile.fromFilePath(join(__dirname, "./example.ts"));
     const [tree, err] = await file.merkleTree();
     expect(err).toBe(null);

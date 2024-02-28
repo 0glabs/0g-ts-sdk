@@ -1,6 +1,6 @@
 {
   "name": "zerog-da-sdk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "JS SDK for zerog DA",
   "main": "./lib.commonjs/index.js",
   "exports": {
@@ -45,7 +45,8 @@
   },
   "dependencies": {
     "@ethersproject/bytes": "^5.7.0",
-    "@ethersproject/keccak256": "^5.7.0"
+    "@ethersproject/keccak256": "^5.7.0",
+    "open-jsonrpc-provider": "^0.2.1"
   },
   "peerDependencies": {
     "ethers": "^6.7.1"

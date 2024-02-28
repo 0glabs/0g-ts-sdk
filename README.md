@@ -1,6 +1,6 @@
-# js-neurahive-sdk
+# zerog-ts-sdk
 
-This is the JavaScript SDK for Neurahive. Features include:
+This is the JavaScript SDK for zerog-storage. Features include:
 
 - [x] File Merkle Tree Class
 - [x] Flow Contract Types
@@ -13,21 +13,19 @@ This is the JavaScript SDK for Neurahive. Features include:
 ## Install
 
 ```sh
-npm install js-neurahive-sdk ethers
+npm install zerog-da-sdk ethers
 ```
 
 `ethers` is a peer dependency of this project.
 
 ## Usage
 
-NH is short for Neurahive.
-
 ### Node.js environment ESM example:
 
 Use `NHFile` to create a file object, then call `merkleTree` method to get the merkle tree of the file.
 
 ```js
-import { NHFile } from 'js-neurahive-sdk';
+import { NHFile } from 'zerog-da-sdk';
 
 const file = await NHFile.fromFilePath('path/to/file');
 const [tree, err] = await file.merkleTree();
@@ -40,7 +38,7 @@ await file.close();
 Create and submit submission:
 
 ```js
-import { getFlowContract, TESTNET_FLOW_ADDRESS } from 'js-neurahive-sdk';
+import { getFlowContract, TESTNET_FLOW_ADDRESS } from 'zerog-da-sdk';
 import { ethers } from 'ethers';
 
 // create ethers signer from private key and rpc endpoint
@@ -63,24 +61,24 @@ await tx.wait();
 console.log(tx.hash);
 ```
 
-Upload file to neurahive:
+Upload file to zerog-storage:
 
 ```js
-import { NHProvider } from 'js-neurahive-sdk';
+import { NHProvider } from 'zerog-da-sdk';
 
-const nhRpc = 'http://47.92.4.77:5678';
-const nhProvider = new NHProvider(neurahiveRpc);
+const nhRpc = 'http://54.193.124.127:5678';
+const nhProvider = new NHProvider(nhRpc);
 
 await nhProvider.uploadFile(file);
 ```
 
 ### Browser environment example:
 
-Import `neurahive.esm.js` in your html file:
+Import `zerogda.esm.js` in your html file:
 
 ```html
 <script type="module">
-  import { NHBlob, NHProvider, getFlowContract } from "./dist/neurahive.esm.js";
+  import { NHBlob, NHProvider, getFlowContract } from "./dist/zerogda.esm.js";
   // Your code here...
 </script>
 ```
@@ -100,7 +98,7 @@ Create and submit submission:
 ```js
 // create ethers signer from private key and rpc endpoint
 import { BrowserProvider } from 'ethers';  // or from ethers.js url
-import { getFlowContract, TESTNET_FLOW_ADDRESS } from 'js-neurahive-sdk';
+import { getFlowContract, TESTNET_FLOW_ADDRESS } from 'zerog-da-sdk';
 let provider = new BrowserProvider(window.ethereum) // metamask need to be installed
 let signer = await provider.getSigner();
 
@@ -128,7 +126,7 @@ This project uses [pnpm](https://pnpm.js.org/) as package manager. After cloning
 
 ### Generate Contract Flow Types
 
-Make sure [neurahive-contracts](https://github.com/conflux-chain/neurahive-contracts) is in project sibling directory.
+Make sure [zerog-contracts](https://github.com/zero-gravity-labs/zerog-storage-contracts) is in project sibling directory.
 
 ```sh
 pnpm gen-contract-type-flow
