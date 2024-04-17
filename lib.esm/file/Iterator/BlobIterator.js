@@ -71,7 +71,6 @@ export class BlobIterator {
         this.clearBuffer();
         if (this.offset >= this.fileSize) {
             this.paddingZeros(expectedBufSize);
-            this.offset += expectedBufSize;
             return [true, null];
         }
         const { bytesRead: n, buffer } = await this.readFromFile(this.offset, this.offset + this.batchSize);
@@ -86,8 +85,9 @@ export class BlobIterator {
             // should never happen
             throw new Error("load more data from file than expected");
         }
-        this.paddingZeros(expectedBufSize - n);
-        this.offset += expectedBufSize - n;
+        if (expectedBufSize > n) {
+            this.paddingZeros(expectedBufSize - n);
+        }
         return [true, null];
     }
     current() {

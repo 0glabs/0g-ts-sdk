@@ -89,7 +89,6 @@ export class BlobIterator implements Iterator {
 
         if (this.offset >= this.fileSize) {
             this.paddingZeros(expectedBufSize);
-            this.offset += expectedBufSize;
             return [true, null];
         }
 
@@ -109,8 +108,9 @@ export class BlobIterator implements Iterator {
             throw new Error("load more data from file than expected")
         }
 
-        this.paddingZeros(expectedBufSize - n);
-        this.offset += expectedBufSize - n;
+        if (expectedBufSize > n) {
+            this.paddingZeros(expectedBufSize - n);
+        }
 
         return [true, null];
     }

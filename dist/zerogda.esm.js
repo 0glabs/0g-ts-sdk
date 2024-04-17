@@ -11197,8 +11197,9 @@ function keccak256(data) {
     return '0x' + sha3.keccak_256(arrayify(data));
 }
 
-const TESTNET_FLOW_ADDRESS = '0xa4dc852cf4e7622BA72EDf24FAAca18A56BBA48c';
-const TESTNET_USDT_ADDRESS = '0xe3a700dF2a8bEBeF2f0B1eE92f46d230b01401B1';
+const TESTNET_FLOW_ADDRESS = '0x22C1CaF8cbb671F220789184fda68BfD7eaA2eE1';
+// not used anymore
+// export const TESTNET_USDT_ADDRESS = '0xe3a700dF2a8bEBeF2f0B1eE92f46d230b01401B1'; 
 const DEFAULT_CHUNK_SIZE = 256; // bytes
 const DEFAULT_SEGMENT_MAX_CHUNKS = 1024;
 const DEFAULT_SEGMENT_SIZE = DEFAULT_CHUNK_SIZE * DEFAULT_SEGMENT_MAX_CHUNKS;
@@ -11612,7 +11613,6 @@ class BlobIterator {
         this.clearBuffer();
         if (this.offset >= this.fileSize) {
             this.paddingZeros(expectedBufSize);
-            this.offset += expectedBufSize;
             return [true, null];
         }
         const { bytesRead: n, buffer } = await this.readFromFile(this.offset, this.offset + this.batchSize);
@@ -11627,8 +11627,9 @@ class BlobIterator {
             // should never happen
             throw new Error("load more data from file than expected");
         }
-        this.paddingZeros(expectedBufSize - n);
-        this.offset += expectedBufSize - n;
+        if (expectedBufSize > n) {
+            this.paddingZeros(expectedBufSize - n);
+        }
         return [true, null];
     }
     current() {
@@ -12459,4 +12460,4 @@ function getFlowContract(address, signer) {
     return Flow__factory.connect(address, signer);
 }
 
-export { DEFAULT_CHUNK_SIZE, DEFAULT_SEGMENT_MAX_CHUNKS, DEFAULT_SEGMENT_SIZE, EMPTY_CHUNK, EMPTY_CHUNK_HASH, Flow__factory, LeafNode, NHBlob, NHFile, NHMerkleTree, NHProofErrors, NHProvider, NeuraProof, SMALL_FILE_SIZE_THRESHOLD, TESTNET_FLOW_ADDRESS, TESTNET_USDT_ADDRESS, ZERO_HASH, computePaddedSize, index as factories, getFlowContract, nextPow2, numSplits };
+export { DEFAULT_CHUNK_SIZE, DEFAULT_SEGMENT_MAX_CHUNKS, DEFAULT_SEGMENT_SIZE, EMPTY_CHUNK, EMPTY_CHUNK_HASH, Flow__factory, LeafNode, NHBlob, NHFile, NHMerkleTree, NHProofErrors, NHProvider, NeuraProof, SMALL_FILE_SIZE_THRESHOLD, TESTNET_FLOW_ADDRESS, ZERO_HASH, computePaddedSize, index as factories, getFlowContract, nextPow2, numSplits };
