@@ -42,7 +42,7 @@ import { getFlowContract, TESTNET_FLOW_ADDRESS } from 'zerog-da-sdk';
 import { ethers } from 'ethers';
 
 // create ethers signer from private key and rpc endpoint
-const evmRpc = 'https://evmtestnet.confluxrpc.com';
+const evmRpc = 'https://rpc-testnet.0g.ai';
 const provider = new ethers.JsonRpcProvider(evmRpc);
 const privateKey = 'your-private-key'; // with balance to pay for gas
 const signer = new ethers.Wallet(privateKey, provider);
@@ -66,7 +66,7 @@ Upload file to zerog-storage:
 ```js
 import { NHProvider } from 'zerog-da-sdk';
 
-const nhRpc = 'http://54.193.124.127:5678';
+const nhRpc = 'https://rpc-storage-testnet.0g.ai';
 const nhProvider = new NHProvider(nhRpc);
 
 await nhProvider.uploadFile(file);
@@ -126,7 +126,7 @@ This project uses [pnpm](https://pnpm.js.org/) as package manager. After cloning
 
 ### Generate Contract Flow Types
 
-Make sure [zerog-contracts](https://github.com/zero-gravity-labs/zerog-storage-contracts) is in project sibling directory.
+Make sure [0g-storage-contracts](https://github.com/0glabs/0g-storage-contracts) is in project sibling directory.
 
 ```sh
 pnpm gen-contract-type-flow

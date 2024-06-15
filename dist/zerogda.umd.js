@@ -8,7 +8,7 @@
     /**
      *  The current version of Ethers.
      */
-    const version$2 = "6.7.1";
+    const version$2 = "6.13.0";
 
     /**
      *  Property helper functions.
@@ -114,7 +114,7 @@
      *  Returns true if the %%error%% matches an error thrown by ethers
      *  that matches the error %%code%%.
      *
-     *  In TypeScript envornoments, this can be used to check that %%error%%
+     *  In TypeScript environments, this can be used to check that %%error%%
      *  matches an EthersError type, which means the expected properties will
      *  be set.
      *
@@ -140,15 +140,16 @@
     }
     /**
      *  Returns a new Error configured to the format ethers emits errors, with
-     *  the %%message%%, [[api:ErrorCode]] %%code%% and additioanl properties
+     *  the %%message%%, [[api:ErrorCode]] %%code%% and additional properties
      *  for the corresponding EthersError.
      *
      *  Each error in ethers includes the version of ethers, a
-     *  machine-readable [[ErrorCode]], and depneding on %%code%%, additional
-     *  required properties. The error message will also include the %%meeage%%,
-     *  ethers version, %%code%% and all aditional properties, serialized.
+     *  machine-readable [[ErrorCode]], and depending on %%code%%, additional
+     *  required properties. The error message will also include the %%message%%,
+     *  ethers version, %%code%% and all additional properties, serialized.
      */
     function makeError(message, code, info) {
+        let shortMessage = message;
         {
             const details = [];
             if (info) {
@@ -156,6 +157,9 @@
                     throw new Error(`value will overwrite populated values: ${stringify(info)}`);
                 }
                 for (const key in info) {
+                    if (key === "shortMessage") {
+                        continue;
+                    }
                     const value = (info[key]);
                     //                try {
                     details.push(key + "=" + stringify(value));
@@ -187,6 +191,9 @@
         if (info) {
             Object.assign(error, info);
         }
+        if (error.shortMessage == null) {
+            defineProperties(error, { shortMessage });
+        }
         return error;
     }
     /**
@@ -195,7 +202,7 @@
      *
      *  @see [[api:makeError]]
      */
-    function assert$1(check, message, code, info) {
+    function assert(check, message, code, info) {
         if (!check) {
             throw makeError(message, code, info);
         }
@@ -208,7 +215,7 @@
      *  any further code does not need additional compile-time checks.
      */
     function assertArgument(check, message, name, value) {
-        assert$1(check, message, "INVALID_ARGUMENT", { argument: name, value: value });
+        assert(check, message, "INVALID_ARGUMENT", { argument: name, value: value });
     }
     function assertArgumentCount(count, expectedCount, message) {
         if (message == null) {
@@ -217,11 +224,11 @@
         if (message) {
             message = ": " + message;
         }
-        assert$1(count >= expectedCount, "missing arguemnt" + message, "MISSING_ARGUMENT", {
+        assert(count >= expectedCount, "missing arguemnt" + message, "MISSING_ARGUMENT", {
             count: count,
             expectedCount: expectedCount
         });
-        assert$1(count <= expectedCount, "too many arguemnts" + message, "UNEXPECTED_ARGUMENT", {
+        assert(count <= expectedCount, "too many arguments" + message, "UNEXPECTED_ARGUMENT", {
             count: count,
             expectedCount: expectedCount
         });
@@ -253,7 +260,7 @@
      *  Throws if the normalization %%form%% is not supported.
      */
     function assertNormalize(form) {
-        assert$1(_normalizeForms.indexOf(form) >= 0, "platform missing String.prototype.normalize", "UNSUPPORTED_OPERATION", {
+        assert(_normalizeForms.indexOf(form) >= 0, "platform missing String.prototype.normalize", "UNSUPPORTED_OPERATION", {
             operation: "String.prototype.normalize", info: { form }
         });
     }
@@ -273,7 +280,7 @@
                 method += ".";
                 operation += " " + className;
             }
-            assert$1(false, `private constructor; use ${method}from* methods`, "UNSUPPORTED_OPERATION", {
+            assert(false, `private constructor; use ${method}from* methods`, "UNSUPPORTED_OPERATION", {
                 operation
             });
         }
@@ -292,7 +299,7 @@
             }
             return value;
         }
-        if (typeof (value) === "string" && value.match(/^0x([0-9a-f][0-9a-f])*$/i)) {
+        if (typeof (value) === "string" && value.match(/^0x(?:[0-9a-f][0-9a-f])*$/i)) {
             const result = new Uint8Array((value.length - 2) / 2);
             let offset = 2;
             for (let i = 0; i < result.length; i++) {
@@ -342,6 +349,13 @@
         }
         return true;
     }
+    /**
+     *  Returns true if %%value%% is a valid representation of arbitrary
+     *  data (i.e. a valid [[DataHexString]] or a Uint8Array).
+     */
+    function isBytesLike(value) {
+        return (isHexString$1(value, true) || (value instanceof Uint8Array));
+    }
     const HexCharacters$1 = "0123456789abcdef";
     /**
      *  Returns a [[DataHexString]] representation of %%data%%.
@@ -371,7 +385,7 @@
     function dataSlice(data, start, end) {
         const bytes = getBytes(data);
         if (end != null && end > bytes.length) {
-            assert$1(false, "cannot slice beyond data bounds", "BUFFER_OVERRUN", {
+            assert(false, "cannot slice beyond data bounds", "BUFFER_OVERRUN", {
                 buffer: bytes, length: bytes.length, offset: end
             });
         }
@@ -379,7 +393,7 @@
     }
     function zeroPad(data, length, left) {
         const bytes = getBytes(data);
-        assert$1(length >= bytes.length, "padding exceeds data length", "BUFFER_OVERRUN", {
+        assert(length >= bytes.length, "padding exceeds data length", "BUFFER_OVERRUN", {
             buffer: new Uint8Array(bytes),
             length: length,
             offset: length + 1
@@ -440,7 +454,7 @@
     function fromTwos(_value, _width) {
         const value = getUint(_value, "value");
         const width = BigInt(getNumber(_width, "width"));
-        assert$1((value >> width) === BN_0$4, "overflow", "NUMERIC_FAULT", {
+        assert((value >> width) === BN_0$4, "overflow", "NUMERIC_FAULT", {
             operation: "fromTwos", fault: "overflow", value: _value
         });
         // Top bit set; treat as a negative value
@@ -462,14 +476,14 @@
         const limit = (BN_1$1 << (width - BN_1$1));
         if (value < BN_0$4) {
             value = -value;
-            assert$1(value <= limit, "too low", "NUMERIC_FAULT", {
+            assert(value <= limit, "too low", "NUMERIC_FAULT", {
                 operation: "toTwos", fault: "overflow", value: _value
             });
             const mask = (BN_1$1 << width) - BN_1$1;
             return ((~value) & mask) + BN_1$1;
         }
         else {
-            assert$1(value < limit, "too high", "NUMERIC_FAULT", {
+            assert(value < limit, "too high", "NUMERIC_FAULT", {
                 operation: "toTwos", fault: "overflow", value: _value
             });
         }
@@ -516,7 +530,7 @@
      */
     function getUint(value, name) {
         const result = getBigInt(value, name);
-        assert$1(result >= BN_0$4, "unsigned value cannot be negative", "NUMERIC_FAULT", {
+        assert(result >= BN_0$4, "unsigned value cannot be negative", "NUMERIC_FAULT", {
             fault: "overflow", operation: "getUint", value
         });
         return result;
@@ -585,7 +599,7 @@
         }
         else {
             const width = getNumber(_width, "width");
-            assert$1(width * 2 >= result.length, `value exceeds width (${width} bits)`, "NUMERIC_FAULT", {
+            assert(width * 2 >= result.length, `value exceeds width (${width} bytes)`, "NUMERIC_FAULT", {
                 operation: "toBeHex",
                 fault: "overflow",
                 value: _value
@@ -822,6 +836,7 @@
      *  If %%form%% is specified, the string is normalized.
      */
     function toUtf8Bytes(str, form) {
+        assertArgument(typeof (str) === "string", "invalid string value", "str", str);
         if (form != null) {
             assertNormalize(form);
             str = str.normalize(form);
@@ -933,10 +948,37 @@
     // - `then` is used to detect if an object is a Promise for await
     const passProperties$1 = ["then"];
     const _guard$1 = {};
+    const resultNames = new WeakMap();
+    function getNames(result) {
+        return resultNames.get(result);
+    }
+    function setNames(result, names) {
+        resultNames.set(result, names);
+    }
     function throwError(name, error) {
         const wrapped = new Error(`deferred error during ABI decoding triggered accessing ${name}`);
         wrapped.error = error;
         throw wrapped;
+    }
+    function toObject(names, items, deep) {
+        if (names.indexOf(null) >= 0) {
+            return items.map((item, index) => {
+                if (item instanceof Result) {
+                    return toObject(getNames(item), item, deep);
+                }
+                return item;
+            });
+        }
+        return names.reduce((accum, name, index) => {
+            let item = items.getValue(name);
+            if (!(name in accum)) {
+                if (deep && item instanceof Result) {
+                    item = toObject(getNames(item), item, deep);
+                }
+                accum[name] = item;
+            }
+            return accum;
+        }, {});
     }
     /**
      *  A [[Result]] is a sub-class of Array, which allows accessing any
@@ -946,6 +988,9 @@
      *  @_docloc: api/abi
      */
     class Result extends Array {
+        // No longer used; but cannot be removed as it will remove the
+        // #private field from the .d.ts which may break backwards
+        // compatibility
         #names;
         /**
          *  @private
@@ -978,20 +1023,25 @@
                 return accum;
             }, (new Map()));
             // Remove any key thats not unique
-            this.#names = Object.freeze(items.map((item, index) => {
+            setNames(this, Object.freeze(items.map((item, index) => {
                 const name = names[index];
                 if (name != null && nameCounts.get(name) === 1) {
                     return name;
                 }
                 return null;
-            }));
+            })));
+            // Dummy operations to prevent TypeScript from complaining
+            this.#names = [];
+            if (this.#names == null) {
+                void (this.#names);
+            }
             if (!wrap) {
                 return;
             }
             // A wrapped Result is immutable
             Object.freeze(this);
             // Proxy indices and names so we can trap deferred errors
-            return new Proxy(this, {
+            const proxy = new Proxy(this, {
                 get: (target, prop, receiver) => {
                     if (typeof (prop) === "string") {
                         // Index accessor
@@ -1026,39 +1076,44 @@
                     return Reflect.get(target, prop, receiver);
                 }
             });
+            setNames(proxy, getNames(this));
+            return proxy;
         }
         /**
-         *  Returns the Result as a normal Array.
+         *  Returns the Result as a normal Array. If %%deep%%, any children
+         *  which are Result objects are also converted to a normal Array.
          *
          *  This will throw if there are any outstanding deferred
          *  errors.
          */
-        toArray() {
+        toArray(deep) {
             const result = [];
             this.forEach((item, index) => {
                 if (item instanceof Error) {
                     throwError(`index ${index}`, item);
+                }
+                if (deep && item instanceof Result) {
+                    item = item.toArray(deep);
                 }
                 result.push(item);
             });
             return result;
         }
         /**
-         *  Returns the Result as an Object with each name-value pair.
+         *  Returns the Result as an Object with each name-value pair. If
+         *  %%deep%%, any children which are Result objects are also
+         *  converted to an Object.
          *
          *  This will throw if any value is unnamed, or if there are
          *  any outstanding deferred errors.
          */
-        toObject() {
-            return this.#names.reduce((accum, name, index) => {
-                assert$1(name != null, "value at index ${ index } unnamed", "UNSUPPORTED_OPERATION", {
+        toObject(deep) {
+            const names = getNames(this);
+            return names.reduce((accum, name, index) => {
+                assert(name != null, `value at index ${index} unnamed`, "UNSUPPORTED_OPERATION", {
                     operation: "toObject()"
                 });
-                // Add values for names that don't conflict
-                if (!(name in accum)) {
-                    accum[name] = this.getValue(name);
-                }
-                return accum;
+                return toObject(names, this, deep);
             }, {});
         }
         /**
@@ -1086,10 +1141,11 @@
             if (end > this.length) {
                 end = this.length;
             }
+            const _names = getNames(this);
             const result = [], names = [];
             for (let i = start; i < end; i++) {
                 result.push(this[i]);
-                names.push(this.#names[i]);
+                names.push(_names[i]);
             }
             return new Result(_guard$1, result, names);
         }
@@ -1097,6 +1153,7 @@
          *  @_ignore
          */
         filter(callback, thisArg) {
+            const _names = getNames(this);
             const result = [], names = [];
             for (let i = 0; i < this.length; i++) {
                 const item = this[i];
@@ -1105,7 +1162,7 @@
                 }
                 if (callback.call(thisArg, item, i, this)) {
                     result.push(item);
-                    names.push(this.#names[i]);
+                    names.push(_names[i]);
                 }
             }
             return new Result(_guard$1, result, names);
@@ -1133,7 +1190,7 @@
          *  accessible by name.
          */
         getValue(name) {
-            const index = this.#names.indexOf(name);
+            const index = getNames(this).indexOf(name);
             if (index === -1) {
                 return undefined;
             }
@@ -1153,7 +1210,7 @@
     }
     function getValue(value) {
         let bytes = toBeArray(value);
-        assert$1(bytes.length <= WordSize, "value out-of-bounds", "BUFFER_OVERRUN", { buffer: bytes, length: WordSize, offset: bytes.length });
+        assert(bytes.length <= WordSize, "value out-of-bounds", "BUFFER_OVERRUN", { buffer: bytes, length: WordSize, offset: bytes.length });
         if (bytes.length !== WordSize) {
             bytes = getBytesCopy(concat([Padding.slice(bytes.length % WordSize), bytes]));
         }
@@ -1243,15 +1300,35 @@
         allowLoose;
         #data;
         #offset;
-        constructor(data, allowLoose) {
+        #bytesRead;
+        #parent;
+        #maxInflation;
+        constructor(data, allowLoose, maxInflation) {
             defineProperties(this, { allowLoose: !!allowLoose });
             this.#data = getBytesCopy(data);
+            this.#bytesRead = 0;
+            this.#parent = null;
+            this.#maxInflation = (maxInflation != null) ? maxInflation : 1024;
             this.#offset = 0;
         }
         get data() { return hexlify$1(this.#data); }
         get dataLength() { return this.#data.length; }
         get consumed() { return this.#offset; }
         get bytes() { return new Uint8Array(this.#data); }
+        #incrementBytesRead(count) {
+            if (this.#parent) {
+                return this.#parent.#incrementBytesRead(count);
+            }
+            this.#bytesRead += count;
+            // Check for excessive inflation (see: #4537)
+            assert(this.#maxInflation < 1 || this.#bytesRead <= this.#maxInflation * this.dataLength, `compressed ABI data exceeds inflation ratio of ${this.#maxInflation} ( see: https:/\/github.com/ethers-io/ethers.js/issues/4537 )`, "BUFFER_OVERRUN", {
+                buffer: getBytesCopy(this.#data), offset: this.#offset,
+                length: count, info: {
+                    bytesRead: this.#bytesRead,
+                    dataLength: this.dataLength
+                }
+            });
+        }
         #peekBytes(offset, length, loose) {
             let alignedLength = Math.ceil(length / WordSize) * WordSize;
             if (this.#offset + alignedLength > this.#data.length) {
@@ -1259,7 +1336,7 @@
                     alignedLength = length;
                 }
                 else {
-                    assert$1(false, "data out-of-bounds", "BUFFER_OVERRUN", {
+                    assert(false, "data out-of-bounds", "BUFFER_OVERRUN", {
                         buffer: getBytesCopy(this.#data),
                         length: this.#data.length,
                         offset: this.#offset + alignedLength
@@ -1270,11 +1347,14 @@
         }
         // Create a sub-reader with the same underlying data, but offset
         subReader(offset) {
-            return new Reader(this.#data.slice(this.#offset + offset), this.allowLoose);
+            const reader = new Reader(this.#data.slice(this.#offset + offset), this.allowLoose, this.#maxInflation);
+            reader.#parent = this;
+            return reader;
         }
         // Read bytes
         readBytes(length, loose) {
             let bytes = this.#peekBytes(0, length, !!loose);
+            this.#incrementBytesRead(length);
             this.#offset += bytes.length;
             // @TODO: Make sure the length..end bytes are all 0?
             return bytes.slice(0, length);
@@ -1292,21 +1372,11 @@
         if (!Number.isSafeInteger(n) || n < 0)
             throw new Error(`Wrong positive integer: ${n}`);
     }
-    function bool(b) {
-        if (typeof b !== 'boolean')
-            throw new Error(`Expected boolean, not ${b}`);
-    }
     function bytes(b, ...lengths) {
         if (!(b instanceof Uint8Array))
-            throw new TypeError('Expected Uint8Array');
+            throw new Error('Expected Uint8Array');
         if (lengths.length > 0 && !lengths.includes(b.length))
-            throw new TypeError(`Expected Uint8Array of length ${lengths}, not of length=${b.length}`);
-    }
-    function hash(hash) {
-        if (typeof hash !== 'function' || typeof hash.create !== 'function')
-            throw new Error('Hash should be wrapped by utils.wrapConstructor');
-        number(hash.outputLen);
-        number(hash.blockLen);
+            throw new Error(`Expected Uint8Array of length ${lengths}, not of length=${b.length}`);
     }
     function exists(instance, checkFinished = true) {
         if (instance.destroyed)
@@ -1321,36 +1391,39 @@
             throw new Error(`digestInto() expects output buffer of length at least ${min}`);
         }
     }
-    const assert = {
-        number,
-        bool,
-        bytes,
-        hash,
-        exists,
-        output,
-    };
 
     /*! noble-hashes - MIT License (c) 2022 Paul Miller (paulmillr.com) */
-    // The import here is via the package name. This is to ensure
-    // that exports mapping/resolution does fall into place.
+    // We use WebCrypto aka globalThis.crypto, which exists in browsers and node.js 16+.
+    // node.js versions earlier than v19 don't declare it in global scope.
+    // For node.js, package.json#exports field mapping rewrites import
+    // from `crypto` to `cryptoNode`, which imports native module.
+    // Makes the utils un-importable in browsers without a bundler.
+    // Once node.js 18 is deprecated, we can just drop the import.
+    const u8a = (a) => a instanceof Uint8Array;
     const u32 = (arr) => new Uint32Array(arr.buffer, arr.byteOffset, Math.floor(arr.byteLength / 4));
+    // big-endian hardware is rare. Just in case someone still decides to run hashes:
+    // early-throw an error because we don't support BE yet.
     const isLE = new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 0x44;
-    // There is almost no big endian hardware, but js typed arrays uses platform specific endianness.
-    // So, just to be sure not to corrupt anything.
     if (!isLE)
         throw new Error('Non little-endian hardware is not supported');
-    Array.from({ length: 256 }, (v, i) => i.toString(16).padStart(2, '0'));
+    /**
+     * @example utf8ToBytes('abc') // new Uint8Array([97, 98, 99])
+     */
     function utf8ToBytes(str) {
-        if (typeof str !== 'string') {
-            throw new TypeError(`utf8ToBytes expected string, got ${typeof str}`);
-        }
-        return new TextEncoder().encode(str);
+        if (typeof str !== 'string')
+            throw new Error(`utf8ToBytes expected string, got ${typeof str}`);
+        return new Uint8Array(new TextEncoder().encode(str)); // https://bugzil.la/1681809
     }
+    /**
+     * Normalizes (non-hex) string or Uint8Array to Uint8Array.
+     * Warning: when Uint8Array is passed, it would NOT get copied.
+     * Keep in mind for future mutable operations.
+     */
     function toBytes(data) {
         if (typeof data === 'string')
             data = utf8ToBytes(data);
-        if (!(data instanceof Uint8Array))
-            throw new TypeError(`Expected input type is Uint8Array (got ${typeof data})`);
+        if (!u8a(data))
+            throw new Error(`expected Uint8Array, got ${typeof data}`);
         return data;
     }
     // For runtime check if class implements interface
@@ -1360,25 +1433,17 @@
             return this._cloneInto();
         }
     }
-    function wrapConstructor(hashConstructor) {
-        const hashC = (message) => hashConstructor().update(toBytes(message)).digest();
-        const tmp = hashConstructor();
+    function wrapConstructor(hashCons) {
+        const hashC = (msg) => hashCons().update(toBytes(msg)).digest();
+        const tmp = hashCons();
         hashC.outputLen = tmp.outputLen;
         hashC.blockLen = tmp.blockLen;
-        hashC.create = () => hashConstructor();
-        return hashC;
-    }
-    function wrapConstructorWithOpts(hashCons) {
-        const hashC = (msg, opts) => hashCons(opts).update(toBytes(msg)).digest();
-        const tmp = hashCons({});
-        hashC.outputLen = tmp.outputLen;
-        hashC.blockLen = tmp.blockLen;
-        hashC.create = (opts) => hashCons(opts);
+        hashC.create = () => hashCons();
         return hashC;
     }
 
-    const U32_MASK64 = BigInt(2 ** 32 - 1);
-    const _32n = BigInt(32);
+    const U32_MASK64 = /* @__PURE__ */ BigInt(2 ** 32 - 1);
+    const _32n = /* @__PURE__ */ BigInt(32);
     // We are not using BigUint64Array, because they are extremely slow as per 2022
     function fromBig(n, le = false) {
         if (le)
@@ -1394,57 +1459,23 @@
         }
         return [Ah, Al];
     }
-    const toBig = (h, l) => (BigInt(h >>> 0) << _32n) | BigInt(l >>> 0);
-    // for Shift in [0, 32)
-    const shrSH = (h, l, s) => h >>> s;
-    const shrSL = (h, l, s) => (h << (32 - s)) | (l >>> s);
-    // Right rotate for Shift in [1, 32)
-    const rotrSH = (h, l, s) => (h >>> s) | (l << (32 - s));
-    const rotrSL = (h, l, s) => (h << (32 - s)) | (l >>> s);
-    // Right rotate for Shift in (32, 64), NOTE: 32 is special case.
-    const rotrBH = (h, l, s) => (h << (64 - s)) | (l >>> (s - 32));
-    const rotrBL = (h, l, s) => (h >>> (s - 32)) | (l << (64 - s));
-    // Right rotate for shift===32 (just swaps l&h)
-    const rotr32H = (h, l) => l;
-    const rotr32L = (h, l) => h;
     // Left rotate for Shift in [1, 32)
     const rotlSH = (h, l, s) => (h << s) | (l >>> (32 - s));
     const rotlSL = (h, l, s) => (l << s) | (h >>> (32 - s));
     // Left rotate for Shift in (32, 64), NOTE: 32 is special case.
     const rotlBH = (h, l, s) => (l << (s - 32)) | (h >>> (64 - s));
     const rotlBL = (h, l, s) => (h << (s - 32)) | (l >>> (64 - s));
-    // JS uses 32-bit signed integers for bitwise operations which means we cannot
-    // simple take carry out of low bit sum by shift, we need to use division.
-    // Removing "export" has 5% perf penalty -_-
-    function add(Ah, Al, Bh, Bl) {
-        const l = (Al >>> 0) + (Bl >>> 0);
-        return { h: (Ah + Bh + ((l / 2 ** 32) | 0)) | 0, l: l | 0 };
-    }
-    // Addition with more than 2 elements
-    const add3L = (Al, Bl, Cl) => (Al >>> 0) + (Bl >>> 0) + (Cl >>> 0);
-    const add3H = (low, Ah, Bh, Ch) => (Ah + Bh + Ch + ((low / 2 ** 32) | 0)) | 0;
-    const add4L = (Al, Bl, Cl, Dl) => (Al >>> 0) + (Bl >>> 0) + (Cl >>> 0) + (Dl >>> 0);
-    const add4H = (low, Ah, Bh, Ch, Dh) => (Ah + Bh + Ch + Dh + ((low / 2 ** 32) | 0)) | 0;
-    const add5L = (Al, Bl, Cl, Dl, El) => (Al >>> 0) + (Bl >>> 0) + (Cl >>> 0) + (Dl >>> 0) + (El >>> 0);
-    const add5H = (low, Ah, Bh, Ch, Dh, Eh) => (Ah + Bh + Ch + Dh + Eh + ((low / 2 ** 32) | 0)) | 0;
-    // prettier-ignore
-    const u64 = {
-        fromBig, split, toBig,
-        shrSH, shrSL,
-        rotrSH, rotrSL, rotrBH, rotrBL,
-        rotr32H, rotr32L,
-        rotlSH, rotlSL, rotlBH, rotlBL,
-        add, add3L, add3H, add4L, add4H, add5H, add5L,
-    };
 
+    // SHA3 (keccak) is based on a new design: basically, the internal state is bigger than output size.
+    // It's called a sponge function.
     // Various per round constants calculations
     const [SHA3_PI, SHA3_ROTL, _SHA3_IOTA] = [[], [], []];
-    const _0n = BigInt(0);
-    const _1n = BigInt(1);
-    const _2n = BigInt(2);
-    const _7n = BigInt(7);
-    const _256n = BigInt(256);
-    const _0x71n = BigInt(0x71);
+    const _0n = /* @__PURE__ */ BigInt(0);
+    const _1n = /* @__PURE__ */ BigInt(1);
+    const _2n = /* @__PURE__ */ BigInt(2);
+    const _7n = /* @__PURE__ */ BigInt(7);
+    const _256n = /* @__PURE__ */ BigInt(256);
+    const _0x71n = /* @__PURE__ */ BigInt(0x71);
     for (let round = 0, R = _1n, x = 1, y = 0; round < 24; round++) {
         // Pi
         [x, y] = [y, (2 * x + 3 * y) % 5];
@@ -1456,14 +1487,14 @@
         for (let j = 0; j < 7; j++) {
             R = ((R << _1n) ^ ((R >> _7n) * _0x71n)) % _256n;
             if (R & _2n)
-                t ^= _1n << ((_1n << BigInt(j)) - _1n);
+                t ^= _1n << ((_1n << /* @__PURE__ */ BigInt(j)) - _1n);
         }
         _SHA3_IOTA.push(t);
     }
-    const [SHA3_IOTA_H, SHA3_IOTA_L] = u64.split(_SHA3_IOTA, true);
+    const [SHA3_IOTA_H, SHA3_IOTA_L] = /* @__PURE__ */ split(_SHA3_IOTA, true);
     // Left rotation (without 0, 32, 64)
-    const rotlH = (h, l, s) => s > 32 ? u64.rotlBH(h, l, s) : u64.rotlSH(h, l, s);
-    const rotlL = (h, l, s) => s > 32 ? u64.rotlBL(h, l, s) : u64.rotlSL(h, l, s);
+    const rotlH = (h, l, s) => (s > 32 ? rotlBH(h, l, s) : rotlSH(h, l, s));
+    const rotlL = (h, l, s) => (s > 32 ? rotlBL(h, l, s) : rotlSL(h, l, s));
     // Same as keccakf1600, but allows to skip some rounds
     function keccakP(s, rounds = 24) {
         const B = new Uint32Array(5 * 2);
@@ -1524,7 +1555,7 @@
             this.finished = false;
             this.destroyed = false;
             // Can be passed from user as dkLen
-            assert.number(outputLen);
+            number(outputLen);
             // 1600 = 5x5 matrix of 64bit.  1600 bits === 200 bytes
             if (0 >= this.blockLen || this.blockLen >= 200)
                 throw new Error('Sha3 supports only keccak-f1600 function');
@@ -1537,7 +1568,7 @@
             this.pos = 0;
         }
         update(data) {
-            assert.exists(this);
+            exists(this);
             const { blockLen, state } = this;
             data = toBytes(data);
             const len = data.length;
@@ -1563,8 +1594,8 @@
             this.keccak();
         }
         writeInto(out) {
-            assert.exists(this, false);
-            assert.bytes(out);
+            exists(this, false);
+            bytes(out);
             this.finish();
             const bufferOut = this.state;
             const { blockLen } = this;
@@ -1585,11 +1616,11 @@
             return this.writeInto(out);
         }
         xof(bytes) {
-            assert.number(bytes);
+            number(bytes);
             return this.xofInto(new Uint8Array(bytes));
         }
         digestInto(out) {
-            assert.output(out, this);
+            output(out, this);
             if (this.finished)
                 throw new Error('digest() was already called');
             this.writeInto(out);
@@ -1620,25 +1651,11 @@
         }
     }
     const gen = (suffix, blockLen, outputLen) => wrapConstructor(() => new Keccak(blockLen, suffix, outputLen));
-    gen(0x06, 144, 224 / 8);
-    /**
-     * SHA3-256 hash function
-     * @param message - that would be hashed
-     */
-    gen(0x06, 136, 256 / 8);
-    gen(0x06, 104, 384 / 8);
-    gen(0x06, 72, 512 / 8);
-    gen(0x01, 144, 224 / 8);
     /**
      * keccak-256 hash function. Different from SHA3-256.
      * @param message - that would be hashed
      */
-    const keccak_256 = gen(0x01, 136, 256 / 8);
-    gen(0x01, 104, 384 / 8);
-    gen(0x01, 72, 512 / 8);
-    const genShake = (suffix, blockLen, outputLen) => wrapConstructorWithOpts((opts = {}) => new Keccak(blockLen, suffix, opts.dkLen === undefined ? outputLen : opts.dkLen, true));
-    genShake(0x1f, 168, 128 / 8);
-    genShake(0x1f, 136, 256 / 8);
+    const keccak_256 = /* @__PURE__ */ gen(0x01, 136, 256 / 8);
 
     /**
      *  Cryptographic hashing functions
@@ -1867,7 +1884,7 @@
     async function checkAddress(target, promise) {
         const result = await promise;
         if (result == null || result === "0x0000000000000000000000000000000000000000") {
-            assert$1(typeof (target) !== "string", "unconfigured name", "UNCONFIGURED_NAME", { value: target });
+            assert(typeof (target) !== "string", "unconfigured name", "UNCONFIGURED_NAME", { value: target });
             assertArgument(false, "invalid AddressLike value; did not resolve to a value address", "target", target);
         }
         return getAddress(result);
@@ -1914,7 +1931,7 @@
             if (target.match(/^0x[0-9a-f]{40}$/i)) {
                 return getAddress(target);
             }
-            assert$1(resolver != null, "ENS resolution requires a provider", "UNSUPPORTED_OPERATION", { operation: "resolveName" });
+            assert(resolver != null, "ENS resolution requires a provider", "UNSUPPORTED_OPERATION", { operation: "resolveName" });
             return checkAddress(target, resolver.resolveName(target));
         }
         else if (isAddressable(target)) {
@@ -2584,8 +2601,8 @@
             let unique = {};
             arrayValues = coders.map((coder) => {
                 const name = coder.localName;
-                assert$1(name, "cannot encode object for signature with missing names", "INVALID_ARGUMENT", { argument: "values", info: { coder }, value: values });
-                assert$1(!unique[name], "cannot encode object for signature with duplicate names", "INVALID_ARGUMENT", { argument: "values", info: { coder }, value: values });
+                assert(name, "cannot encode object for signature with missing names", "INVALID_ARGUMENT", { argument: "values", info: { coder }, value: values });
+                assert(!unique[name], "cannot encode object for signature with duplicate names", "INVALID_ARGUMENT", { argument: "values", info: { coder }, value: values });
                 unique[name] = true;
                 return values[name];
             });
@@ -2717,7 +2734,7 @@
                 // slot requires at least 32 bytes for their value (or 32
                 // bytes as a link to the data). This could use a much
                 // tighter bound, but we are erroring on the side of safety.
-                assert$1(count * WordSize <= reader.dataLength, "insufficient data length", "BUFFER_OVERRUN", { buffer: reader.bytes, offset: count * WordSize, length: reader.dataLength });
+                assert(count * WordSize <= reader.dataLength, "insufficient data length", "BUFFER_OVERRUN", { buffer: reader.bytes, offset: count * WordSize, length: reader.dataLength });
             }
             let coders = [];
             for (let i = 0; i < count; i++) {
@@ -3012,10 +3029,10 @@
         items.forEach((k) => result.add(k));
         return Object.freeze(result);
     }
-    const _kwVisibDeploy = "external public payable";
+    const _kwVisibDeploy = "external public payable override";
     const KwVisibDeploy = setify(_kwVisibDeploy.split(" "));
     // Visibility Keywords
-    const _kwVisib = "constant external internal payable private public pure view";
+    const _kwVisib = "constant external internal payable private public pure view override";
     const KwVisib = setify(_kwVisib.split(" "));
     const _kwTypes = "constructor error event fallback function receive struct";
     const KwTypes = setify(_kwTypes.split(" "));
@@ -3069,7 +3086,8 @@
         // Pops and returns the value of the next token if it is `type`; throws if out of tokens
         popType(type) {
             if (this.peek().type !== type) {
-                throw new Error(`expected ${type}; got ${JSON.stringify(this.peek())}`);
+                const top = this.peek();
+                throw new Error(`expected ${type}; got ${top.type} ${JSON.stringify(top.text)}`);
             }
             return this.pop().text;
         }
@@ -3301,7 +3319,7 @@
     }
     function consumeEoi(tokens) {
         if (tokens.length) {
-            throw new Error(`unexpected tokens: ${tokens.toString()}`);
+            throw new Error(`unexpected tokens at offset ${tokens.offset}: ${tokens.toString()}`);
         }
     }
     const regexArrayType = new RegExp(/^(.*)\[([0-9]*)\]$/);
@@ -3449,9 +3467,6 @@
             }
             else {
                 if (this.isTuple()) {
-                    if (format !== "sighash") {
-                        result += this.type;
-                    }
                     result += "(" + this.components.map((comp) => comp.format(format)).join((format === "full") ? ", " : ",") + ")";
                 }
                 else {
@@ -3584,7 +3599,7 @@
          *  Walks the **ParamType** with %%value%%, asynchronously calling
          *  %%process%% on each type, destructing the %%value%% recursively.
          *
-         *  This can be used to resolve ENS naes by walking and resolving each
+         *  This can be used to resolve ENS names by walking and resolving each
          *  ``"address"`` type.
          */
         async walkAsync(value, process) {
@@ -3748,7 +3763,7 @@
                     case "function": return FunctionFragment.from(obj);
                     case "struct": return StructFragment.from(obj);
                 }
-                assert$1(false, `unsupported type: ${obj.type}`, "UNSUPPORTED_OPERATION", {
+                assert(false, `unsupported type: ${obj.type}`, "UNSUPPORTED_OPERATION", {
                     operation: "Fragment.from"
                 });
             }
@@ -3982,7 +3997,7 @@
          *  Returns a string representation of this constructor as %%format%%.
          */
         format(format) {
-            assert$1(format != null && format !== "sighash", "cannot format a constructor for sighash", "UNSUPPORTED_OPERATION", { operation: "format(sighash)" });
+            assert(format != null && format !== "sighash", "cannot format a constructor for sighash", "UNSUPPORTED_OPERATION", { operation: "format(sighash)" });
             if (format === "json") {
                 return JSON.stringify({
                     type: "constructor",
@@ -3993,7 +4008,9 @@
                 });
             }
             const result = [`constructor${joinParams(format, this.inputs)}`];
-            result.push((this.payable) ? "payable" : "nonpayable");
+            if (this.payable) {
+                result.push("payable");
+            }
             if (this.gas != null) {
                 result.push(`@${this.gas.toString()}`);
             }
@@ -4339,6 +4356,7 @@
     const paramTypeBytes = new RegExp(/^bytes([0-9]*)$/);
     const paramTypeNumber = new RegExp(/^(u?int)([0-9]*)$/);
     let defaultCoder = null;
+    let defaultMaxInflation = 1024;
     function getBuiltinCallException(action, tx, data, abiCoder) {
         let message = "missing revert data";
         let reason = null;
@@ -4475,7 +4493,11 @@
         decode(types, data, loose) {
             const coders = types.map((type) => this.#getCoder(ParamType.from(type)));
             const coder = new TupleCoder(coders, "_");
-            return coder.decode(new Reader(data, loose));
+            return coder.decode(new Reader(data, loose, defaultMaxInflation));
+        }
+        static _setDefaultMaxInflation(value) {
+            assertArgument(typeof (value) === "number" && Number.isInteger(value), "invalid defaultMaxInflation factor", "value", value);
+            defaultMaxInflation = value;
         }
         /**
          *  Returns the shared singleton instance of a default [[AbiCoder]].
@@ -4737,7 +4759,7 @@
                     frags.push(Fragment.from(a));
                 }
                 catch (error) {
-                    console.log("EE", error);
+                    console.log(`[Warning] Invalid Fragment ${JSON.stringify(a)}:`, error.message);
                 }
             }
             defineProperties(this, {
@@ -5261,7 +5283,7 @@
                 }
             }
             // Call returned data with no error, but the data is junk
-            assert$1(false, message, "BAD_DATA", {
+            assert(false, message, "BAD_DATA", {
                 value: hexlify$1(bytes),
                 info: { method: fragment.name, signature: fragment.format() }
             });
@@ -5352,7 +5374,7 @@
                 assertArgument(f, "unknown event", "eventFragment", fragment);
                 fragment = f;
             }
-            assert$1(values.length <= fragment.inputs.length, `too many arguments for ${fragment.format()}`, "UNEXPECTED_ARGUMENT", { count: values.length, expectedCount: fragment.inputs.length });
+            assert(values.length <= fragment.inputs.length, `too many arguments for ${fragment.format()}`, "UNEXPECTED_ARGUMENT", { count: values.length, expectedCount: fragment.inputs.length });
             const topics = [];
             if (!fragment.anonymous) {
                 topics.push(fragment.topicHash);
@@ -5552,7 +5574,7 @@
          *  Parses a revert data, finding the matching error and extracts
          *  the parameter values along with other useful error details.
          *
-         *  If the matching event cannot be found, returns null.
+         *  If the matching error cannot be found, returns null.
          */
         parseError(data) {
             const hexData = hexlify$1(data);
@@ -5578,7 +5600,11 @@
             if (typeof (value) === "string") {
                 return new Interface(JSON.parse(value));
             }
-            // Maybe an interface from an older version, or from a symlinked copy
+            // An Interface; possibly from another v6 instance
+            if (typeof (value.formatJson) === "function") {
+                return new Interface(value.formatJson());
+            }
+            // A legacy Interface; from an older version
             if (typeof (value.format) === "function") {
                 return new Interface(value.format("json"));
             }
@@ -5611,7 +5637,7 @@
         if (req.data) {
             result.data = hexlify$1(req.data);
         }
-        const bigIntKeys = "chainId,gasLimit,gasPrice,maxFeePerGas,maxPriorityFeePerGas,value".split(/,/);
+        const bigIntKeys = "chainId,gasLimit,gasPrice,maxFeePerBlobGas,maxFeePerGas,maxPriorityFeePerGas,value".split(/,/);
         for (const key of bigIntKeys) {
             if (!(key in req) || req[key] == null) {
                 continue;
@@ -5636,6 +5662,20 @@
         }
         if ("customData" in req) {
             result.customData = req.customData;
+        }
+        if ("blobVersionedHashes" in req && req.blobVersionedHashes) {
+            result.blobVersionedHashes = req.blobVersionedHashes.slice();
+        }
+        if ("kzg" in req) {
+            result.kzg = req.kzg;
+        }
+        if ("blobs" in req && req.blobs) {
+            result.blobs = req.blobs.map((b) => {
+                if (isBytesLike(b)) {
+                    return hexlify$1(b);
+                }
+                return Object.assign({}, b);
+            });
         }
         return result;
     }
@@ -5735,7 +5775,7 @@
          */
         async getBlock() {
             const block = await this.provider.getBlock(this.blockHash);
-            assert$1(!!block, "failed to find transaction", "UNKNOWN_ERROR", {});
+            assert(!!block, "failed to find transaction", "UNKNOWN_ERROR", {});
             return block;
         }
         /**
@@ -5743,7 +5783,7 @@
          */
         async getTransaction() {
             const tx = await this.provider.getTransaction(this.transactionHash);
-            assert$1(!!tx, "failed to find transaction", "UNKNOWN_ERROR", {});
+            assert(!!tx, "failed to find transaction", "UNKNOWN_ERROR", {});
             return tx;
         }
         /**
@@ -5752,7 +5792,7 @@
          */
         async getTransactionReceipt() {
             const receipt = await this.provider.getTransactionReceipt(this.transactionHash);
-            assert$1(!!receipt, "failed to find transaction receipt", "UNKNOWN_ERROR", {});
+            assert(!!receipt, "failed to find transaction receipt", "UNKNOWN_ERROR", {});
             return receipt;
         }
         /**
@@ -5788,7 +5828,7 @@
          */
         provider;
         /**
-         *  The address the transaction was send to.
+         *  The address the transaction was sent to.
          */
         to;
         /**
@@ -5834,6 +5874,10 @@
          */
         gasUsed;
         /**
+         *  The gas used for BLObs. See [[link-eip-4844]].
+         */
+        blobGasUsed;
+        /**
          *  The amount of gas used by all transactions within the block for this
          *  and all transactions with a lower ``index``.
          *
@@ -5849,6 +5893,10 @@
          *  fee is protocol-enforced.
          */
         gasPrice;
+        /**
+         *  The price paid per BLOB in gas. See [[link-eip-4844]].
+         */
+        blobGasPrice;
         /**
          *  The [[link-eip-2718]] transaction type.
          */
@@ -5896,7 +5944,9 @@
                 logsBloom: tx.logsBloom,
                 gasUsed: tx.gasUsed,
                 cumulativeGasUsed: tx.cumulativeGasUsed,
+                blobGasUsed: tx.blobGasUsed,
                 gasPrice,
+                blobGasPrice: tx.blobGasPrice,
                 type: tx.type,
                 //byzantium: tx.byzantium,
                 status: tx.status,
@@ -5921,6 +5971,8 @@
                 cumulativeGasUsed: toJson(this.cumulativeGasUsed),
                 from,
                 gasPrice: toJson(this.gasPrice),
+                blobGasUsed: toJson(this.blobGasUsed),
+                blobGasPrice: toJson(this.blobGasPrice),
                 gasUsed: toJson(this.gasUsed),
                 hash, index, logs, logsBloom, root, status, to
             };
@@ -5991,7 +6043,7 @@
          *  @_ignore:
          */
         reorderedEvent(other) {
-            assert$1(!other || other.isMined(), "unmined 'other' transction cannot be orphaned", "UNSUPPORTED_OPERATION", { operation: "reorderedEvent(other)" });
+            assert(!other || other.isMined(), "unmined 'other' transction cannot be orphaned", "UNSUPPORTED_OPERATION", { operation: "reorderedEvent(other)" });
             return createReorderedTransactionFilter(this, other);
         }
     }
@@ -6090,6 +6142,10 @@
          */
         maxFeePerGas;
         /**
+         *  The [[link-eip-4844]] max fee per BLOb gas.
+         */
+        maxFeePerBlobGas;
+        /**
          *  The data.
          */
         data;
@@ -6111,6 +6167,10 @@
          *  support it, otherwise ``null``.
          */
         accessList;
+        /**
+         *  The [[link-eip-4844]] BLOb versioned hashes.
+         */
+        blobVersionedHashes;
         #startBlock;
         /**
          *  @_ignore:
@@ -6131,19 +6191,22 @@
             this.gasPrice = tx.gasPrice;
             this.maxPriorityFeePerGas = (tx.maxPriorityFeePerGas != null) ? tx.maxPriorityFeePerGas : null;
             this.maxFeePerGas = (tx.maxFeePerGas != null) ? tx.maxFeePerGas : null;
+            this.maxFeePerBlobGas = (tx.maxFeePerBlobGas != null) ? tx.maxFeePerBlobGas : null;
             this.chainId = tx.chainId;
             this.signature = tx.signature;
             this.accessList = (tx.accessList != null) ? tx.accessList : null;
+            this.blobVersionedHashes = (tx.blobVersionedHashes != null) ? tx.blobVersionedHashes : null;
             this.#startBlock = -1;
         }
         /**
          *  Returns a JSON-compatible representation of this transaction.
          */
         toJSON() {
-            const { blockNumber, blockHash, index, hash, type, to, from, nonce, data, signature, accessList } = this;
+            const { blockNumber, blockHash, index, hash, type, to, from, nonce, data, signature, accessList, blobVersionedHashes } = this;
             return {
-                _type: "TransactionReceipt",
+                _type: "TransactionResponse",
                 accessList, blockNumber, blockHash,
+                blobVersionedHashes,
                 chainId: toJson(this.chainId),
                 data, from,
                 gasLimit: toJson(this.gasLimit),
@@ -6151,6 +6214,7 @@
                 hash,
                 maxFeePerGas: toJson(this.maxFeePerGas),
                 maxPriorityFeePerGas: toJson(this.maxPriorityFeePerGas),
+                maxFeePerBlobGas: toJson(this.maxFeePerBlobGas),
                 nonce, signature, to, index, type,
                 value: toJson(this.value),
             };
@@ -6290,7 +6354,7 @@
                             else if (tx.data === "0x" && tx.from === tx.to && tx.value === BN_0$1) {
                                 reason = "cancelled";
                             }
-                            assert$1(false, "transaction was replaced", "TRANSACTION_REPLACED", {
+                            assert(false, "transaction was replaced", "TRANSACTION_REPLACED", {
                                 cancelled: (reason === "replaced" || reason === "cancelled"),
                                 reason,
                                 replacement: tx.replaceableTransaction(startBlock),
@@ -6307,7 +6371,7 @@
                 if (receipt == null || receipt.status !== 0) {
                     return receipt;
                 }
-                assert$1(false, "transaction execution reverted", "CALL_EXCEPTION", {
+                assert(false, "transaction execution reverted", "CALL_EXCEPTION", {
                     action: "sendTransaction",
                     data: null, reason: null, invocation: null, revert: null,
                     transaction: {
@@ -6433,11 +6497,18 @@
             return (this.type === 2);
         }
         /**
+         *  Returns true if hte transaction is a Cancun (i.e. ``type == 3``)
+         *  transaction. See [[link-eip-4844]].
+         */
+        isCancun() {
+            return (this.type === 3);
+        }
+        /**
          *  Returns a filter which can be used to listen for orphan events
          *  that evict this transaction.
          */
         removedEvent() {
-            assert$1(this.isMined(), "unmined transaction canot be orphaned", "UNSUPPORTED_OPERATION", { operation: "removeEvent()" });
+            assert(this.isMined(), "unmined transaction canot be orphaned", "UNSUPPORTED_OPERATION", { operation: "removeEvent()" });
             return createRemovedTransactionFilter(this);
         }
         /**
@@ -6445,8 +6516,8 @@
          *  that re-order this event against %%other%%.
          */
         reorderedEvent(other) {
-            assert$1(this.isMined(), "unmined transaction canot be orphaned", "UNSUPPORTED_OPERATION", { operation: "removeEvent()" });
-            assert$1(!other || other.isMined(), "unmined 'other' transaction canot be orphaned", "UNSUPPORTED_OPERATION", { operation: "removeEvent()" });
+            assert(this.isMined(), "unmined transaction canot be orphaned", "UNSUPPORTED_OPERATION", { operation: "removeEvent()" });
+            assert(!other || other.isMined(), "unmined 'other' transaction canot be orphaned", "UNSUPPORTED_OPERATION", { operation: "removeEvent()" });
             return createReorderedTransactionFilter(this, other);
         }
         /**
@@ -6588,8 +6659,8 @@
          *  and the transaction has not been mined, otherwise this will
          *  wait until enough confirmations have completed.
          */
-        async wait(confirms) {
-            const receipt = await super.wait(confirms);
+        async wait(confirms, timeout) {
+            const receipt = await super.wait(confirms, timeout);
             if (receipt == null) {
                 return null;
             }
@@ -6671,6 +6742,17 @@
     function canSend(value) {
         return (value && typeof (value.sendTransaction) === "function");
     }
+    function getResolver(value) {
+        if (value != null) {
+            if (canResolve(value)) {
+                return value;
+            }
+            if (value.provider) {
+                return value.provider;
+            }
+        }
+        return undefined;
+    }
     class PreparedTopicFilter {
         #filter;
         fragment;
@@ -6742,7 +6824,7 @@
         assertArgument(overrides.data == null || (allowed || []).indexOf("data") >= 0, "cannot override data", "overrides.data", overrides.data);
         // Resolve any from
         if (overrides.from) {
-            overrides.from = await resolveAddress(overrides.from);
+            overrides.from = overrides.from;
         }
         return overrides;
     }
@@ -6768,6 +6850,9 @@
             // If an overrides was passed in, copy it and normalize the values
             const tx = (await copyOverrides(overrides, ["data"]));
             tx.to = await contract.getAddress();
+            if (tx.from) {
+                tx.from = await resolveAddress(tx.from, getResolver(contract.runner));
+            }
             const iface = contract.interface;
             const noValue = (getBigInt((tx.value || BN_0), "overrides.value") === BN_0);
             const noData = ((tx.data || "0x") === "0x");
@@ -6784,7 +6869,7 @@
         };
         const staticCall = async function (overrides) {
             const runner = getRunner(contract.runner, "call");
-            assert$1(canCall(runner), "contract runner does not support calling", "UNSUPPORTED_OPERATION", { operation: "call" });
+            assert(canCall(runner), "contract runner does not support calling", "UNSUPPORTED_OPERATION", { operation: "call" });
             const tx = await populateTransaction(overrides);
             try {
                 return await runner.call(tx);
@@ -6798,7 +6883,7 @@
         };
         const send = async function (overrides) {
             const runner = contract.runner;
-            assert$1(canSend(runner), "contract runner does not support sending transactions", "UNSUPPORTED_OPERATION", { operation: "sendTransaction" });
+            assert(canSend(runner), "contract runner does not support sending transactions", "UNSUPPORTED_OPERATION", { operation: "sendTransaction" });
             const tx = await runner.sendTransaction(await populateTransaction(overrides));
             const provider = getProvider(contract.runner);
             // @TODO: the provider can be null; make a custom dummy provider that will throw a
@@ -6807,7 +6892,7 @@
         };
         const estimateGas = async function (overrides) {
             const runner = getRunner(contract.runner, "estimateGas");
-            assert$1(canEstimate(runner), "contract runner does not support gas estimation", "UNSUPPORTED_OPERATION", { operation: "estimateGas" });
+            assert(canEstimate(runner), "contract runner does not support gas estimation", "UNSUPPORTED_OPERATION", { operation: "estimateGas" });
             return await runner.estimateGas(await populateTransaction(overrides));
         };
         const method = async (overrides) => {
@@ -6824,7 +6909,7 @@
     function buildWrappedMethod(contract, key) {
         const getFragment = function (...args) {
             const fragment = contract.interface.getFunction(key, args);
-            assert$1(fragment, "no matching fragment", "UNSUPPORTED_OPERATION", {
+            assert(fragment, "no matching fragment", "UNSUPPORTED_OPERATION", {
                 operation: "fragment",
                 info: { key, args }
             });
@@ -6836,6 +6921,9 @@
             let overrides = {};
             if (fragment.inputs.length + 1 === args.length) {
                 overrides = await copyOverrides(args.pop());
+                if (overrides.from) {
+                    overrides.from = await resolveAddress(overrides.from, getResolver(contract.runner));
+                }
             }
             if (fragment.inputs.length !== args.length) {
                 throw new Error("internal error: fragment inputs doesn't match arguments; should not happen");
@@ -6855,7 +6943,7 @@
         };
         const send = async function (...args) {
             const runner = contract.runner;
-            assert$1(canSend(runner), "contract runner does not support sending transactions", "UNSUPPORTED_OPERATION", { operation: "sendTransaction" });
+            assert(canSend(runner), "contract runner does not support sending transactions", "UNSUPPORTED_OPERATION", { operation: "sendTransaction" });
             const tx = await runner.sendTransaction(await populateTransaction(...args));
             const provider = getProvider(contract.runner);
             // @TODO: the provider can be null; make a custom dummy provider that will throw a
@@ -6864,12 +6952,12 @@
         };
         const estimateGas = async function (...args) {
             const runner = getRunner(contract.runner, "estimateGas");
-            assert$1(canEstimate(runner), "contract runner does not support gas estimation", "UNSUPPORTED_OPERATION", { operation: "estimateGas" });
+            assert(canEstimate(runner), "contract runner does not support gas estimation", "UNSUPPORTED_OPERATION", { operation: "estimateGas" });
             return await runner.estimateGas(await populateTransaction(...args));
         };
         const staticCallResult = async function (...args) {
             const runner = getRunner(contract.runner, "call");
-            assert$1(canCall(runner), "contract runner does not support calling", "UNSUPPORTED_OPERATION", { operation: "call" });
+            assert(canCall(runner), "contract runner does not support calling", "UNSUPPORTED_OPERATION", { operation: "call" });
             const tx = await populateTransaction(...args);
             let result = "0x";
             try {
@@ -6905,7 +6993,7 @@
             enumerable: true,
             get: () => {
                 const fragment = contract.interface.getFunction(key);
-                assert$1(fragment, "no matching fragment", "UNSUPPORTED_OPERATION", {
+                assert(fragment, "no matching fragment", "UNSUPPORTED_OPERATION", {
                     operation: "fragment",
                     info: { key }
                 });
@@ -6917,7 +7005,7 @@
     function buildWrappedEvent(contract, key) {
         const getFragment = function (...args) {
             const fragment = contract.interface.getEvent(key, args);
-            assert$1(fragment, "no matching fragment", "UNSUPPORTED_OPERATION", {
+            assert(fragment, "no matching fragment", "UNSUPPORTED_OPERATION", {
                 operation: "fragment",
                 info: { key, args }
             });
@@ -6937,7 +7025,7 @@
             enumerable: true,
             get: () => {
                 const fragment = contract.interface.getEvent(key);
-                assert$1(fragment, "no matching fragment", "UNSUPPORTED_OPERATION", {
+                assert(fragment, "no matching fragment", "UNSUPPORTED_OPERATION", {
                     operation: "fragment",
                     info: { key }
                 });
@@ -7047,7 +7135,7 @@
     async function getSub(contract, operation, event) {
         // Make sure our runner can actually subscribe to events
         const provider = getProvider(contract.runner);
-        assert$1(provider, "contract runner does not support subscribing", "UNSUPPORTED_OPERATION", { operation });
+        assert(provider, "contract runner does not support subscribing", "UNSUPPORTED_OPERATION", { operation });
         const { fragment, tag, topics } = await getSubInfo(contract, event);
         const { addr, subs } = getInternal(contract);
         let sub = subs.get(tag);
@@ -7303,7 +7391,7 @@
          */
         async getDeployedCode() {
             const provider = getProvider(this.runner);
-            assert$1(provider, "runner does not support .provider", "UNSUPPORTED_OPERATION", { operation: "getDeployedCode" });
+            assert(provider, "runner does not support .provider", "UNSUPPORTED_OPERATION", { operation: "getDeployedCode" });
             const code = await provider.getCode(await this.getAddress());
             if (code === "0x") {
                 return null;
@@ -7328,7 +7416,7 @@
             }
             // Make sure we can subscribe to a provider event
             const provider = getProvider(this.runner);
-            assert$1(provider != null, "contract runner does not support .provider", "UNSUPPORTED_OPERATION", { operation: "waitForDeployment" });
+            assert(provider != null, "contract runner does not support .provider", "UNSUPPORTED_OPERATION", { operation: "waitForDeployment" });
             return new Promise((resolve, reject) => {
                 const checkCode = async () => {
                     try {
@@ -7415,7 +7503,7 @@
             const { fragment, topics } = await getSubInfo(this, event);
             const filter = { address, topics, fromBlock, toBlock };
             const provider = getProvider(this.runner);
-            assert$1(provider, "contract runner does not have a provider", "UNSUPPORTED_OPERATION", { operation: "queryFilter" });
+            assert(provider, "contract runner does not have a provider", "UNSUPPORTED_OPERATION", { operation: "queryFilter" });
             return (await provider.getLogs(filter)).map((log) => {
                 let foundFragment = fragment;
                 if (foundFragment == null) {
@@ -7655,13 +7743,13 @@
          *  Resolves to the Contract deployed by passing %%args%% into the
          *  constructor.
          *
-         *  This will resovle to the Contract before it has been deployed to the
+         *  This will resolve to the Contract before it has been deployed to the
          *  network, so the [[BaseContract-waitForDeployment]] should be used before
          *  sending any transactions to it.
          */
         async deploy(...args) {
             const tx = await this.getDeployTransaction(...args);
-            assert$1(this.runner && typeof (this.runner.sendTransaction) === "function", "factory runner does not support sending transactions", "UNSUPPORTED_OPERATION", {
+            assert(this.runner && typeof (this.runner.sendTransaction) === "function", "factory runner does not support sending transactions", "UNSUPPORTED_OPERATION", {
                 operation: "sendTransaction"
             });
             const sentTx = await this.runner.sendTransaction(tx);
@@ -11201,7 +11289,7 @@
         return '0x' + sha3.keccak_256(arrayify(data));
     }
 
-    const TESTNET_FLOW_ADDRESS = '0x22C1CaF8cbb671F220789184fda68BfD7eaA2eE1';
+    const TESTNET_FLOW_ADDRESS = '0xb8F03061969da6Ad38f0a4a9f8a86bE71dA3c8E7';
     // not used anymore
     // export const TESTNET_USDT_ADDRESS = '0xe3a700dF2a8bEBeF2f0B1eE92f46d230b01401B1'; 
     const DEFAULT_CHUNK_SIZE = 256; // bytes
@@ -11828,8 +11916,18 @@
             inputs: [
                 {
                     internalType: "address",
-                    name: "_token",
+                    name: "book_",
                     type: "address",
+                },
+                {
+                    internalType: "uint256",
+                    name: "blocksPerEpoch_",
+                    type: "uint256",
+                },
+                {
+                    internalType: "uint256",
+                    name: "deployDelay_",
+                    type: "uint256",
                 },
             ],
             stateMutability: "nonpayable",
@@ -11982,6 +12080,95 @@
             type: "event",
         },
         {
+            inputs: [
+                {
+                    components: [
+                        {
+                            internalType: "uint256",
+                            name: "length",
+                            type: "uint256",
+                        },
+                        {
+                            internalType: "bytes",
+                            name: "tags",
+                            type: "bytes",
+                        },
+                        {
+                            components: [
+                                {
+                                    internalType: "bytes32",
+                                    name: "root",
+                                    type: "bytes32",
+                                },
+                                {
+                                    internalType: "uint256",
+                                    name: "height",
+                                    type: "uint256",
+                                },
+                            ],
+                            internalType: "struct SubmissionNode[]",
+                            name: "nodes",
+                            type: "tuple[]",
+                        },
+                    ],
+                    internalType: "struct Submission[]",
+                    name: "submissions",
+                    type: "tuple[]",
+                },
+            ],
+            name: "batchSubmit",
+            outputs: [
+                {
+                    internalType: "uint256[]",
+                    name: "indexes",
+                    type: "uint256[]",
+                },
+                {
+                    internalType: "bytes32[]",
+                    name: "digests",
+                    type: "bytes32[]",
+                },
+                {
+                    internalType: "uint256[]",
+                    name: "startIndexes",
+                    type: "uint256[]",
+                },
+                {
+                    internalType: "uint256[]",
+                    name: "lengths",
+                    type: "uint256[]",
+                },
+            ],
+            stateMutability: "payable",
+            type: "function",
+        },
+        {
+            inputs: [],
+            name: "blocksPerEpoch",
+            outputs: [
+                {
+                    internalType: "uint256",
+                    name: "",
+                    type: "uint256",
+                },
+            ],
+            stateMutability: "view",
+            type: "function",
+        },
+        {
+            inputs: [],
+            name: "book",
+            outputs: [
+                {
+                    internalType: "contract AddressBook",
+                    name: "",
+                    type: "address",
+                },
+            ],
+            stateMutability: "view",
+            type: "function",
+        },
+        {
             inputs: [],
             name: "commitRoot",
             outputs: [],
@@ -12119,6 +12306,19 @@
         {
             inputs: [],
             name: "makeContext",
+            outputs: [],
+            stateMutability: "nonpayable",
+            type: "function",
+        },
+        {
+            inputs: [
+                {
+                    internalType: "uint256",
+                    name: "cnt",
+                    type: "uint256",
+                },
+            ],
+            name: "makeContextFixedTimes",
             outputs: [],
             stateMutability: "nonpayable",
             type: "function",
@@ -12372,20 +12572,7 @@
                     type: "uint256",
                 },
             ],
-            stateMutability: "nonpayable",
-            type: "function",
-        },
-        {
-            inputs: [],
-            name: "token",
-            outputs: [
-                {
-                    internalType: "contract IERC20",
-                    name: "",
-                    type: "address",
-                },
-            ],
-            stateMutability: "view",
+            stateMutability: "payable",
             type: "function",
         },
         {
@@ -12421,7 +12608,7 @@
             type: "function",
         },
     ];
-    const _bytecode = "0x60806040523480156200001157600080fd5b50604051620031c0380380620031c0833981016040819052620000349162000261565b6000805460ff1916815560018055604080518281526020810191829052516200006091600291620001ec565b50600280546001808201835560009283527f405787fa12a823e0f2b7631cc41b3ba8828b3321ca811111fa75cd3aa3bb5ace90910192909255600391909155600480546001600160a01b0319166001600160a01b038416179055600855604051601490620000ce906200023c565b908152602001604051809103906000f080158015620000f1573d6000803e3d6000fd5b50600580546001600160a01b0319166001600160a01b03929092169190911790556200011f600043620002a9565b60078190556040805160c081018252600081526020810192909252810162000146620001b3565b815260016020808301919091527fc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a47060408084018290526060938401919091528351600a5590830151600b55820151600c55810151600d556080810151600e5560a00151600f5550620002f1565b6002805460009190620001c990600190620002c5565b81548110620001dc57620001dc620002db565b9060005260206000200154905090565b8280548282559060005260206000209081019282156200022a579160200282015b828111156200022a5782518255916020019190600101906200020d565b50620002389291506200024a565b5090565b6106708062002b5083390190565b5b808211156200023857600081556001016200024b565b6000602082840312156200027457600080fd5b81516001600160a01b03811681146200028c57600080fd5b9392505050565b634e487b7160e01b600052601160045260246000fd5b80820180821115620002bf57620002bf62000293565b92915050565b81810381811115620002bf57620002bf62000293565b634e487b7160e01b600052603260045260246000fd5b61284f80620003016000396000f3fe608060405234801561001057600080fd5b50600436106101375760003560e01c8063900cf0cf116100b8578063c7dd52211161007c578063c7dd5221146102f8578063d34353c914610323578063e82955881461032b578063ebf0c7171461033e578063ef3e12dc14610346578063fc0c546a1461037957600080fd5b8063900cf0cf146102cc57806393e405a0146102d5578063a3d35f36146102de578063b464b53e146102e7578063b8a409ac146102ef57600080fd5b80633d75d9c2116100ff5780633d75d9c214610206578063555430a1146102195780635c975abb1461022c57806377e19824146102425780637d5907081461024a57600080fd5b8063127f0f071461013c578063231b02681461019957806331bae174146101b0578063364800ec146101f357806338d45e10146101fc575b600080fd5b61014461038c565b6040516101909190600060c082019050825182526020830151602083015260408301516040830152606083015160608301526080830151608083015260a083015160a083015292915050565b60405180910390f35b6101a260075481565b604051908152602001610190565b6101c36101be3660046121cb565b6103fb565b6040805182516001600160801b039081168252602080850151909116908201529181015190820152606001610190565b6101a260035481565b6102046105a3565b005b6101a26102143660046121f4565b610889565b6101a261022736600461220d565b6108d5565b60005460ff166040519015158152602001610190565b6006546101a2565b6102a56102583660046121f4565b6040805180820190915260008082526020820152506000908152601060209081526040918290208251808401909352546001600160801b038082168452600160801b909104169082015290565b6040805182516001600160801b039081168252602093840151169281019290925201610190565b6101a260085481565b6101a260095481565b6101a260015481565b61014461090f565b6101a260065481565b60055461030b906001600160a01b031681565b6040516001600160a01b039091168152602001610190565b610204610978565b6101a26103393660046121f4565b610a8f565b6101a261168e565b61035961035436600461222f565b6116c2565b604080519485526020850193909352918301526060820152608001610190565b60045461030b906001600160a01b031681565b6040805160c081018252600080825260208201819052918101829052606081018290526080810182905260a0810191909152506040805160c081018252600a548152600b546020820152600c5491810191909152600d546060820152600e546080820152600f5460a082015290565b60408051606081018252600080825260208201819052918101919091526104206105a3565b600154826001600160801b03161061048b5760405162461bcd60e51b8152602060048201526024808201527f5175657269656420706f736974696f6e206578636565647320757070657220626044820152631bdd5b9960e21b60648201526084015b60405180910390fd5b6011546000905b8181111561055b57600060026104a88484612280565b6104b291906122a9565b9050601181815481106104c7576104c76122bd565b600091825260209182902060408051606081018252600290930290910180546001600160801b038082168552600160801b90910481169484018590526001909101549183019190915290955086161061052c57610525816001612280565b9250610555565b83600001516001600160801b0316856001600160801b03161061055157505050919050565b8091505b50610492565b60405162461bcd60e51b815260206004820152601b60248201527f43616e206e6f742066696e642070726f70657220636f6e7465787400000000006044820152606401610482565b6007544310156105c55760405162461bcd60e51b8152600401610482906122d3565b6008546007546001909101606402014381106105de5750565b6105e6610978565b60006105f061168e565b600554604051632d287e4360e01b8152600481018390529192506000916001600160a01b0390911690632d287e43906024016020604051808303816000875af1158015610641573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610665919061230a565b9050600854811461067857610678612323565b6000804361068886610100612280565b10156106b857507fc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a4709050806107c6565b506001546040805186406020820181905291810186905260608101929092529060800160408051808303601f190181528282528051602091820120600980546001805487870187526001600160801b039283168089529083168689018181526000878152601089528981209a519151918616600160801b928716830217909a558851606081018a5292835296820190815296810185815260118054808501825599529051965196831696909216909402949094177f31ecc21a745e3968a04e9570e4425bc18fa8019c68028196b546d1669c200c6860029096029586015592517f31ecc21a745e3968a04e9570e4425bc18fa8019c68028196b546d1669c200c699094019390935554905591505b6001600860008282546107d99190612280565b90915550506040805160c08101825260085480825260208083018990528284018890526001546060808501829052608080860188905260a0909501889052600a849055600b8b9055600c8a9055600d829055600e879055600f88905560065486518b815293840152948201529283018590529133917fbc8a3fd82465d43f1709e44ed882f7e1af0147274196ef1ec009f5d52ff4e993910160405180910390a36108816105a3565b50505050505b565b60008180820361089c5750600092915050565b600181811c909117600281901c17600481901c17600881901c17601081901c17602081901c17906108ce908290612280565b9392505050565b6000828082036108e9576000915050610909565b6108f4600182612339565b831c9050610903600182612280565b831b9150505b92915050565b6040805160c081018252600080825260208201819052918101829052606081018290526080810182905260a08101919091526007544310156109635760405162461bcd60e51b8152600401610482906122d3565b61096b6105a3565b61097361038c565b905090565b6002546003540361098557565b60028054600354909160009161099d90600190612339565b815481106109ad576109ad6122bd565b9060005260206000200154905060006109ce60016003546103399190612339565b6003549091505b83811015610a875760408051602080820186905281830185905282518083038401815260609092019092528051910120600154610a1690600290841c61234c565b600003610a5057809350610a2982610a8f565b92508060028381548110610a3f57610a3f6122bd565b600091825260209091200155610a74565b60028281548110610a6357610a636122bd565b906000526020600020015493508092505b5080610a7f81612360565b9150506109d5565b505050600355565b600081600003610ac057507fd397b3b043d87fcd6fad1291ff0bfd16401c274896d8c63a923727f077b8e0b5919050565b81600103610aef57507ff73e6947d7d1628b9976a6e40d7b278a8a16405e96324a68df45b12a51b7cfde919050565b81600203610b1e57507fa1520264ae93cac619e22e8718fc4fa7ebdd23f493cad602434d2a58ff4868fb919050565b81600303610b4d57507fde5747106ac1194a1fa9071dbd6cf19dc2bc7964497ef0afec7e4bdbcf08c47e919050565b81600403610b7c57507f09c7082879180d28c789c05fafe7030871c76cedbe82c948b165d6a1d66ac15b919050565b81600503610bab57507faa7a02bcf29fba687f84123c808b5b48834ff5395abe98e622fadc14e4180c95919050565b81600603610bda57507f7608fd46b710b589e0f2ee5a13cd9c41d432858a30d524f84c6d5db37f66273a919050565b81600703610c0957507fa5d9a2f7f3573ac9a1366bc484688b4daf934b87ea9b3bf2e703da8fd9f09708919050565b81600803610c3857507f6c1779477f4c3fca26b4607398859a43b90a286ce8062500744bd4949981757f919050565b81600903610c6757507f45c22df3d952c33d5edce122eed85e5cda3fd61939e7ad7b3e03b6927bb598ea919050565b81600a03610c9657507fe68d02859bb6211cec64f52368b77d422de3b8eac34bf615942b814b643301b5919050565b81600b03610cc557507f62d78399b954d51cb9728601738ad13ddc43b2300064660716bb661d2f4d686f919050565b81600c03610cf457507f6e250d9abdbbb3993fce08de0395cdb56f0483e67d8762a798de011f6a50866a919050565b81600d03610d2357507f1d1a3a74062fd94078617e33eb901eaf16a830f67c387d8eed342db2ac5e2cc5919050565b81600e03610d5257507f19b3b3886526917eae8650223d0be20a0301be960eb339696e673ad8a804440f919050565b81600f03610d8157507fee9e05df53f10e62a897e5140a3f58732dd849e69cd1d62b21ed80ead711a014919050565b81601003610db057507f2cc7aa6e611a113a34505dc1c96b220f14909b70e2c2c7b1a74655da21013c5e919050565b81601103610ddf57507f949b52dfece7ca3bad3cb27f7750ecaee64cedb6243a275c35984e92956c530a919050565b81601203610e0e57507fb2680d060b763b932c150434c3812ba9fbc50937e0ebcf5758de884be81bab65919050565b81601303610e3d57507f523aebf4a085edbc9c8cdc99c83f46262e5f029b395ff7bf561a48a3f387e6b8919050565b81601403610e6c57507fc9ab73827ab33c0cedb7ecf0ed2e6e32583c0fe887133a7f381ea4ba84d95b76919050565b81601503610e9b57507f23eb397dec7e564ebe97f160a5e1081a77d9861f316807079b6be4731beb331e919050565b81601603610eca57507fdfa44a274c60f090df034aaf75539fd40e94cfd6362dd53d26ed20c8ad529563919050565b81601703610ef957507f15b13ee358e1044a53381243c094e54bf7aceb9b5325a0313d6b85fd44e8b3a5919050565b81601803610f2857507f1a7a93871e2daa0f1860aa91d4ece4ccd012dac5fe581176a21b155cfeca6d40919050565b81601903610f5757507fb12665fd0b884a7c7d1e0294d369170d7e672d9e125eb87784556305f98292df919050565b81601a03610f8657507f2a5543b0b2f8cf550524390291774f4d6c8c0a25ff5393b09c44d75c92a5bd8e919050565b81601b03610fb557507ff9df1841a6e7164b67a1242f1c74975137085ffd9721831f6c469d3a4d5ba42e919050565b81601c03610fe457507fba24736b1b48246c1f7803be967be43ca0dddc9c2c0687a2957952249bc89371919050565b81601d0361101357507ff3f706b73790c73ca0a8f0460ac3a2a102e280415586b520e70cd5e8264388b4919050565b81601e0361104257507fc1f5a9a9f357e1c37814688cf7290c87a264ed3d6174a12b978da1c586f53825919050565b81601f0361107157507f766f7702e19ce23d426cdad03e4292a5a42c4669420101fed74400ec7cda3ac6919050565b816020036110a057507f070fec213e105b3e4d9b0434ac2fc7ca721d35093dc741fb9419797003e2394a919050565b816021036110cf57507f9a7aade05b49e43f5fd3782571cc8c90eadacd5d660b53842b4e5b63d675ae0c919050565b816022036110fe57507fb27b35a8236d0f9b6692820429c025ed58ed378dc98d316b762f0c865c68be6f919050565b8160230361112d57507fdc567ad38d9b90cc9bea4e0f82ec05eca10b3aa94eddc7b63c4fd20c001bb53b919050565b8160240361115c57507fb208dfc457c8b30661ae49544c8e57399818095aab8dd7a426fb8dd56bb8c559919050565b8160250361118b57507fc4a72e1ff84f7a22631f3f95c61c392f98f52050360215a9d7e75d79b0bcd2ca919050565b816026036111ba57507fbb093ec8c0d7defb1de668b5b5dd4f2619e5cd92d29cc144862364a83ab993a8919050565b816027036111e957507fe341796f2fe3975012c1e6badfa2e9c4523e43f911dc845082c3f4d7b4ff871d919050565b8160280361121857507f42d356a11a0b39243eca3c3263299cb6f8c3e9728af6d9d8b0ddb6d354f1890d919050565b8160290361124757507f0ce506e834e3a50a33f80074bc7fa16cf3c0712b36a41b69699177ea25de6c30919050565b81602a0361127657507fd8fa5bf130aeb7756b1ed09090cc80ed78dae0617978540f0fabd06dfb978938919050565b81602b036112a557507feed69a20fe36eb604f2153efa3b01c0e143cdf02229a1b8f741c9c2719059eb0919050565b81602c036112d457507f303c9c566ebf5bfe252796e5c131a99801226152a514688b5ca6883e99031d88919050565b81602d0361130357507fc7c3765ba96cfbccf3ae718393fa89791070cc8cd85f280b6ac46aea10d96042919050565b81602e0361133257507f1ca65b0a2b8034ee6bfb1fa4526832304e393af835c2c42b4dace58048746800919050565b81602f0361136157507f957add5e02350fd47de3a8e1da38fd774ceb31214d5897ed6315740a83cd634a919050565b8160300361139057507f787892cb439d5d358870774e163557cf02ec3cb87be6fde11abf1acee14eeaa4919050565b816031036113bf57507f047c0962d4f5c8f60692c587de07739528c4d2059240d61dd34d2a547a438ee6919050565b816032036113ee57507fc18727efc9e4df63020dcd90edc17dfd2ad14f02328c912b13898e0b53735556919050565b8160330361141d57507fe38b9218987e451effe1648c3c9851ad03b64b052a5a3f5ca30f4d7b1ecf7120919050565b8160340361144c57507f0e48ecb1a5418e6218289acc8cf723e67ac6eae3ecb80f644336ab4365a2f2b2919050565b8160350361147b57507fd60e66f5b8cd08d71a1a4d7798952a7afa5a6e93a886c587a46a5500ebef4a60919050565b816036036114aa57507f5162aa9c31d9105f689cf6e71e19548bc9f0218b7d0f99ff7fa8bc2f19c68462919050565b816037036114d957507f6fa8519b4b0e8fb97a9b618e97627d97b9b9d29d04521fd96472e9c502700568919050565b8160380361150857507f41f5dcf0cdee270a2ad9a5f8130aaaab94b237463e09757c28b0321f09e24eb0919050565b8160390361153757507f87a119239fa90732197108adfd029938b4743874d959d3da79b3a30f4832899e919050565b81603a0361156657507f8e96dbaa5c72e84a5297b040ccc1a60750a3201166e3b7740d352837233608a1919050565b81603b0361159557507f01605058d167ce967af8c475d2f6c341c3e0b437babf899c9da73a520aa4ecb5919050565b81603c036115c457507f04529eb80532c5118949d700d8dfd2aa86850b1c6479b26276b9486784a145ff919050565b81603d036115f357507fd191814ad13f27361ae20a46cbac8f6e76c10ebe9af0806d6720492ee2f296f0919050565b81603e0361162257507fa28df63f78821060570da371c0be1312188346b92a7965cc4b980b26c134a4d7919050565b81603f0361165157507fb48a92d40b61dc995ceecee4cded6415050dcece448b1e0b5e5b6a0e6981f3ef919050565b60405162461bcd60e51b8152602060048201526012602482015271125b99195e081bdd5d081bd988189bdd5b9960721b6044820152606401610482565b60028054600091906116a290600190612339565b815481106116b2576116b26122bd565b9060005260206000200154905090565b6000806000806116d06117f4565b6007544310156116f25760405162461bcd60e51b8152600401610482906122d3565b6117036116fe866124b0565b61183a565b6117445760405162461bcd60e51b815260206004820152601260248201527124b73b30b634b21039bab136b4b9b9b4b7b760711b6044820152606401610482565b61174c6105a3565b600061175786611a51565b9050600061176c611767886124b0565b611b1b565b9050600061178161177c896124b0565b611b79565b6006805491925060019060006117978385612280565b9250508190555081336001600160a01b03167f167ce04d2aa1981994d3a31695da0d785373335b1078cec239a1a3a2c76755558387878e6040516117de949392919061260b565b60405180910390a3989097509195509350915050565b60005460ff16156108875760405162461bcd60e51b815260206004820152601060248201526f14185d5cd8589b194e881c185d5cd95960821b6044820152606401610482565b600081604001515160000361185157506000919050565b604082015180516004919061186890600190612339565b81518110611878576118786122bd565b602002602001015160200151836040015160008151811061189b5761189b6122bd565b6020026020010151602001516118b19190612339565b106118be57506000919050565b604082604001516000815181106118d7576118d76122bd565b602002602001015160200151106118f057506000919050565b60005b60018360400151516119059190612339565b81101561197c5782604001518181518110611922576119226122bd565b60200260200101516020015183604001518260016119409190612280565b81518110611950576119506122bd565b6020026020010151602001511061196a5750600092915050565b8061197481612360565b9150506118f3565b50600061198883611b1b565b9050611996610100826126cc565b835111156119a75750600092915050565b600060108210156119c4576119bd600183612339565b9050611a2a565b8360400151516001036119df576119bd600483901c83612339565b600484604001516000815181106119f8576119f86122bd565b602002602001015160200151611a0e9190612339565b611a19906001612280565b611a27906001901b83612339565b90505b611a36610100826126cc565b845111611a47575060009392505050565b5060019392505050565b600154600090815b611a6660408501856126eb565b9050811015611af8576000611a7e60408601866126eb565b83818110611a8e57611a8e6122bd565b9050604002016000013590506000858060400190611aac91906126eb565b84818110611abc57611abc6122bd565b9050604002016020013590506000611ad48383611bad565b905083600003611ae2578095505b5050508080611af090612360565b915050611a59565b506001546000611b088383612339565b9050611b1381611d1d565b505050919050565b600080805b836040015151811015611b725783604001518181518110611b4357611b436122bd565b6020026020010151602001516001901b82611b5e9190612280565b915080611b6a81612360565b915050611b20565b5092915050565b60008160400151604051602001611b909190612735565b604051602081830303815290604052805190602001209050919050565b600080611bbc600154846108d5565b90506000611bcd6001851b83612280565b600254909150611bdf90600190612339565b6001901b811115611c2857611bf2610978565b611bfa611d55565b600254611c0990600190612339565b6001901b811115611c2157611c1c611d55565b611bfa565b6002546003555b600254611c3485611de3565b60008087875b84811015611cff57611c4f600288831c61234c565b600003611c95578160028281548110611c6a57611c6a6122bd565b600091825260209091200155611c81816001612280565b600355611c8f600186612339565b50611cff565b60028181548110611ca857611ca86122bd565b906000526020600020015493508192508383604051602001611cd4929190918252602082015260400190565b6040516020818303038152906040528051906020012091508080611cf790612360565b915050611c3a565b50611d0d6001891b87612280565b6001555093979650505050505050565b6000611d2a8260646126cc565b611d36906103e8612280565b600454909150611d51906001600160a01b0316333084611f01565b5050565b6002805490600090611d68600184612339565b81548110611d7857611d786122bd565b60009182526020822001549150611d93610339600185612339565b905060028282604051602001611db3929190918252602082015260400190565b60408051601f19818403018152919052805160209182012082546001810184556000938452919092200155505050565b806003541115611df05750565b600280546003549091600091611e0890600190612339565b81548110611e1857611e186122bd565b906000526020600020015490506000611e3960016003546103399190612339565b6003549091505b838110156108815760408051602080820186905281830185905282518083038401815260609092019092528051910120600154611e8190600290841c61234c565b600003611eca57809350611e9482610a8f565b9250858210611ec5578060028381548110611eb157611eb16122bd565b600091825260209091200155505050505050565b611eee565b60028281548110611edd57611edd6122bd565b906000526020600020015493508092505b5080611ef981612360565b915050611e40565b604080516001600160a01b0385811660248301528416604482015260648082018490528251808303909101815260849091019091526020810180516001600160e01b03166323b872dd60e01b179052611f5b908590611f61565b50505050565b6000611fb6826040518060400160405280602081526020017f5361666545524332303a206c6f772d6c6576656c2063616c6c206661696c6564815250856001600160a01b031661203b9092919063ffffffff16565b9050805160001480611fd7575080806020019051810190611fd79190612784565b6120365760405162461bcd60e51b815260206004820152602a60248201527f5361666545524332303a204552433230206f7065726174696f6e20646964206e6044820152691bdd081cdd58d8d9595960b21b6064820152608401610482565b505050565b606061204a8484600085612052565b949350505050565b6060824710156120b35760405162461bcd60e51b815260206004820152602660248201527f416464726573733a20696e73756666696369656e742062616c616e636520666f6044820152651c8818d85b1b60d21b6064820152608401610482565b600080866001600160a01b031685876040516120cf91906127ca565b60006040518083038185875af1925050503d806000811461210c576040519150601f19603f3d011682016040523d82523d6000602084013e612111565b606091505b50915091506121228783838761212d565b979650505050505050565b6060831561219c578251600003612195576001600160a01b0385163b6121955760405162461bcd60e51b815260206004820152601d60248201527f416464726573733a2063616c6c20746f206e6f6e2d636f6e74726163740000006044820152606401610482565b508161204a565b61204a83838151156121b15781518083602001fd5b8060405162461bcd60e51b815260040161048291906127e6565b6000602082840312156121dd57600080fd5b81356001600160801b03811681146108ce57600080fd5b60006020828403121561220657600080fd5b5035919050565b6000806040838503121561222057600080fd5b50508035926020909101359150565b60006020828403121561224157600080fd5b813567ffffffffffffffff81111561225857600080fd5b8201606081850312156108ce57600080fd5b634e487b7160e01b600052601160045260246000fd5b808201808211156109095761090961226a565b634e487b7160e01b600052601260045260246000fd5b6000826122b8576122b8612293565b500490565b634e487b7160e01b600052603260045260246000fd5b6020808252601a908201527f436f6e747261637420686173206e6f74206c61756e636865642e000000000000604082015260600190565b60006020828403121561231c57600080fd5b5051919050565b634e487b7160e01b600052600160045260246000fd5b818103818111156109095761090961226a565b60008261235b5761235b612293565b500690565b6000600182016123725761237261226a565b5060010190565b634e487b7160e01b600052604160045260246000fd5b6040805190810167ffffffffffffffff811182821017156123b2576123b2612379565b60405290565b6040516060810167ffffffffffffffff811182821017156123b2576123b2612379565b604051601f8201601f1916810167ffffffffffffffff8111828210171561240457612404612379565b604052919050565b600082601f83011261241d57600080fd5b8135602067ffffffffffffffff82111561243957612439612379565b612447818360051b016123db565b82815260069290921b8401810191818101908684111561246657600080fd5b8286015b848110156124a557604081890312156124835760008081fd5b61248b61238f565b81358152848201358582015283529183019160400161246a565b509695505050505050565b6000606082360312156124c257600080fd5b6124ca6123b8565b8235815260208084013567ffffffffffffffff808211156124ea57600080fd5b9085019036601f8301126124fd57600080fd5b81358181111561250f5761250f612379565b612521601f8201601f191685016123db565b818152368583860101111561253557600080fd5b8185850186830137600085838301015280858701525050604086013592508083111561256057600080fd5b505061256e3682860161240c565b60408301525092915050565b6000808335601e1984360301811261259157600080fd5b830160208101925035905067ffffffffffffffff8111156125b157600080fd5b8060061b36038213156125c357600080fd5b9250929050565b8183526000602080850194508260005b8581101561260057813587528282013583880152604096870196909101906001016125da565b509495945050505050565b848152836020820152826040820152608060608201528135608082015260006020830135601e1984360301811261264157600080fd5b830160208101903567ffffffffffffffff81111561265e57600080fd5b80360382131561266d57600080fd5b606060a08501528060e08501526101008183828701376000858301820152601f8201601f1916850192506126a4604087018761257a565b925060808685030160c08701526126be82850184836125ca565b9a9950505050505050505050565b60008160001904831182151516156126e6576126e661226a565b500290565b6000808335601e1984360301811261270257600080fd5b83018035915067ffffffffffffffff82111561271d57600080fd5b6020019150600681901b36038213156125c357600080fd5b602080825282518282018190526000919060409081850190868401855b8281101561277757815180518552860151868501529284019290850190600101612752565b5091979650505050505050565b60006020828403121561279657600080fd5b815180151581146108ce57600080fd5b60005b838110156127c15781810151838201526020016127a9565b50506000910152565b600082516127dc8184602087016127a6565b9190910192915050565b60208152600082518060208401526128058160408501602087016127a6565b601f01601f1916919091016040019291505056fea2646970667358221220ed2c4024b73a78a36770d5cb3a4655f07563f3917b90ca4f96db5d978ae7e61b64736f6c63430008100033608060405234801561001057600080fd5b5060405161067038038061067083398101604081905261002f9161014a565b6100383361009a565b806001600160401b0381111561005057610050610163565b604051908082528060200260200182016040528015610079578160200160208202803683370190505b50805161008e916001916020909101906100ea565b50506000600255610179565b600080546001600160a01b038381166001600160a01b0319831681178455604051919092169283917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09190a35050565b828054828255906000526020600020908101928215610125579160200282015b8281111561012557825182559160200191906001019061010a565b50610131929150610135565b5090565b5b808211156101315760008155600101610136565b60006020828403121561015c57600080fd5b5051919050565b634e487b7160e01b600052604160045260246000fd5b6104e8806101886000396000f3fe608060405234801561001057600080fd5b506004361061007d5760003560e01c80638da5cb5b1161005b5780638da5cb5b146100d557806396e494e8146100f0578063e0886f9014610103578063f2fde38b1461011657600080fd5b80631d1a696d146100825780632d287e43146100aa578063715018a6146100cb575b600080fd5b6100956100903660046103e3565b610129565b60405190151581526020015b60405180910390f35b6100bd6100b83660046103e3565b610194565b6040519081526020016100a1565b6100d36101ee565b005b6000546040516001600160a01b0390911681526020016100a1565b6100956100fe3660046103e3565b610202565b6100bd6101113660046103e3565b610237565b6100d36101243660046103fc565b610297565b60008061013d600254600180549050610310565b905060005b8181101561018a57836001828154811061015e5761015e610425565b906000526020600020015403610178575060019392505050565b8061018281610451565b915050610142565b5060009392505050565b6002546001546000919082906101aa908361046a565b905083600182815481106101c0576101c0610425565b90600052602060002001819055506001600260008282546101e1919061048c565b9091555091949350505050565b6101f661032a565b6102006000610384565b565b6001546002546000919083108015610230575080610222600254836103d4565b61022c919061049f565b8310155b9392505050565b600061024282610202565b6102675760405163b52d71f360e01b8152600481018390526024015b60405180910390fd5b60018054610275908461046a565b8154811061028557610285610425565b90600052602060002001549050919050565b61029f61032a565b6001600160a01b0381166103045760405162461bcd60e51b815260206004820152602660248201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160448201526564647265737360d01b606482015260840161025e565b61030d81610384565b50565b600081831061031f5781610321565b825b90505b92915050565b6000546001600160a01b031633146102005760405162461bcd60e51b815260206004820181905260248201527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e6572604482015260640161025e565b600080546001600160a01b038381166001600160a01b0319831681178455604051919092169283917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09190a35050565b600081831161031f5781610321565b6000602082840312156103f557600080fd5b5035919050565b60006020828403121561040e57600080fd5b81356001600160a01b038116811461023057600080fd5b634e487b7160e01b600052603260045260246000fd5b634e487b7160e01b600052601160045260246000fd5b6000600182016104635761046361043b565b5060010190565b60008261048757634e487b7160e01b600052601260045260246000fd5b500690565b808201808211156103245761032461043b565b818103818111156103245761032461043b56fea26469706673582212200a156351fbc1507eaca28f51609c390dc529eafe4c1360643f3de61f8868cff064736f6c63430008100033";
+    const _bytecode = "0x6101006040523480156200001257600080fd5b506040516200353b3803806200353b833981016040819052620000359162000246565b6000805460ff1916815560018055604080518281526020810191829052516200006191600291620001d1565b50600280546001818101835560009283527f405787fa12a823e0f2b7631cc41b3ba8828b3321ca811111fa75cd3aa3bb5ace9091019290925560039190915560055560c0829052604051601490620000b99062000221565b908152602001604051809103906000f080158015620000dc573d6000803e3d6000fd5b506001600160a01b031660a052620000f58143620002a1565b60e09081526001600160a01b0384166080526040805160c081018252600081529151602083015281016200012862000198565b815260016020808301919091527fc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a4706040808401829052606093840191909152835160075590830151600855820151600955810151600a556080810151600b5560a00151600c5550620002e9915050565b6002805460009190620001ae90600190620002bd565b81548110620001c157620001c1620002d3565b9060005260206000200154905090565b8280548282559060005260206000209081019282156200020f579160200282015b828111156200020f578251825591602001919060010190620001f2565b506200021d9291506200022f565b5090565b6106718062002eca83390190565b5b808211156200021d576000815560010162000230565b6000806000606084860312156200025c57600080fd5b83516001600160a01b03811681146200027457600080fd5b602085015160409095015190969495509392505050565b634e487b7160e01b600052601160045260246000fd5b80820180821115620002b757620002b76200028b565b92915050565b81810381811115620002b757620002b76200028b565b634e487b7160e01b600052603260045260246000fd5b60805160a05160c05160e051612b686200036260003960008181610236015281816105ce015281816107e8015281816108cb01528181610b28015281816118d50152611a2b01526000818161053b0152611a0301526000818161048a0152611a92015260008181610162015261208e0152612b686000f3fe60806040526004361061014b5760003560e01c8063900cf0cf116100b6578063c7dd52211161006f578063c7dd522114610478578063d34353c9146104ac578063e8295588146104c1578063ebf0c717146104e1578063ef3e12dc146104f6578063f06820541461052957600080fd5b8063900cf0cf146103e857806393e405a0146103fe5780639e62a38e14610414578063a3d35f3614610437578063b464b53e1461044d578063b8a409ac1461046257600080fd5b806338d45e101161010857806338d45e10146102cc5780633d75d9c2146102e1578063555430a1146103015780635c975abb1461032157806377e19824146103445780637d5907081461035957600080fd5b806305a8da7214610150578063127f0f07146101a157806318a641ef14610202578063231b02681461022457806331bae17414610266578063364800ec146102b6575b600080fd5b34801561015c57600080fd5b506101847f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b0390911681526020015b60405180910390f35b3480156101ad57600080fd5b506101b661055d565b6040516101989190600060c082019050825182526020830151602083015260408301516040830152606083015160608301526080830151608083015260a083015160a083015292915050565b34801561020e57600080fd5b5061022261021d3660046124d7565b6105cc565b005b34801561023057600080fd5b506102587f000000000000000000000000000000000000000000000000000000000000000081565b604051908152602001610198565b34801561027257600080fd5b506102866102813660046124f0565b610643565b6040805182516001600160801b039081168252602080850151909116908201529181015190820152606001610198565b3480156102c257600080fd5b5061025860035481565b3480156102d857600080fd5b506102226107e6565b3480156102ed57600080fd5b506102586102fc3660046124d7565b610835565b34801561030d57600080fd5b5061025861031c366004612519565b610881565b34801561032d57600080fd5b5060005460ff166040519015158152602001610198565b34801561035057600080fd5b50600454610258565b34801561036557600080fd5b506103c16103743660046124d7565b6040805180820190915260008082526020820152506000908152600d60209081526040918290208251808401909352546001600160801b038082168452600160801b909104169082015290565b6040805182516001600160801b039081168252602093840151169281019290925201610198565b3480156103f457600080fd5b5061025860055481565b34801561040a57600080fd5b5061025860065481565b61042761042236600461274e565b6108bb565b604051610198949392919061283a565b34801561044357600080fd5b5061025860015481565b34801561045957600080fd5b506101b6610af4565b34801561046e57600080fd5b5061025860045481565b34801561048457600080fd5b506101847f000000000000000000000000000000000000000000000000000000000000000081565b3480156104b857600080fd5b50610222610b7b565b3480156104cd57600080fd5b506102586104dc3660046124d7565b610c92565b3480156104ed57600080fd5b50610258611891565b6105096105043660046128b9565b6118c5565b604080519485526020850193909352918301526060820152608001610198565b34801561053557600080fd5b506102587f000000000000000000000000000000000000000000000000000000000000000081565b6040805160c081018252600080825260208201819052918101829052606081018290526080810182905260a0810191909152506040805160c0810182526007548152600854602082015260095491810191909152600a546060820152600b546080820152600c5460a082015290565b7f00000000000000000000000000000000000000000000000000000000000000004310156106155760405162461bcd60e51b815260040161060c906128f6565b60405180910390fd5b60005b81811161063f576106276119fe565b61062f575050565b61063881612943565b9050610618565b5050565b60408051606081018252600080825260208201819052918101919091526106686107e6565b600154826001600160801b0316106106ce5760405162461bcd60e51b8152602060048201526024808201527f5175657269656420706f736974696f6e206578636565647320757070657220626044820152631bdd5b9960e21b606482015260840161060c565b600e546000905b8181111561079e57600060026106eb848461295c565b6106f59190612985565b9050600e818154811061070a5761070a612999565b600091825260209182902060408051606081018252600290930290910180546001600160801b038082168552600160801b90910481169484018590526001909101549183019190915290955086161061076f5761076881600161295c565b9250610798565b83600001516001600160801b0316856001600160801b03161061079457505050919050565b8091505b506106d5565b60405162461bcd60e51b815260206004820152601b60248201527f43616e206e6f742066696e642070726f70657220636f6e746578740000000000604482015260640161060c565b7f00000000000000000000000000000000000000000000000000000000000000004310156108265760405162461bcd60e51b815260040161060c906128f6565b61082e6119fe565b610826575b565b6000818082036108485750600092915050565b600181811c909117600281901c17600481901c17600881901c17601081901c17602081901c179061087a90829061295c565b9392505050565b6000828082036108955760009150506108b5565b6108a06001826129af565b831c90506108af60018261295c565b831b9150505b92915050565b6060806060806108c9611d1f565b7f00000000000000000000000000000000000000000000000000000000000000004310156109095760405162461bcd60e51b815260040161060c906128f6565b84518067ffffffffffffffff8111156109245761092461253b565b60405190808252806020026020018201604052801561094d578160200160208202803683370190505b5094508067ffffffffffffffff8111156109695761096961253b565b604051908082528060200260200182016040528015610992578160200160208202803683370190505b5093508067ffffffffffffffff8111156109ae576109ae61253b565b6040519080825280602002602001820160405280156109d7578160200160208202803683370190505b5092508067ffffffffffffffff8111156109f3576109f361253b565b604051908082528060200260200182016040528015610a1c578160200160208202803683370190505b50915060005b81811015610aeb57600080600080610a528b8681518110610a4557610a45612999565b60200260200101516118c5565b9350935093509350838a8681518110610a6d57610a6d612999565b60200260200101818152505082898681518110610a8c57610a8c612999565b60200260200101818152505081888681518110610aab57610aab612999565b60200260200101818152505080878681518110610aca57610aca612999565b6020026020010181815250505050505080610ae490612943565b9050610a22565b50509193509193565b6040805160c081018252600080825260208201819052918101829052606081018290526080810182905260a08101919091527f0000000000000000000000000000000000000000000000000000000000000000431015610b665760405162461bcd60e51b815260040161060c906128f6565b610b6e6107e6565b610b7661055d565b905090565b60025460035403610b8857565b600280546003549091600091610ba0906001906129af565b81548110610bb057610bb0612999565b906000526020600020015490506000610bd160016003546104dc91906129af565b6003549091505b83811015610c8a5760408051602080820186905281830185905282518083038401815260609092019092528051910120600154610c1990600290841c6129c2565b600003610c5357809350610c2c82610c92565b92508060028381548110610c4257610c42612999565b600091825260209091200155610c77565b60028281548110610c6657610c66612999565b906000526020600020015493508092505b5080610c8281612943565b915050610bd8565b505050600355565b600081600003610cc357507fd397b3b043d87fcd6fad1291ff0bfd16401c274896d8c63a923727f077b8e0b5919050565b81600103610cf257507ff73e6947d7d1628b9976a6e40d7b278a8a16405e96324a68df45b12a51b7cfde919050565b81600203610d2157507fa1520264ae93cac619e22e8718fc4fa7ebdd23f493cad602434d2a58ff4868fb919050565b81600303610d5057507fde5747106ac1194a1fa9071dbd6cf19dc2bc7964497ef0afec7e4bdbcf08c47e919050565b81600403610d7f57507f09c7082879180d28c789c05fafe7030871c76cedbe82c948b165d6a1d66ac15b919050565b81600503610dae57507faa7a02bcf29fba687f84123c808b5b48834ff5395abe98e622fadc14e4180c95919050565b81600603610ddd57507f7608fd46b710b589e0f2ee5a13cd9c41d432858a30d524f84c6d5db37f66273a919050565b81600703610e0c57507fa5d9a2f7f3573ac9a1366bc484688b4daf934b87ea9b3bf2e703da8fd9f09708919050565b81600803610e3b57507f6c1779477f4c3fca26b4607398859a43b90a286ce8062500744bd4949981757f919050565b81600903610e6a57507f45c22df3d952c33d5edce122eed85e5cda3fd61939e7ad7b3e03b6927bb598ea919050565b81600a03610e9957507fe68d02859bb6211cec64f52368b77d422de3b8eac34bf615942b814b643301b5919050565b81600b03610ec857507f62d78399b954d51cb9728601738ad13ddc43b2300064660716bb661d2f4d686f919050565b81600c03610ef757507f6e250d9abdbbb3993fce08de0395cdb56f0483e67d8762a798de011f6a50866a919050565b81600d03610f2657507f1d1a3a74062fd94078617e33eb901eaf16a830f67c387d8eed342db2ac5e2cc5919050565b81600e03610f5557507f19b3b3886526917eae8650223d0be20a0301be960eb339696e673ad8a804440f919050565b81600f03610f8457507fee9e05df53f10e62a897e5140a3f58732dd849e69cd1d62b21ed80ead711a014919050565b81601003610fb357507f2cc7aa6e611a113a34505dc1c96b220f14909b70e2c2c7b1a74655da21013c5e919050565b81601103610fe257507f949b52dfece7ca3bad3cb27f7750ecaee64cedb6243a275c35984e92956c530a919050565b8160120361101157507fb2680d060b763b932c150434c3812ba9fbc50937e0ebcf5758de884be81bab65919050565b8160130361104057507f523aebf4a085edbc9c8cdc99c83f46262e5f029b395ff7bf561a48a3f387e6b8919050565b8160140361106f57507fc9ab73827ab33c0cedb7ecf0ed2e6e32583c0fe887133a7f381ea4ba84d95b76919050565b8160150361109e57507f23eb397dec7e564ebe97f160a5e1081a77d9861f316807079b6be4731beb331e919050565b816016036110cd57507fdfa44a274c60f090df034aaf75539fd40e94cfd6362dd53d26ed20c8ad529563919050565b816017036110fc57507f15b13ee358e1044a53381243c094e54bf7aceb9b5325a0313d6b85fd44e8b3a5919050565b8160180361112b57507f1a7a93871e2daa0f1860aa91d4ece4ccd012dac5fe581176a21b155cfeca6d40919050565b8160190361115a57507fb12665fd0b884a7c7d1e0294d369170d7e672d9e125eb87784556305f98292df919050565b81601a0361118957507f2a5543b0b2f8cf550524390291774f4d6c8c0a25ff5393b09c44d75c92a5bd8e919050565b81601b036111b857507ff9df1841a6e7164b67a1242f1c74975137085ffd9721831f6c469d3a4d5ba42e919050565b81601c036111e757507fba24736b1b48246c1f7803be967be43ca0dddc9c2c0687a2957952249bc89371919050565b81601d0361121657507ff3f706b73790c73ca0a8f0460ac3a2a102e280415586b520e70cd5e8264388b4919050565b81601e0361124557507fc1f5a9a9f357e1c37814688cf7290c87a264ed3d6174a12b978da1c586f53825919050565b81601f0361127457507f766f7702e19ce23d426cdad03e4292a5a42c4669420101fed74400ec7cda3ac6919050565b816020036112a357507f070fec213e105b3e4d9b0434ac2fc7ca721d35093dc741fb9419797003e2394a919050565b816021036112d257507f9a7aade05b49e43f5fd3782571cc8c90eadacd5d660b53842b4e5b63d675ae0c919050565b8160220361130157507fb27b35a8236d0f9b6692820429c025ed58ed378dc98d316b762f0c865c68be6f919050565b8160230361133057507fdc567ad38d9b90cc9bea4e0f82ec05eca10b3aa94eddc7b63c4fd20c001bb53b919050565b8160240361135f57507fb208dfc457c8b30661ae49544c8e57399818095aab8dd7a426fb8dd56bb8c559919050565b8160250361138e57507fc4a72e1ff84f7a22631f3f95c61c392f98f52050360215a9d7e75d79b0bcd2ca919050565b816026036113bd57507fbb093ec8c0d7defb1de668b5b5dd4f2619e5cd92d29cc144862364a83ab993a8919050565b816027036113ec57507fe341796f2fe3975012c1e6badfa2e9c4523e43f911dc845082c3f4d7b4ff871d919050565b8160280361141b57507f42d356a11a0b39243eca3c3263299cb6f8c3e9728af6d9d8b0ddb6d354f1890d919050565b8160290361144a57507f0ce506e834e3a50a33f80074bc7fa16cf3c0712b36a41b69699177ea25de6c30919050565b81602a0361147957507fd8fa5bf130aeb7756b1ed09090cc80ed78dae0617978540f0fabd06dfb978938919050565b81602b036114a857507feed69a20fe36eb604f2153efa3b01c0e143cdf02229a1b8f741c9c2719059eb0919050565b81602c036114d757507f303c9c566ebf5bfe252796e5c131a99801226152a514688b5ca6883e99031d88919050565b81602d0361150657507fc7c3765ba96cfbccf3ae718393fa89791070cc8cd85f280b6ac46aea10d96042919050565b81602e0361153557507f1ca65b0a2b8034ee6bfb1fa4526832304e393af835c2c42b4dace58048746800919050565b81602f0361156457507f957add5e02350fd47de3a8e1da38fd774ceb31214d5897ed6315740a83cd634a919050565b8160300361159357507f787892cb439d5d358870774e163557cf02ec3cb87be6fde11abf1acee14eeaa4919050565b816031036115c257507f047c0962d4f5c8f60692c587de07739528c4d2059240d61dd34d2a547a438ee6919050565b816032036115f157507fc18727efc9e4df63020dcd90edc17dfd2ad14f02328c912b13898e0b53735556919050565b8160330361162057507fe38b9218987e451effe1648c3c9851ad03b64b052a5a3f5ca30f4d7b1ecf7120919050565b8160340361164f57507f0e48ecb1a5418e6218289acc8cf723e67ac6eae3ecb80f644336ab4365a2f2b2919050565b8160350361167e57507fd60e66f5b8cd08d71a1a4d7798952a7afa5a6e93a886c587a46a5500ebef4a60919050565b816036036116ad57507f5162aa9c31d9105f689cf6e71e19548bc9f0218b7d0f99ff7fa8bc2f19c68462919050565b816037036116dc57507f6fa8519b4b0e8fb97a9b618e97627d97b9b9d29d04521fd96472e9c502700568919050565b8160380361170b57507f41f5dcf0cdee270a2ad9a5f8130aaaab94b237463e09757c28b0321f09e24eb0919050565b8160390361173a57507f87a119239fa90732197108adfd029938b4743874d959d3da79b3a30f4832899e919050565b81603a0361176957507f8e96dbaa5c72e84a5297b040ccc1a60750a3201166e3b7740d352837233608a1919050565b81603b0361179857507f01605058d167ce967af8c475d2f6c341c3e0b437babf899c9da73a520aa4ecb5919050565b81603c036117c757507f04529eb80532c5118949d700d8dfd2aa86850b1c6479b26276b9486784a145ff919050565b81603d036117f657507fd191814ad13f27361ae20a46cbac8f6e76c10ebe9af0806d6720492ee2f296f0919050565b81603e0361182557507fa28df63f78821060570da371c0be1312188346b92a7965cc4b980b26c134a4d7919050565b81603f0361185457507fb48a92d40b61dc995ceecee4cded6415050dcece448b1e0b5e5b6a0e6981f3ef919050565b60405162461bcd60e51b8152602060048201526012602482015271125b99195e081bdd5d081bd988189bdd5b9960721b604482015260640161060c565b60028054600091906118a5906001906129af565b815481106118b5576118b5612999565b9060005260206000200154905090565b6000806000806118d3611d1f565b7f00000000000000000000000000000000000000000000000000000000000000004310156119135760405162461bcd60e51b815260040161060c906128f6565b61191c85611d65565b61195d5760405162461bcd60e51b815260206004820152601260248201527124b73b30b634b21039bab136b4b9b9b4b7b760711b604482015260640161060c565b600061196886611f7c565b90506119726107e6565b600061197d87611fda565b9050600061198a88612180565b6004805491925060019060006119a0838561295c565b9250508190555081336001600160a01b03167f167ce04d2aa1981994d3a31695da0d785373335b1078cec239a1a3a2c76755558386888e6040516119e79493929190612a11565b60405180910390a396509450925090509193509193565b6000807f0000000000000000000000000000000000000000000000000000000000000000600554600101027f0000000000000000000000000000000000000000000000000000000000000000019050438110611a5c57600091505090565b611a64610b7b565b6000611a6e611891565b604051632d287e4360e01b8152600481018290529091506000906001600160a01b037f00000000000000000000000000000000000000000000000000000000000000001690632d287e43906024016020604051808303816000875af1158015611adb573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611aff9190612aa8565b90506005548114611b1257611b12612ac1565b60008043611b228661010061295c565b1015611b5257507fc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470905080611c60565b506001546040805186406020820181905291810186905260608101929092529060800160408051808303601f190181528282528051602091820120600680546001805487870187526001600160801b039283168089529083168689018181526000878152600d89528981209a519151918616600160801b928716830217909a558851606081018a52928352968201908152968101858152600e8054808501825599529051965196831696909216909402949094177fbb7b4a454dc3493923482f07822329ed19e8244eff582cc204f8554c3620c3fd60029096029586015592517fbb7b4a454dc3493923482f07822329ed19e8244eff582cc204f8554c3620c3fe9094019390935554905591505b600160056000828254611c73919061295c565b90915550506040805160c08101825260055480825260208083018990528284018890526001546060808501829052608080860188905260a0909501889052600784905560088b905560098a9055600a829055600b879055600c88905560045486518b815293840152948201529283018590529133917fbc8a3fd82465d43f1709e44ed882f7e1af0147274196ef1ec009f5d52ff4e993910160405180910390a360019550505050505090565b60005460ff16156108335760405162461bcd60e51b815260206004820152601060248201526f14185d5cd8589b194e881c185d5cd95960821b604482015260640161060c565b6000816040015151600003611d7c57506000919050565b6040820151805160049190611d93906001906129af565b81518110611da357611da3612999565b6020026020010151602001518360400151600081518110611dc657611dc6612999565b602002602001015160200151611ddc91906129af565b10611de957506000919050565b60408260400151600081518110611e0257611e02612999565b60200260200101516020015110611e1b57506000919050565b60005b6001836040015151611e3091906129af565b811015611ea75782604001518181518110611e4d57611e4d612999565b6020026020010151602001518360400151826001611e6b919061295c565b81518110611e7b57611e7b612999565b60200260200101516020015110611e955750600092915050565b80611e9f81612943565b915050611e1e565b506000611eb383611f7c565b9050611ec161010082612ad7565b83511115611ed25750600092915050565b60006010821015611eef57611ee86001836129af565b9050611f55565b836040015151600103611f0a57611ee8600483901c836129af565b60048460400151600081518110611f2357611f23612999565b602002602001015160200151611f3991906129af565b611f4490600161295c565b611f52906001901b836129af565b90505b611f6161010082612ad7565b845111611f72575060009392505050565b5060019392505050565b600080805b836040015151811015611fd35783604001518181518110611fa457611fa4612999565b6020026020010151602001516001901b82611fbf919061295c565b915080611fcb81612943565b915050611f81565b5092915050565b600154600090815b83604001515181101561206b5760008460400151828151811061200757612007612999565b602002602001015160000151905060008560400151838151811061202d5761202d612999565b6020026020010151602001519050600061204783836121b4565b905083600003612055578095505b505050808061206390612943565b915050611fe2565b50600061207882846129af565b905060008360015461208a91906129af565b90507f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03166380f556056040518163ffffffff1660e01b8152600401602060405180830381865afa1580156120ea573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061210e9190612af6565b604051636d3759b560e11b81526004810185905260248101839052604481018490526001600160a01b03919091169063da6eb36a90606401600060405180830381600087803b15801561216057600080fd5b505af1158015612174573d6000803e3d6000fd5b50505050505050919050565b600081604001516040516020016121979190612b1f565b604051602081830303815290604052805190602001209050919050565b6000806121c360015484610881565b905060006121d46001851b8361295c565b6002549091506121e6906001906129af565b6001901b81111561222f576121f9610b7b565b612201612324565b600254612210906001906129af565b6001901b81111561222857612223612324565b612201565b6002546003555b60025461223b856123b2565b60008087875b8481101561230657612256600288831c6129c2565b60000361229c57816002828154811061227157612271612999565b60009182526020909120015561228881600161295c565b6003556122966001866129af565b50612306565b600281815481106122af576122af612999565b9060005260206000200154935081925083836040516020016122db929190918252602082015260400190565b60405160208183030381529060405280519060200120915080806122fe90612943565b915050612241565b506123146001891b8761295c565b6001555093979650505050505050565b60028054906000906123376001846129af565b8154811061234757612347612999565b600091825260208220015491506123626104dc6001856129af565b905060028282604051602001612382929190918252602082015260400190565b60408051601f19818403018152919052805160209182012082546001810184556000938452919092200155505050565b8060035411156123bf5750565b6002805460035490916000916123d7906001906129af565b815481106123e7576123e7612999565b90600052602060002001549050600061240860016003546104dc91906129af565b6003549091505b838110156124d0576040805160208082018690528183018590528251808303840181526060909201909252805191012060015461245090600290841c6129c2565b6000036124995780935061246382610c92565b925085821061249457806002838154811061248057612480612999565b600091825260209091200155505050505050565b6124bd565b600282815481106124ac576124ac612999565b906000526020600020015493508092505b50806124c881612943565b91505061240f565b5050505050565b6000602082840312156124e957600080fd5b5035919050565b60006020828403121561250257600080fd5b81356001600160801b038116811461087a57600080fd5b6000806040838503121561252c57600080fd5b50508035926020909101359150565b634e487b7160e01b600052604160045260246000fd5b6040805190810167ffffffffffffffff811182821017156125745761257461253b565b60405290565b6040516060810167ffffffffffffffff811182821017156125745761257461253b565b604051601f8201601f1916810167ffffffffffffffff811182821017156125c6576125c661253b565b604052919050565b600067ffffffffffffffff8211156125e8576125e861253b565b5060051b60200190565b600082601f83011261260357600080fd5b81356020612618612613836125ce565b61259d565b82815260069290921b8401810191818101908684111561263757600080fd5b8286015b8481101561267657604081890312156126545760008081fd5b61265c612551565b81358152848201358582015283529183019160400161263b565b509695505050505050565b60006060828403121561269357600080fd5b61269b61257a565b90508135815260208083013567ffffffffffffffff808211156126bd57600080fd5b818501915085601f8301126126d157600080fd5b8135818111156126e3576126e361253b565b6126f5601f8201601f1916850161259d565b818152878583860101111561270957600080fd5b8185850186830137600085838301015280858701525050604085013592508083111561273457600080fd5b5050612742848285016125f2565b60408301525092915050565b6000602080838503121561276157600080fd5b823567ffffffffffffffff8082111561277957600080fd5b818501915085601f83011261278d57600080fd5b813561279b612613826125ce565b81815260059190911b830184019084810190888311156127ba57600080fd5b8585015b838110156127f2578035858111156127d65760008081fd5b6127e48b89838a0101612681565b8452509186019186016127be565b5098975050505050505050565b600081518084526020808501945080840160005b8381101561282f57815187529582019590820190600101612813565b509495945050505050565b60808152600061284d60808301876127ff565b82810360208481019190915286518083528782019282019060005b8181101561288457845183529383019391830191600101612868565b5050848103604086015261289881886127ff565b9250505082810360608401526128ae81856127ff565b979650505050505050565b6000602082840312156128cb57600080fd5b813567ffffffffffffffff8111156128e257600080fd5b6128ee84828501612681565b949350505050565b6020808252601a908201527f436f6e747261637420686173206e6f74206c61756e636865642e000000000000604082015260600190565b634e487b7160e01b600052601160045260246000fd5b6000600182016129555761295561292d565b5060010190565b808201808211156108b5576108b561292d565b634e487b7160e01b600052601260045260246000fd5b6000826129945761299461296f565b500490565b634e487b7160e01b600052603260045260246000fd5b818103818111156108b5576108b561292d565b6000826129d1576129d161296f565b500690565b600081518084526020808501945080840160005b8381101561282f5781518051885283015183880152604090960195908201906001016129ea565b848152600060208581840152846040840152608060608401528351608084015280840151606060a085015280518060e086015260005b81811015612a645782810184015186820161010001528301612a47565b5061010092506000838287010152601f19601f8201168501915050604085015160808583030160c0860152612a9b838301826129d6565b9998505050505050505050565b600060208284031215612aba57600080fd5b5051919050565b634e487b7160e01b600052600160045260246000fd5b6000816000190483118215151615612af157612af161292d565b500290565b600060208284031215612b0857600080fd5b81516001600160a01b038116811461087a57600080fd5b60208152600061087a60208301846129d656fea2646970667358221220e377cee588fd799febc8e15969a547b0a21cc3e04618ae49bf1350bd131c5f7d64736f6c63430008100033608060405234801561001057600080fd5b5060405161067138038061067183398101604081905261002f9161014a565b6100383361009a565b806001600160401b0381111561005057610050610163565b604051908082528060200260200182016040528015610079578160200160208202803683370190505b50805161008e916001916020909101906100ea565b50506000600255610179565b600080546001600160a01b038381166001600160a01b0319831681178455604051919092169283917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09190a35050565b828054828255906000526020600020908101928215610125579160200282015b8281111561012557825182559160200191906001019061010a565b50610131929150610135565b5090565b5b808211156101315760008155600101610136565b60006020828403121561015c57600080fd5b5051919050565b634e487b7160e01b600052604160045260246000fd5b6104e9806101886000396000f3fe608060405234801561001057600080fd5b506004361061007d5760003560e01c80638da5cb5b1161005b5780638da5cb5b146100d557806396e494e8146100f0578063e0886f9014610103578063f2fde38b1461011657600080fd5b80631d1a696d146100825780632d287e43146100aa578063715018a6146100cb575b600080fd5b6100956100903660046103e4565b610129565b60405190151581526020015b60405180910390f35b6100bd6100b83660046103e4565b610194565b6040519081526020016100a1565b6100d36101ee565b005b6000546040516001600160a01b0390911681526020016100a1565b6100956100fe3660046103e4565b610202565b6100bd6101113660046103e4565b610237565b6100d36101243660046103fd565b610297565b60008061013d600254600180549050610310565b905060005b8181101561018a57836001828154811061015e5761015e610426565b906000526020600020015403610178575060019392505050565b8061018281610452565b915050610142565b5060009392505050565b6002546001546000919082906101aa908361046b565b905083600182815481106101c0576101c0610426565b90600052602060002001819055506001600260008282546101e1919061048d565b9091555091949350505050565b6101f661032a565b6102006000610384565b565b6001546002546000919083108015610230575080610222600254836103d4565b61022c91906104a0565b8310155b9392505050565b600061024282610202565b6102675760405163b52d71f360e01b8152600481018390526024015b60405180910390fd5b60018054610275908461046b565b8154811061028557610285610426565b90600052602060002001549050919050565b61029f61032a565b6001600160a01b0381166103045760405162461bcd60e51b815260206004820152602660248201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160448201526564647265737360d01b606482015260840161025e565b61030d81610384565b50565b600081831061031f5781610321565b825b90505b92915050565b6000546001600160a01b031633146102005760405162461bcd60e51b815260206004820181905260248201527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e6572604482015260640161025e565b600080546001600160a01b038381166001600160a01b0319831681178455604051919092169283917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09190a35050565b60008183101561031f5781610321565b6000602082840312156103f657600080fd5b5035919050565b60006020828403121561040f57600080fd5b81356001600160a01b038116811461023057600080fd5b634e487b7160e01b600052603260045260246000fd5b634e487b7160e01b600052601160045260246000fd5b6000600182016104645761046461043c565b5060010190565b60008261048857634e487b7160e01b600052601260045260246000fd5b500690565b808201808211156103245761032461043c565b818103818111156103245761032461043c56fea26469706673582212202d7a75b8d01477d7b0dfd4de81e732d9f919a499a532643d0950277377b9966e64736f6c63430008100033";
     const isSuperArgs = (xs) => xs.length > 1;
     class Flow__factory extends ContractFactory {
         constructor(...args) {
@@ -12432,11 +12619,11 @@
                 super(_abi, _bytecode, args[0]);
             }
         }
-        getDeployTransaction(_token, overrides) {
-            return super.getDeployTransaction(_token, overrides || {});
+        getDeployTransaction(book_, blocksPerEpoch_, deployDelay_, overrides) {
+            return super.getDeployTransaction(book_, blocksPerEpoch_, deployDelay_, overrides || {});
         }
-        deploy(_token, overrides) {
-            return super.deploy(_token, overrides || {});
+        deploy(book_, blocksPerEpoch_, deployDelay_, overrides) {
+            return super.deploy(book_, blocksPerEpoch_, deployDelay_, overrides || {});
         }
         connect(runner) {
             return super.connect(runner);

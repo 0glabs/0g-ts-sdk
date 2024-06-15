@@ -68,8 +68,11 @@ export type EpochRangeWithContextDigestStructOutput = [
     digest: string;
 };
 export interface FlowInterface extends Interface {
-    getFunction(nameOrSignature: "commitRoot" | "currentLength" | "epoch" | "epochStartPosition" | "firstBlock" | "getContext" | "getEpochRange" | "makeContext" | "makeContextWithResult" | "nextAlign" | "nextPow2" | "numSubmissions" | "paused" | "queryContextAtPosition" | "root" | "rootHistory" | "submissionIndex" | "submit" | "token" | "unstagedHeight" | "zeros"): FunctionFragment;
+    getFunction(nameOrSignature: "batchSubmit" | "blocksPerEpoch" | "book" | "commitRoot" | "currentLength" | "epoch" | "epochStartPosition" | "firstBlock" | "getContext" | "getEpochRange" | "makeContext" | "makeContextFixedTimes" | "makeContextWithResult" | "nextAlign" | "nextPow2" | "numSubmissions" | "paused" | "queryContextAtPosition" | "root" | "rootHistory" | "submissionIndex" | "submit" | "unstagedHeight" | "zeros"): FunctionFragment;
     getEvent(nameOrSignatureOrTopic: "NewEpoch" | "Paused" | "Submit" | "Unpaused"): EventFragment;
+    encodeFunctionData(functionFragment: "batchSubmit", values: [SubmissionStruct[]]): string;
+    encodeFunctionData(functionFragment: "blocksPerEpoch", values?: undefined): string;
+    encodeFunctionData(functionFragment: "book", values?: undefined): string;
     encodeFunctionData(functionFragment: "commitRoot", values?: undefined): string;
     encodeFunctionData(functionFragment: "currentLength", values?: undefined): string;
     encodeFunctionData(functionFragment: "epoch", values?: undefined): string;
@@ -78,6 +81,7 @@ export interface FlowInterface extends Interface {
     encodeFunctionData(functionFragment: "getContext", values?: undefined): string;
     encodeFunctionData(functionFragment: "getEpochRange", values: [BytesLike]): string;
     encodeFunctionData(functionFragment: "makeContext", values?: undefined): string;
+    encodeFunctionData(functionFragment: "makeContextFixedTimes", values: [BigNumberish]): string;
     encodeFunctionData(functionFragment: "makeContextWithResult", values?: undefined): string;
     encodeFunctionData(functionFragment: "nextAlign", values: [BigNumberish, BigNumberish]): string;
     encodeFunctionData(functionFragment: "nextPow2", values: [BigNumberish]): string;
@@ -88,9 +92,11 @@ export interface FlowInterface extends Interface {
     encodeFunctionData(functionFragment: "rootHistory", values?: undefined): string;
     encodeFunctionData(functionFragment: "submissionIndex", values?: undefined): string;
     encodeFunctionData(functionFragment: "submit", values: [SubmissionStruct]): string;
-    encodeFunctionData(functionFragment: "token", values?: undefined): string;
     encodeFunctionData(functionFragment: "unstagedHeight", values?: undefined): string;
     encodeFunctionData(functionFragment: "zeros", values: [BigNumberish]): string;
+    decodeFunctionResult(functionFragment: "batchSubmit", data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: "blocksPerEpoch", data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: "book", data: BytesLike): Result;
     decodeFunctionResult(functionFragment: "commitRoot", data: BytesLike): Result;
     decodeFunctionResult(functionFragment: "currentLength", data: BytesLike): Result;
     decodeFunctionResult(functionFragment: "epoch", data: BytesLike): Result;
@@ -99,6 +105,7 @@ export interface FlowInterface extends Interface {
     decodeFunctionResult(functionFragment: "getContext", data: BytesLike): Result;
     decodeFunctionResult(functionFragment: "getEpochRange", data: BytesLike): Result;
     decodeFunctionResult(functionFragment: "makeContext", data: BytesLike): Result;
+    decodeFunctionResult(functionFragment: "makeContextFixedTimes", data: BytesLike): Result;
     decodeFunctionResult(functionFragment: "makeContextWithResult", data: BytesLike): Result;
     decodeFunctionResult(functionFragment: "nextAlign", data: BytesLike): Result;
     decodeFunctionResult(functionFragment: "nextPow2", data: BytesLike): Result;
@@ -109,7 +116,6 @@ export interface FlowInterface extends Interface {
     decodeFunctionResult(functionFragment: "rootHistory", data: BytesLike): Result;
     decodeFunctionResult(functionFragment: "submissionIndex", data: BytesLike): Result;
     decodeFunctionResult(functionFragment: "submit", data: BytesLike): Result;
-    decodeFunctionResult(functionFragment: "token", data: BytesLike): Result;
     decodeFunctionResult(functionFragment: "unstagedHeight", data: BytesLike): Result;
     decodeFunctionResult(functionFragment: "zeros", data: BytesLike): Result;
 }
@@ -208,6 +214,23 @@ export interface Flow extends BaseContract {
     listeners<TCEvent extends TypedContractEvent>(event: TCEvent): Promise<Array<TypedListener<TCEvent>>>;
     listeners(eventName?: string): Promise<Array<Listener>>;
     removeAllListeners<TCEvent extends TypedContractEvent>(event?: TCEvent): Promise<this>;
+    batchSubmit: TypedContractMethod<[
+        submissions: SubmissionStruct[]
+    ], [
+        [
+            bigint[],
+            string[],
+            bigint[],
+            bigint[]
+        ] & {
+            indexes: bigint[];
+            digests: string[];
+            startIndexes: bigint[];
+            lengths: bigint[];
+        }
+    ], "payable">;
+    blocksPerEpoch: TypedContractMethod<[], [bigint], "view">;
+    book: TypedContractMethod<[], [string], "view">;
     commitRoot: TypedContractMethod<[], [void], "nonpayable">;
     currentLength: TypedContractMethod<[], [bigint], "view">;
     epoch: TypedContractMethod<[], [bigint], "view">;
@@ -220,6 +243,11 @@ export interface Flow extends BaseContract {
         EpochRangeStructOutput
     ], "view">;
     makeContext: TypedContractMethod<[], [void], "nonpayable">;
+    makeContextFixedTimes: TypedContractMethod<[
+        cnt: BigNumberish
+    ], [
+        void
+    ], "nonpayable">;
     makeContextWithResult: TypedContractMethod<[
     ], [
         MineContextStructOutput
@@ -245,11 +273,27 @@ export interface Flow extends BaseContract {
         submission: SubmissionStruct
     ], [
         [bigint, string, bigint, bigint]
-    ], "nonpayable">;
-    token: TypedContractMethod<[], [string], "view">;
+    ], "payable">;
     unstagedHeight: TypedContractMethod<[], [bigint], "view">;
     zeros: TypedContractMethod<[height: BigNumberish], [string], "view">;
     getFunction<T extends ContractMethod = ContractMethod>(key: string | FunctionFragment): T;
+    getFunction(nameOrSignature: "batchSubmit"): TypedContractMethod<[
+        submissions: SubmissionStruct[]
+    ], [
+        [
+            bigint[],
+            string[],
+            bigint[],
+            bigint[]
+        ] & {
+            indexes: bigint[];
+            digests: string[];
+            startIndexes: bigint[];
+            lengths: bigint[];
+        }
+    ], "payable">;
+    getFunction(nameOrSignature: "blocksPerEpoch"): TypedContractMethod<[], [bigint], "view">;
+    getFunction(nameOrSignature: "book"): TypedContractMethod<[], [string], "view">;
     getFunction(nameOrSignature: "commitRoot"): TypedContractMethod<[], [void], "nonpayable">;
     getFunction(nameOrSignature: "currentLength"): TypedContractMethod<[], [bigint], "view">;
     getFunction(nameOrSignature: "epoch"): TypedContractMethod<[], [bigint], "view">;
@@ -258,6 +302,7 @@ export interface Flow extends BaseContract {
     getFunction(nameOrSignature: "getContext"): TypedContractMethod<[], [MineContextStructOutput], "view">;
     getFunction(nameOrSignature: "getEpochRange"): TypedContractMethod<[digest: BytesLike], [EpochRangeStructOutput], "view">;
     getFunction(nameOrSignature: "makeContext"): TypedContractMethod<[], [void], "nonpayable">;
+    getFunction(nameOrSignature: "makeContextFixedTimes"): TypedContractMethod<[cnt: BigNumberish], [void], "nonpayable">;
     getFunction(nameOrSignature: "makeContextWithResult"): TypedContractMethod<[], [MineContextStructOutput], "nonpayable">;
     getFunction(nameOrSignature: "nextAlign"): TypedContractMethod<[
         _length: BigNumberish,
@@ -280,8 +325,7 @@ export interface Flow extends BaseContract {
         submission: SubmissionStruct
     ], [
         [bigint, string, bigint, bigint]
-    ], "nonpayable">;
-    getFunction(nameOrSignature: "token"): TypedContractMethod<[], [string], "view">;
+    ], "payable">;
     getFunction(nameOrSignature: "unstagedHeight"): TypedContractMethod<[], [bigint], "view">;
     getFunction(nameOrSignature: "zeros"): TypedContractMethod<[height: BigNumberish], [string], "view">;
     getEvent(key: "NewEpoch"): TypedContractEvent<NewEpochEvent.InputTuple, NewEpochEvent.OutputTuple, NewEpochEvent.OutputObject>;
