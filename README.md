@@ -42,8 +42,8 @@ import { getFlowContract, TESTNET_FLOW_ADDRESS } from 'zerog-da-sdk';
 import { ethers } from 'ethers';
 
 // create ethers signer from private key and rpc endpoint
-const evmRpc = 'https://rpc-testnet.0g.ai';
-const provider = new ethers.JsonRpcProvider(evmRpc);
+const rpc = 'https://rpc-testnet.0g.ai';
+const provider = new ethers.JsonRpcProvider(rpc);
 const privateKey = 'your-private-key'; // with balance to pay for gas
 const signer = new ethers.Wallet(privateKey, provider);
 
