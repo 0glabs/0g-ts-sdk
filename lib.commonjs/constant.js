@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ZERO_HASH = exports.SMALL_FILE_SIZE_THRESHOLD = exports.EMPTY_CHUNK_HASH = exports.EMPTY_CHUNK = exports.DEFAULT_SEGMENT_SIZE = exports.DEFAULT_SEGMENT_MAX_CHUNKS = exports.DEFAULT_CHUNK_SIZE = exports.TESTNET_FLOW_ADDRESS = void 0;
 const keccak256_1 = require("@ethersproject/keccak256");
-exports.TESTNET_FLOW_ADDRESS = '0x22C1CaF8cbb671F220789184fda68BfD7eaA2eE1';
+exports.TESTNET_FLOW_ADDRESS = '0xb8F03061969da6Ad38f0a4a9f8a86bE71dA3c8E7';
 // not used anymore
 // export const TESTNET_USDT_ADDRESS = '0xe3a700dF2a8bEBeF2f0B1eE92f46d230b01401B1'; 
 exports.DEFAULT_CHUNK_SIZE = 256; // bytes

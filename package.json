@@ -1,7 +1,7 @@
 {
   "name": "zerog-da-sdk",
-  "version": "0.2.1",
-  "description": "JS SDK for zerog DA",
+  "version": "0.1.0",
+  "description": "JS SDK for 0G DA",
   "main": "./lib.commonjs/index.js",
   "exports": {
     "require": "./lib.commonjs/index.js",
@@ -20,7 +20,7 @@
     "build-cjs": "tsc --project tsconfig.commonjs.json",
     "build-all": "npm run clean && tsc -b tsconfig.esm.json tsconfig.commonjs.json tsconfig.types.json",
     "gen-type-package-json": "echo '{\"type\": \"commonjs\"}' > ./lib.commonjs/package.json && echo '{\"type\": \"module\"}' > ./lib.esm/package.json",
-    "gen-contract-type-flow": "typechain --target ethers-v6 --node16-modules --out-dir src.ts/contracts/flow '../zerog-contracts/artifacts/contracts/dataFlow/Flow.sol/Flow.json'",
+    "gen-contract-type-flow": "typechain --target ethers-v6 --node16-modules --out-dir src.ts/contracts/flow '../0g-storage-contracts/artifacts/contracts/dataFlow/Flow.sol/Flow.json'",
     "release": "npm run build-all && npm run gen-type-package-json && npm run build-dist"
   },
   "keywords": [],
@@ -49,6 +49,6 @@
     "open-jsonrpc-provider": "^0.2.1"
   },
   "peerDependencies": {
-    "ethers": "^6.7.1"
+    "ethers": "^6.13.0"
   }
 }
