@@ -1,3 +1,4 @@
+import * as fs from 'fs';
 import { open } from 'node:fs/promises';
 
 /* Do NOT modify this file; see /src.ts/_admin/update-version.ts */
@@ -11296,614 +11297,6 @@ const EMPTY_CHUNK_HASH = keccak256(EMPTY_CHUNK);
 const SMALL_FILE_SIZE_THRESHOLD = 256 * 1024;
 const ZERO_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000';
 
-class NHProvider extends HttpProvider {
-    constructor(url) {
-        super({ url });
-    }
-    async getStatus() {
-        const res = await super.request({ method: 'zgs_getStatus' });
-        return res;
-    }
-    async uploadSegment(seg) {
-        const res = await super.request({
-            method: 'zgs_uploadSegment',
-            params: [seg],
-        });
-        return res;
-    }
-    async uploadSegments(segs) {
-        const res = await super.request({
-            method: 'zgs_uploadSegments',
-            params: [segs],
-        });
-        return res;
-    }
-    async downloadSegment(root, startIndex, endIndx) {
-        const seg = await super.request({
-            method: 'zgs_downloadSegment',
-            params: [root, startIndex, endIndx],
-        });
-        return seg;
-    }
-    async downloadSegmentWithProof(root, index) {
-        const seg = await super.request({
-            method: 'zgs_downloadSegmentWithProof',
-            params: [root, index],
-        });
-        return seg;
-    }
-    async getFileInfo(root) {
-        const info = await super.request({
-            method: 'zgs_getFileInfo',
-            params: [root],
-        });
-        return info;
-    }
-    async getFileInfoByTxSeq(txSeq) {
-        const info = await super.request({
-            method: 'zgs_getFileInfoByTxSeq',
-            params: [txSeq],
-        });
-        return info;
-    }
-    async uploadFile(file, segIndex = 0) {
-        const [tree, err] = await file.merkleTree();
-        if (tree == null || err != null) {
-            return err;
-        }
-        /*
-            todo: check if file is already uploaded
-            1. calculate root hash of file
-            2. get file info by root hash
-            3. check file is finalized
-        */
-        const iter = file.iterateWithOffsetAndBatch(segIndex * DEFAULT_SEGMENT_SIZE, DEFAULT_SEGMENT_SIZE, true);
-        const numChunks = file.numChunks();
-        const fileSize = file.size();
-        while (true) {
-            let [ok, err] = await iter.next();
-            if (err) {
-                return new Error('Failed to read segment');
-            }
-            if (!ok) {
-                break;
-            }
-            let segment = iter.current();
-            const proof = tree.proofAt(segIndex);
-            const startIndex = segIndex * DEFAULT_SEGMENT_MAX_CHUNKS;
-            let allDataUploaded = false;
-            if (startIndex >= numChunks) {
-                break;
-            }
-            else if (startIndex + segment.length / DEFAULT_CHUNK_SIZE >= numChunks) {
-                const expectedLen = DEFAULT_CHUNK_SIZE * (numChunks - startIndex);
-                segment = segment.slice(0, expectedLen);
-                allDataUploaded = true;
-            }
-            const segWithProof = {
-                root: tree.rootHash(),
-                data: encodeBase64(segment),
-                index: segIndex,
-                proof: proof,
-                fileSize,
-            };
-            try {
-                await this.uploadSegment(segWithProof); // todo check error
-            }
-            catch (e) {
-                return e;
-            }
-            if (allDataUploaded) {
-                break;
-            }
-            segIndex++;
-        }
-        return null;
-    }
-}
-
-class LeafNode {
-    hash; // hex string
-    parent = null;
-    left = null;
-    right = null;
-    constructor(hash) {
-        this.hash = hash;
-    }
-    // content should be a hex string
-    static fromContent(content) {
-        return new LeafNode(keccak256(content));
-    }
-    static fromLeftAndRight(left, right) {
-        const node = new LeafNode(keccak256Hash(left.hash, right.hash));
-        node.left = left;
-        node.right = right;
-        left.parent = node;
-        right.parent = node;
-        return node;
-    }
-    isLeftSide() {
-        return this.parent !== null && this.parent.left === this;
-    }
-}
-var NHProofErrors;
-(function (NHProofErrors) {
-    NHProofErrors["WRONG_FORMAT"] = "invalid merkle proof format";
-    NHProofErrors["ROOT_MISMATCH"] = "merkle proof root mismatch";
-    NHProofErrors["CONTENT_MISMATCH"] = "merkle proof content mismatch";
-    NHProofErrors["POSITION_MISMATCH"] = "merkle proof position mismatch";
-    NHProofErrors["VALIDATION_FAILURE"] = "failed to validate merkle proof";
-})(NHProofErrors || (NHProofErrors = {}));
-// Proof represents a merkle tree proof of target content, e.g. chunk or segment of file.
-class NeuraProof {
-    // Lemma is made up of 3 parts to keep consistent with zerog-rust:
-    // 1. Target content hash (leaf node).
-    // 2. Hashes from bottom to top of sibling nodes.
-    // 3. Root hash.
-    lemma = [];
-    // Path contains flags to indicate that whether the corresponding node is on the left side.
-    // All true for the left most leaf node, and all false for the right most leaf node.
-    path = [];
-    constructor(lemma = [], path = []) {
-        this.lemma = lemma;
-        this.path = path;
-    }
-    validateFormat() {
-        const numSiblings = this.path.length;
-        if (numSiblings === 0) {
-            if (this.lemma.length !== 1) {
-                return NHProofErrors.WRONG_FORMAT;
-            }
-            return null;
-        }
-        if (numSiblings + 2 !== this.lemma.length) {
-            return NHProofErrors.WRONG_FORMAT;
-        }
-        return null;
-    }
-    validate(rootHash, content, position, numLeafNodes) {
-        const contentHash = keccak256(content);
-        return this.validateHash(rootHash, contentHash, position, numLeafNodes);
-    }
-    validateHash(rootHash, contentHash, position, numLeafNodes) {
-        const formatError = this.validateFormat();
-        if (formatError !== null) {
-            return formatError;
-        }
-        if (contentHash !== this.lemma[0]) {
-            return NHProofErrors.CONTENT_MISMATCH;
-        }
-        if (this.lemma.length > 1 && rootHash !== this.lemma[this.lemma.length - 1]) {
-            return NHProofErrors.ROOT_MISMATCH;
-        }
-        const proofPosition = this.calculateProofPosition(numLeafNodes);
-        if (proofPosition !== position) {
-            return NHProofErrors.POSITION_MISMATCH;
-        }
-        if (!this.validateRoot()) {
-            return NHProofErrors.VALIDATION_FAILURE;
-        }
-        return null;
-    }
-    validateRoot() {
-        let hash = this.lemma[0];
-        for (let i = 0; i < this.path.length; i++) {
-            const isLeft = this.path[i];
-            if (isLeft) {
-                hash = keccak256Hash(hash, this.lemma[i + 1]);
-            }
-            else {
-                hash = keccak256Hash(this.lemma[i + 1], hash);
-            }
-        }
-        return hash === this.lemma[this.lemma.length - 1];
-    }
-    // numLeafNodes should bigger than 0
-    calculateProofPosition(numLeafNodes) {
-        let position = 0;
-        for (let i = this.path.length - 1; i >= 0; i--) {
-            const leftSideDepth = Math.ceil(Math.log2(numLeafNodes));
-            const leftSideLeafNodes = Math.pow(2, leftSideDepth) / 2;
-            const isLeft = this.path[i];
-            if (isLeft) {
-                numLeafNodes = leftSideLeafNodes;
-            }
-            else {
-                position += leftSideLeafNodes;
-                numLeafNodes -= leftSideLeafNodes;
-            }
-        }
-        return position;
-    }
-}
-class NHMerkleTree {
-    root = null;
-    leaves = [];
-    constructor(root = null, leaves = []) {
-        this.root = root;
-        this.leaves = leaves;
-    }
-    rootHash() {
-        return this.root ? this.root.hash : null;
-    }
-    proofAt(i) {
-        if (i < 0 || i >= this.leaves.length) {
-            throw new Error('Index out of range');
-        }
-        if (this.leaves.length === 1) {
-            return new NeuraProof([this.rootHash()], []);
-        }
-        const proof = new NeuraProof();
-        // append the target leaf node hash
-        proof.lemma.push(this.leaves[i].hash);
-        let current = this.leaves[i];
-        while (current !== this.root) {
-            if (current.isLeftSide()) {
-                proof.lemma.push(current.parent?.right?.hash);
-                proof.path.push(true);
-            }
-            else {
-                proof.lemma.push(current.parent?.left?.hash);
-                proof.path.push(false);
-            }
-            current = current.parent;
-        }
-        // append the root node hash
-        proof.lemma.push(this.rootHash());
-        return proof;
-    }
-    addLeaf(leafContent) {
-        this.leaves.push(LeafNode.fromContent(leafContent));
-    }
-    addLeafByHash(leafHash) {
-        this.leaves.push(new LeafNode(leafHash));
-    }
-    // build root
-    build() {
-        const numLeafNodes = this.leaves.length;
-        if (numLeafNodes === 0) {
-            return null;
-        }
-        let queue = [];
-        for (let i = 0; i < numLeafNodes; i += 2) {
-            // last single leaf node
-            if (i === numLeafNodes - 1) {
-                queue.push(this.leaves[i]);
-                continue;
-            }
-            const node = LeafNode.fromLeftAndRight(this.leaves[i], this.leaves[i + 1]);
-            queue.push(node);
-        }
-        while (true) {
-            const numNodes = queue.length;
-            if (numNodes <= 1) {
-                break;
-            }
-            for (let i = 0; i < Math.floor(numNodes / 2); i++) {
-                const left = queue[0];
-                const right = queue[1];
-                queue.splice(0, 2); // remove first two elements
-                queue.push(LeafNode.fromLeftAndRight(left, right));
-            }
-            if (numNodes % 2 === 1) {
-                const first = queue[0];
-                queue.splice(0, 1); // remove first element
-                queue.push(first);
-            }
-        }
-        this.root = queue[0];
-        return this;
-    }
-}
-function keccak256Hash(...hashes) {
-    return keccak256(hexConcat(hashes));
-}
-
-function numSplits(total, unit) {
-    return Math.floor((total - 1) / unit) + 1;
-}
-function nextPow2(input) {
-    let x = input;
-    x -= 1;
-    x |= x >> 32;
-    x |= x >> 16;
-    x |= x >> 8;
-    x |= x >> 4;
-    x |= x >> 2;
-    x |= x >> 1;
-    x += 1;
-    return x;
-}
-function computePaddedSize(chunks) {
-    let chunksNextPow2 = nextPow2(chunks);
-    if (chunksNextPow2 === chunks) {
-        return [chunksNextPow2, chunksNextPow2];
-    }
-    let minChunk;
-    if (chunksNextPow2 >= 16) {
-        minChunk = Math.floor(chunksNextPow2 / 16);
-    }
-    else {
-        minChunk = 1;
-    }
-    const paddedChunks = numSplits(chunks, minChunk) * minChunk;
-    return [paddedChunks, chunksNextPow2];
-}
-
-class BlobIterator {
-    file = null; // browser file
-    buf;
-    bufSize = 0; // buffer content size
-    fileSize;
-    paddedSize; // total size including padding zeros
-    offset = 0;
-    batchSize;
-    constructor(file, fileSize, offset, batch, flowPadding) {
-        if (batch % DEFAULT_CHUNK_SIZE > 0) {
-            throw new Error("batch size should align with chunk size");
-        }
-        const buf = new Uint8Array(batch);
-        const chunks = numSplits(fileSize, DEFAULT_CHUNK_SIZE);
-        let paddedSize;
-        if (flowPadding) {
-            const [paddedChunks,] = computePaddedSize(chunks);
-            paddedSize = paddedChunks * DEFAULT_CHUNK_SIZE;
-        }
-        else {
-            paddedSize = chunks * DEFAULT_CHUNK_SIZE;
-        }
-        this.file = file;
-        this.buf = buf;
-        this.fileSize = fileSize;
-        this.paddedSize = paddedSize;
-        this.batchSize = batch;
-        this.offset = offset;
-    }
-    static NewSegmentIterator(file, fileSize, offset, flowPadding) {
-        return new BlobIterator(file, fileSize, offset, DEFAULT_SEGMENT_SIZE, flowPadding);
-    }
-    async readFromFile(start, end) {
-        if (start < 0 || start >= this.fileSize) {
-            throw new Error("invalid start offset");
-        }
-        if (end > this.fileSize) {
-            end = this.fileSize;
-        }
-        const buf = (await this.file?.slice(start, end).arrayBuffer());
-        const buffer = new Uint8Array(this.batchSize);
-        buffer.set(new Uint8Array(buf));
-        return {
-            bytesRead: buf.byteLength,
-            buffer
-        };
-    }
-    clearBuffer() {
-        this.bufSize = 0;
-    }
-    paddingZeros(length) {
-        const startOffset = this.bufSize;
-        this.buf = this.buf.fill(0, startOffset, startOffset + length);
-        this.bufSize += length;
-        this.offset += length;
-    }
-    async next() {
-        if (this.offset < 0 || this.offset >= this.paddedSize) {
-            return [false, null];
-        }
-        let expectedBufSize;
-        let maxAvailableLength = this.paddedSize - this.offset; // include padding zeros
-        if (maxAvailableLength >= this.batchSize) {
-            expectedBufSize = this.batchSize;
-        }
-        else {
-            expectedBufSize = maxAvailableLength;
-        }
-        this.clearBuffer();
-        if (this.offset >= this.fileSize) {
-            this.paddingZeros(expectedBufSize);
-            return [true, null];
-        }
-        const { bytesRead: n, buffer } = await this.readFromFile(this.offset, this.offset + this.batchSize);
-        this.buf = buffer;
-        this.bufSize = n;
-        this.offset += n;
-        // not reach EOF
-        if (n === expectedBufSize) {
-            return [true, null];
-        }
-        if (n > expectedBufSize) {
-            // should never happen
-            throw new Error("load more data from file than expected");
-        }
-        if (expectedBufSize > n) {
-            this.paddingZeros(expectedBufSize - n);
-        }
-        return [true, null];
-    }
-    current() {
-        return this.buf.subarray(0, this.bufSize);
-    }
-}
-
-class NodeFdIterator extends BlobIterator {
-    fd = null; // node file descriptor
-    constructor(fd, fileSize, offset, batch, flowPadding) {
-        super(null, fileSize, offset, batch, flowPadding);
-        this.fd = fd;
-    }
-    // override BlobIterator.readFromFile
-    async readFromFile(start, end) {
-        if (start < 0 || start >= this.fileSize) {
-            throw new Error("invalid start offset");
-        }
-        if (end > this.fileSize) {
-            end = this.fileSize;
-        }
-        const res = await this.fd?.read({
-            buffer: this.buf,
-            offset: this.bufSize,
-            length: end - start,
-            position: start
-        });
-        return res;
-    }
-}
-
-class AbstractFile {
-    fileSize = 0;
-    // constructor() {}
-    // split a segment into chunks and compute the root hash
-    static segmentRoot(segment, emptyChunksPadded = 0) {
-        const tree = new NHMerkleTree();
-        const dataLength = segment.length;
-        for (let offset = 0; offset < dataLength; offset += DEFAULT_CHUNK_SIZE) {
-            const chunk = segment.subarray(offset, offset + DEFAULT_CHUNK_SIZE);
-            tree.addLeaf(chunk);
-        }
-        if (emptyChunksPadded > 0) {
-            for (let i = 0; i < emptyChunksPadded; i++) {
-                tree.addLeafByHash(EMPTY_CHUNK_HASH);
-            }
-        }
-        tree.build();
-        if (tree.root !== null) {
-            return tree.rootHash();
-        }
-        return ZERO_HASH; // TODO check this
-    }
-    size() {
-        return this.fileSize;
-    }
-    iterate(flowPadding) {
-        return this.iterateWithOffsetAndBatch(0, DEFAULT_SEGMENT_SIZE, flowPadding);
-    }
-    async merkleTree() {
-        const iter = this.iterate(true);
-        const tree = new NHMerkleTree();
-        while (true) {
-            let [ok, err] = await iter.next();
-            if (err != null) {
-                return [null, err];
-            }
-            if (!ok) {
-                break;
-            }
-            const current = iter.current();
-            const segRoot = AbstractFile.segmentRoot(current);
-            tree.addLeafByHash(segRoot);
-        }
-        return [tree.build(), null];
-    }
-    numChunks() {
-        return numSplits(this.size(), DEFAULT_CHUNK_SIZE);
-    }
-    numSegments() {
-        return numSplits(this.size(), DEFAULT_SEGMENT_SIZE);
-    }
-    async createSubmission(tags) {
-        const submission = {
-            length: this.size(),
-            tags: tags,
-            nodes: []
-        };
-        const nodes = this.splitNodes();
-        let offset = 0;
-        for (let chunks of nodes) {
-            let [node, err] = await this.createNode(offset, chunks);
-            if (err != null) {
-                return [null, err];
-            }
-            submission.nodes.push(node);
-            offset += chunks * DEFAULT_CHUNK_SIZE;
-        }
-        return [submission, null];
-    }
-    splitNodes() {
-        let nodes = [];
-        let chunks = this.numChunks();
-        let [paddedChunks, chunksNextPow2] = computePaddedSize(chunks);
-        let nextChunkSize = chunksNextPow2;
-        while (paddedChunks > 0) {
-            if (paddedChunks >= nextChunkSize) {
-                paddedChunks -= nextChunkSize;
-                nodes.push(nextChunkSize);
-            }
-            nextChunkSize /= 2;
-        }
-        return nodes;
-    }
-    async createNode(offset, chunks) {
-        let batch = chunks;
-        if (chunks > DEFAULT_SEGMENT_MAX_CHUNKS) {
-            batch = DEFAULT_SEGMENT_MAX_CHUNKS;
-        }
-        return this.createSegmentNode(offset, DEFAULT_CHUNK_SIZE * batch, DEFAULT_CHUNK_SIZE * chunks);
-    }
-    async createSegmentNode(offset, batch, size) {
-        const iter = this.iterateWithOffsetAndBatch(offset, batch, true);
-        const tree = new NHMerkleTree();
-        for (let i = 0; i < size;) {
-            let [ok, err] = await iter.next();
-            if (err != null) {
-                return [null, err];
-            }
-            if (!ok) {
-                break;
-            }
-            const current = iter.current();
-            const segRoot = AbstractFile.segmentRoot(current);
-            tree.addLeafByHash(segRoot);
-            i += current.length;
-        }
-        tree.build();
-        const numChunks = size / DEFAULT_CHUNK_SIZE;
-        const height = Math.log2(numChunks);
-        const node = {
-            height: height,
-            root: tree.rootHash()
-        };
-        return [node, null];
-    }
-}
-
-class NHBlob extends AbstractFile {
-    blob = null; // @see https://developer.mozilla.org/en-US/docs/Web/API/File/File
-    fileSize = 0;
-    constructor(blob) {
-        super();
-        this.blob = blob;
-        this.fileSize = blob.size;
-    }
-    iterateWithOffsetAndBatch(offset, batch, flowPadding) {
-        return new BlobIterator(this.blob, this.size(), offset, batch, flowPadding);
-    }
-}
-
-class NHFile extends AbstractFile {
-    fd = null;
-    fileSize = 0;
-    constructor(fd, fileSize) {
-        super();
-        this.fd = fd;
-        this.fileSize = fileSize;
-    }
-    static async fromNodeFileHandle(fd) {
-        const stat = await fd.stat();
-        return new NHFile(fd, stat.size);
-    }
-    // NOTE: need manually close fd after use
-    static async fromFilePath(path) {
-        const fd = await open(path, 'r'); // if fail, throw error
-        return await NHFile.fromNodeFileHandle(fd);
-    }
-    async close() {
-        await this.fd?.close();
-    }
-    iterateWithOffsetAndBatch(offset, batch, flowPadding) {
-        return new NodeFdIterator(this.fd, this.size(), offset, batch, flowPadding);
-    }
-}
-
 /* Autogenerated file. Do not edit manually. */
 /* tslint:disable */
 /* eslint-disable */
@@ -12646,5 +12039,667 @@ var index = /*#__PURE__*/Object.freeze({
 function getFlowContract(address, signer) {
     return Flow__factory.connect(address, signer);
 }
+function checkExist(path) {
+    let statSync = fs.statSync(path);
+    if (statSync.isFile()) {
+        return true;
+    }
+    if (statSync.isDirectory()) {
+        return true;
+    }
+    return false;
+}
+function GetSplitNum(total, unit) {
+    return (total - 1) / unit + 1;
+}
 
-export { DEFAULT_CHUNK_SIZE, DEFAULT_SEGMENT_MAX_CHUNKS, DEFAULT_SEGMENT_SIZE, EMPTY_CHUNK, EMPTY_CHUNK_HASH, Flow__factory, LeafNode, NHBlob, NHFile, NHMerkleTree, NHProofErrors, NHProvider, NeuraProof, SMALL_FILE_SIZE_THRESHOLD, TESTNET_FLOW_ADDRESS, ZERO_HASH, computePaddedSize, index as factories, getFlowContract, nextPow2, numSplits };
+class NHProvider extends HttpProvider {
+    constructor(url) {
+        super({ url });
+    }
+    async getStatus() {
+        const res = await super.request({ method: 'zgs_getStatus' });
+        return res;
+    }
+    async uploadSegment(seg) {
+        const res = await super.request({
+            method: 'zgs_uploadSegment',
+            params: [seg],
+        });
+        return res;
+    }
+    async uploadSegments(segs) {
+        const res = await super.request({
+            method: 'zgs_uploadSegments',
+            params: [segs],
+        });
+        return res;
+    }
+    async downloadSegment(root, startIndex, endIndx) {
+        const seg = await super.request({
+            method: 'zgs_downloadSegment',
+            params: [root, startIndex, endIndx],
+        });
+        return seg;
+    }
+    async downloadSegmentWithProof(root, index) {
+        const seg = await super.request({
+            method: 'zgs_downloadSegmentWithProof',
+            params: [root, index],
+        });
+        return seg;
+    }
+    async getFileInfo(root) {
+        const info = await super.request({
+            method: 'zgs_getFileInfo',
+            params: [root],
+        });
+        return info;
+    }
+    async getFileInfoByTxSeq(txSeq) {
+        const info = await super.request({
+            method: 'zgs_getFileInfoByTxSeq',
+            params: [txSeq],
+        });
+        return info;
+    }
+    async downloadFileHelper(root, filePath, size, proof) {
+        const segmentOffset = 0;
+        const numChunks = GetSplitNum(size, DEFAULT_CHUNK_SIZE);
+        const numSegments = GetSplitNum(size, DEFAULT_SEGMENT_SIZE);
+        const numTasks = numSegments - segmentOffset;
+        for (let taskInd = 0; taskInd < numTasks; taskInd++) {
+            const segmentIndex = segmentOffset + taskInd;
+            const startIndex = segmentIndex * DEFAULT_SEGMENT_MAX_CHUNKS;
+            var endIndex = startIndex + DEFAULT_SEGMENT_MAX_CHUNKS;
+            if (endIndex > numChunks) {
+                endIndex = numChunks;
+            }
+            var segment = await this.downloadSegment(root, startIndex, endIndex);
+            if (segment == null) {
+                return new Error('Failed to download segment');
+            }
+            if (segmentIndex == numSegments - 1) {
+                const lastChunkSize = size % DEFAULT_CHUNK_SIZE;
+                if (lastChunkSize > 0) {
+                    const paddings = DEFAULT_CHUNK_SIZE - lastChunkSize;
+                    segment = segment.slice(0, segment.length - paddings);
+                }
+            }
+            fs.appendFileSync(filePath, segment);
+        }
+        return null;
+    }
+    async uploadFile(file, segIndex = 0) {
+        const [tree, err] = await file.merkleTree();
+        if (tree == null || err != null) {
+            return err;
+        }
+        /*
+            todo: check if file is already uploaded
+            1. calculate root hash of file
+            2. get file info by root hash
+            3. check file is finalized
+        */
+        const iter = file.iterateWithOffsetAndBatch(segIndex * DEFAULT_SEGMENT_SIZE, DEFAULT_SEGMENT_SIZE, true);
+        const numChunks = file.numChunks();
+        const fileSize = file.size();
+        while (true) {
+            let [ok, err] = await iter.next();
+            if (err) {
+                return new Error('Failed to read segment');
+            }
+            if (!ok) {
+                break;
+            }
+            let segment = iter.current();
+            const proof = tree.proofAt(segIndex);
+            const startIndex = segIndex * DEFAULT_SEGMENT_MAX_CHUNKS;
+            let allDataUploaded = false;
+            if (startIndex >= numChunks) {
+                break;
+            }
+            else if (startIndex + segment.length / DEFAULT_CHUNK_SIZE >= numChunks) {
+                const expectedLen = DEFAULT_CHUNK_SIZE * (numChunks - startIndex);
+                segment = segment.slice(0, expectedLen);
+                allDataUploaded = true;
+            }
+            const segWithProof = {
+                root: tree.rootHash(),
+                data: encodeBase64(segment),
+                index: segIndex,
+                proof: proof,
+                fileSize,
+            };
+            try {
+                await this.uploadSegment(segWithProof); // todo check error
+            }
+            catch (e) {
+                return e;
+            }
+            if (allDataUploaded) {
+                break;
+            }
+            segIndex++;
+        }
+        return null;
+    }
+    async downloadFile(root, filePath, proof) {
+        const info = await this.getFileInfo(root);
+        if (info == null) {
+            return new Error('File not found');
+        }
+        if (!info.finalized) {
+            return new Error('File not finalized');
+        }
+        if (checkExist(filePath)) {
+            return new Error('Wrong path, provide a file path which does not exist.');
+        }
+        let err = await this.downloadFileHelper(root, filePath, info.tx.size, proof);
+        return err;
+    }
+}
+
+class LeafNode {
+    hash; // hex string
+    parent = null;
+    left = null;
+    right = null;
+    constructor(hash) {
+        this.hash = hash;
+    }
+    // content should be a hex string
+    static fromContent(content) {
+        return new LeafNode(keccak256(content));
+    }
+    static fromLeftAndRight(left, right) {
+        const node = new LeafNode(keccak256Hash(left.hash, right.hash));
+        node.left = left;
+        node.right = right;
+        left.parent = node;
+        right.parent = node;
+        return node;
+    }
+    isLeftSide() {
+        return this.parent !== null && this.parent.left === this;
+    }
+}
+var NHProofErrors;
+(function (NHProofErrors) {
+    NHProofErrors["WRONG_FORMAT"] = "invalid merkle proof format";
+    NHProofErrors["ROOT_MISMATCH"] = "merkle proof root mismatch";
+    NHProofErrors["CONTENT_MISMATCH"] = "merkle proof content mismatch";
+    NHProofErrors["POSITION_MISMATCH"] = "merkle proof position mismatch";
+    NHProofErrors["VALIDATION_FAILURE"] = "failed to validate merkle proof";
+})(NHProofErrors || (NHProofErrors = {}));
+// Proof represents a merkle tree proof of target content, e.g. chunk or segment of file.
+class NeuraProof {
+    // Lemma is made up of 3 parts to keep consistent with zerog-rust:
+    // 1. Target content hash (leaf node).
+    // 2. Hashes from bottom to top of sibling nodes.
+    // 3. Root hash.
+    lemma = [];
+    // Path contains flags to indicate that whether the corresponding node is on the left side.
+    // All true for the left most leaf node, and all false for the right most leaf node.
+    path = [];
+    constructor(lemma = [], path = []) {
+        this.lemma = lemma;
+        this.path = path;
+    }
+    validateFormat() {
+        const numSiblings = this.path.length;
+        if (numSiblings === 0) {
+            if (this.lemma.length !== 1) {
+                return NHProofErrors.WRONG_FORMAT;
+            }
+            return null;
+        }
+        if (numSiblings + 2 !== this.lemma.length) {
+            return NHProofErrors.WRONG_FORMAT;
+        }
+        return null;
+    }
+    validate(rootHash, content, position, numLeafNodes) {
+        const contentHash = keccak256(content);
+        return this.validateHash(rootHash, contentHash, position, numLeafNodes);
+    }
+    validateHash(rootHash, contentHash, position, numLeafNodes) {
+        const formatError = this.validateFormat();
+        if (formatError !== null) {
+            return formatError;
+        }
+        if (contentHash !== this.lemma[0]) {
+            return NHProofErrors.CONTENT_MISMATCH;
+        }
+        if (this.lemma.length > 1 && rootHash !== this.lemma[this.lemma.length - 1]) {
+            return NHProofErrors.ROOT_MISMATCH;
+        }
+        const proofPosition = this.calculateProofPosition(numLeafNodes);
+        if (proofPosition !== position) {
+            return NHProofErrors.POSITION_MISMATCH;
+        }
+        if (!this.validateRoot()) {
+            return NHProofErrors.VALIDATION_FAILURE;
+        }
+        return null;
+    }
+    validateRoot() {
+        let hash = this.lemma[0];
+        for (let i = 0; i < this.path.length; i++) {
+            const isLeft = this.path[i];
+            if (isLeft) {
+                hash = keccak256Hash(hash, this.lemma[i + 1]);
+            }
+            else {
+                hash = keccak256Hash(this.lemma[i + 1], hash);
+            }
+        }
+        return hash === this.lemma[this.lemma.length - 1];
+    }
+    // numLeafNodes should bigger than 0
+    calculateProofPosition(numLeafNodes) {
+        let position = 0;
+        for (let i = this.path.length - 1; i >= 0; i--) {
+            const leftSideDepth = Math.ceil(Math.log2(numLeafNodes));
+            const leftSideLeafNodes = Math.pow(2, leftSideDepth) / 2;
+            const isLeft = this.path[i];
+            if (isLeft) {
+                numLeafNodes = leftSideLeafNodes;
+            }
+            else {
+                position += leftSideLeafNodes;
+                numLeafNodes -= leftSideLeafNodes;
+            }
+        }
+        return position;
+    }
+}
+class NHMerkleTree {
+    root = null;
+    leaves = [];
+    constructor(root = null, leaves = []) {
+        this.root = root;
+        this.leaves = leaves;
+    }
+    rootHash() {
+        return this.root ? this.root.hash : null;
+    }
+    proofAt(i) {
+        if (i < 0 || i >= this.leaves.length) {
+            throw new Error('Index out of range');
+        }
+        if (this.leaves.length === 1) {
+            return new NeuraProof([this.rootHash()], []);
+        }
+        const proof = new NeuraProof();
+        // append the target leaf node hash
+        proof.lemma.push(this.leaves[i].hash);
+        let current = this.leaves[i];
+        while (current !== this.root) {
+            if (current.isLeftSide()) {
+                proof.lemma.push(current.parent?.right?.hash);
+                proof.path.push(true);
+            }
+            else {
+                proof.lemma.push(current.parent?.left?.hash);
+                proof.path.push(false);
+            }
+            current = current.parent;
+        }
+        // append the root node hash
+        proof.lemma.push(this.rootHash());
+        return proof;
+    }
+    addLeaf(leafContent) {
+        this.leaves.push(LeafNode.fromContent(leafContent));
+    }
+    addLeafByHash(leafHash) {
+        this.leaves.push(new LeafNode(leafHash));
+    }
+    // build root
+    build() {
+        const numLeafNodes = this.leaves.length;
+        if (numLeafNodes === 0) {
+            return null;
+        }
+        let queue = [];
+        for (let i = 0; i < numLeafNodes; i += 2) {
+            // last single leaf node
+            if (i === numLeafNodes - 1) {
+                queue.push(this.leaves[i]);
+                continue;
+            }
+            const node = LeafNode.fromLeftAndRight(this.leaves[i], this.leaves[i + 1]);
+            queue.push(node);
+        }
+        while (true) {
+            const numNodes = queue.length;
+            if (numNodes <= 1) {
+                break;
+            }
+            for (let i = 0; i < Math.floor(numNodes / 2); i++) {
+                const left = queue[0];
+                const right = queue[1];
+                queue.splice(0, 2); // remove first two elements
+                queue.push(LeafNode.fromLeftAndRight(left, right));
+            }
+            if (numNodes % 2 === 1) {
+                const first = queue[0];
+                queue.splice(0, 1); // remove first element
+                queue.push(first);
+            }
+        }
+        this.root = queue[0];
+        return this;
+    }
+}
+function keccak256Hash(...hashes) {
+    return keccak256(hexConcat(hashes));
+}
+
+function numSplits(total, unit) {
+    return Math.floor((total - 1) / unit) + 1;
+}
+function nextPow2(input) {
+    let x = input;
+    x -= 1;
+    x |= x >> 32;
+    x |= x >> 16;
+    x |= x >> 8;
+    x |= x >> 4;
+    x |= x >> 2;
+    x |= x >> 1;
+    x += 1;
+    return x;
+}
+function computePaddedSize(chunks) {
+    let chunksNextPow2 = nextPow2(chunks);
+    if (chunksNextPow2 === chunks) {
+        return [chunksNextPow2, chunksNextPow2];
+    }
+    let minChunk;
+    if (chunksNextPow2 >= 16) {
+        minChunk = Math.floor(chunksNextPow2 / 16);
+    }
+    else {
+        minChunk = 1;
+    }
+    const paddedChunks = numSplits(chunks, minChunk) * minChunk;
+    return [paddedChunks, chunksNextPow2];
+}
+
+class BlobIterator {
+    file = null; // browser file
+    buf;
+    bufSize = 0; // buffer content size
+    fileSize;
+    paddedSize; // total size including padding zeros
+    offset = 0;
+    batchSize;
+    constructor(file, fileSize, offset, batch, flowPadding) {
+        if (batch % DEFAULT_CHUNK_SIZE > 0) {
+            throw new Error("batch size should align with chunk size");
+        }
+        const buf = new Uint8Array(batch);
+        const chunks = numSplits(fileSize, DEFAULT_CHUNK_SIZE);
+        let paddedSize;
+        if (flowPadding) {
+            const [paddedChunks,] = computePaddedSize(chunks);
+            paddedSize = paddedChunks * DEFAULT_CHUNK_SIZE;
+        }
+        else {
+            paddedSize = chunks * DEFAULT_CHUNK_SIZE;
+        }
+        this.file = file;
+        this.buf = buf;
+        this.fileSize = fileSize;
+        this.paddedSize = paddedSize;
+        this.batchSize = batch;
+        this.offset = offset;
+    }
+    static NewSegmentIterator(file, fileSize, offset, flowPadding) {
+        return new BlobIterator(file, fileSize, offset, DEFAULT_SEGMENT_SIZE, flowPadding);
+    }
+    async readFromFile(start, end) {
+        if (start < 0 || start >= this.fileSize) {
+            throw new Error("invalid start offset");
+        }
+        if (end > this.fileSize) {
+            end = this.fileSize;
+        }
+        const buf = (await this.file?.slice(start, end).arrayBuffer());
+        const buffer = new Uint8Array(this.batchSize);
+        buffer.set(new Uint8Array(buf));
+        return {
+            bytesRead: buf.byteLength,
+            buffer
+        };
+    }
+    clearBuffer() {
+        this.bufSize = 0;
+    }
+    paddingZeros(length) {
+        const startOffset = this.bufSize;
+        this.buf = this.buf.fill(0, startOffset, startOffset + length);
+        this.bufSize += length;
+        this.offset += length;
+    }
+    async next() {
+        if (this.offset < 0 || this.offset >= this.paddedSize) {
+            return [false, null];
+        }
+        let expectedBufSize;
+        let maxAvailableLength = this.paddedSize - this.offset; // include padding zeros
+        if (maxAvailableLength >= this.batchSize) {
+            expectedBufSize = this.batchSize;
+        }
+        else {
+            expectedBufSize = maxAvailableLength;
+        }
+        this.clearBuffer();
+        if (this.offset >= this.fileSize) {
+            this.paddingZeros(expectedBufSize);
+            return [true, null];
+        }
+        const { bytesRead: n, buffer } = await this.readFromFile(this.offset, this.offset + this.batchSize);
+        this.buf = buffer;
+        this.bufSize = n;
+        this.offset += n;
+        // not reach EOF
+        if (n === expectedBufSize) {
+            return [true, null];
+        }
+        if (n > expectedBufSize) {
+            // should never happen
+            throw new Error("load more data from file than expected");
+        }
+        if (expectedBufSize > n) {
+            this.paddingZeros(expectedBufSize - n);
+        }
+        return [true, null];
+    }
+    current() {
+        return this.buf.subarray(0, this.bufSize);
+    }
+}
+
+class NodeFdIterator extends BlobIterator {
+    fd = null; // node file descriptor
+    constructor(fd, fileSize, offset, batch, flowPadding) {
+        super(null, fileSize, offset, batch, flowPadding);
+        this.fd = fd;
+    }
+    // override BlobIterator.readFromFile
+    async readFromFile(start, end) {
+        if (start < 0 || start >= this.fileSize) {
+            throw new Error("invalid start offset");
+        }
+        if (end > this.fileSize) {
+            end = this.fileSize;
+        }
+        const res = await this.fd?.read({
+            buffer: this.buf,
+            offset: this.bufSize,
+            length: end - start,
+            position: start
+        });
+        return res;
+    }
+}
+
+class AbstractFile {
+    fileSize = 0;
+    // constructor() {}
+    // split a segment into chunks and compute the root hash
+    static segmentRoot(segment, emptyChunksPadded = 0) {
+        const tree = new NHMerkleTree();
+        const dataLength = segment.length;
+        for (let offset = 0; offset < dataLength; offset += DEFAULT_CHUNK_SIZE) {
+            const chunk = segment.subarray(offset, offset + DEFAULT_CHUNK_SIZE);
+            tree.addLeaf(chunk);
+        }
+        if (emptyChunksPadded > 0) {
+            for (let i = 0; i < emptyChunksPadded; i++) {
+                tree.addLeafByHash(EMPTY_CHUNK_HASH);
+            }
+        }
+        tree.build();
+        if (tree.root !== null) {
+            return tree.rootHash();
+        }
+        return ZERO_HASH; // TODO check this
+    }
+    size() {
+        return this.fileSize;
+    }
+    iterate(flowPadding) {
+        return this.iterateWithOffsetAndBatch(0, DEFAULT_SEGMENT_SIZE, flowPadding);
+    }
+    async merkleTree() {
+        const iter = this.iterate(true);
+        const tree = new NHMerkleTree();
+        while (true) {
+            let [ok, err] = await iter.next();
+            if (err != null) {
+                return [null, err];
+            }
+            if (!ok) {
+                break;
+            }
+            const current = iter.current();
+            const segRoot = AbstractFile.segmentRoot(current);
+            tree.addLeafByHash(segRoot);
+        }
+        return [tree.build(), null];
+    }
+    numChunks() {
+        return numSplits(this.size(), DEFAULT_CHUNK_SIZE);
+    }
+    numSegments() {
+        return numSplits(this.size(), DEFAULT_SEGMENT_SIZE);
+    }
+    async createSubmission(tags) {
+        const submission = {
+            length: this.size(),
+            tags: tags,
+            nodes: []
+        };
+        const nodes = this.splitNodes();
+        let offset = 0;
+        for (let chunks of nodes) {
+            let [node, err] = await this.createNode(offset, chunks);
+            if (err != null) {
+                return [null, err];
+            }
+            submission.nodes.push(node);
+            offset += chunks * DEFAULT_CHUNK_SIZE;
+        }
+        return [submission, null];
+    }
+    splitNodes() {
+        let nodes = [];
+        let chunks = this.numChunks();
+        let [paddedChunks, chunksNextPow2] = computePaddedSize(chunks);
+        let nextChunkSize = chunksNextPow2;
+        while (paddedChunks > 0) {
+            if (paddedChunks >= nextChunkSize) {
+                paddedChunks -= nextChunkSize;
+                nodes.push(nextChunkSize);
+            }
+            nextChunkSize /= 2;
+        }
+        return nodes;
+    }
+    async createNode(offset, chunks) {
+        let batch = chunks;
+        if (chunks > DEFAULT_SEGMENT_MAX_CHUNKS) {
+            batch = DEFAULT_SEGMENT_MAX_CHUNKS;
+        }
+        return this.createSegmentNode(offset, DEFAULT_CHUNK_SIZE * batch, DEFAULT_CHUNK_SIZE * chunks);
+    }
+    async createSegmentNode(offset, batch, size) {
+        const iter = this.iterateWithOffsetAndBatch(offset, batch, true);
+        const tree = new NHMerkleTree();
+        for (let i = 0; i < size;) {
+            let [ok, err] = await iter.next();
+            if (err != null) {
+                return [null, err];
+            }
+            if (!ok) {
+                break;
+            }
+            const current = iter.current();
+            const segRoot = AbstractFile.segmentRoot(current);
+            tree.addLeafByHash(segRoot);
+            i += current.length;
+        }
+        tree.build();
+        const numChunks = size / DEFAULT_CHUNK_SIZE;
+        const height = Math.log2(numChunks);
+        const node = {
+            height: height,
+            root: tree.rootHash()
+        };
+        return [node, null];
+    }
+}
+
+class NHBlob extends AbstractFile {
+    blob = null; // @see https://developer.mozilla.org/en-US/docs/Web/API/File/File
+    fileSize = 0;
+    constructor(blob) {
+        super();
+        this.blob = blob;
+        this.fileSize = blob.size;
+    }
+    iterateWithOffsetAndBatch(offset, batch, flowPadding) {
+        return new BlobIterator(this.blob, this.size(), offset, batch, flowPadding);
+    }
+}
+
+class NHFile extends AbstractFile {
+    fd = null;
+    fileSize = 0;
+    constructor(fd, fileSize) {
+        super();
+        this.fd = fd;
+        this.fileSize = fileSize;
+    }
+    static async fromNodeFileHandle(fd) {
+        const stat = await fd.stat();
+        return new NHFile(fd, stat.size);
+    }
+    // NOTE: need manually close fd after use
+    static async fromFilePath(path) {
+        const fd = await open(path, 'r'); // if fail, throw error
+        return await NHFile.fromNodeFileHandle(fd);
+    }
+    async close() {
+        await this.fd?.close();
+    }
+    iterateWithOffsetAndBatch(offset, batch, flowPadding) {
+        return new NodeFdIterator(this.fd, this.size(), offset, batch, flowPadding);
+    }
+}
+
+export { DEFAULT_CHUNK_SIZE, DEFAULT_SEGMENT_MAX_CHUNKS, DEFAULT_SEGMENT_SIZE, EMPTY_CHUNK, EMPTY_CHUNK_HASH, Flow__factory, GetSplitNum, LeafNode, NHBlob, NHFile, NHMerkleTree, NHProofErrors, NHProvider, NeuraProof, SMALL_FILE_SIZE_THRESHOLD, TESTNET_FLOW_ADDRESS, ZERO_HASH, checkExist, computePaddedSize, index as factories, getFlowContract, nextPow2, numSplits };
