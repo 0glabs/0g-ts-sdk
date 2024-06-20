@@ -34,6 +34,11 @@ export interface FileInfo {
     isCached: boolean;
     uploadedSegNum: number;
 }
+export interface Metadata {
+    root: Hash;
+    fileSize: number;
+    offsite: number;
+}
 export declare class NHProvider extends HttpProvider {
     constructor(url: string);
     getStatus(): Promise<Status>;
@@ -43,6 +48,8 @@ export declare class NHProvider extends HttpProvider {
     downloadSegmentWithProof(root: Hash, index: number): Promise<SegmentWithProof>;
     getFileInfo(root: Hash): Promise<FileInfo | null>;
     getFileInfoByTxSeq(txSeq: number): Promise<FileInfo | null>;
+    downloadFileHelper(root: Hash, filePath: string, size: number, proof: boolean): Promise<Error | null>;
     uploadFile(file: AbstractFile, segIndex?: number): Promise<Error | null>;
+    downloadFile(root: Hash, filePath: string, proof: boolean): Promise<Error | null>;
 }
 //# sourceMappingURL=NHProvider.d.ts.map
