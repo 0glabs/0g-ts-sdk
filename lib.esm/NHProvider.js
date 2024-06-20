@@ -1,6 +1,6 @@
-import { encodeBase64 } from "ethers";
+import { decodeBase64, encodeBase64 } from "ethers";
 import { HttpProvider } from "open-jsonrpc-provider";
-import * as fs from 'fs';
+import fs from 'fs';
 import { DEFAULT_SEGMENT_SIZE, DEFAULT_SEGMENT_MAX_CHUNKS, DEFAULT_CHUNK_SIZE, } from "./constant.js";
 import { GetSplitNum, checkExist } from "./utils.js";
 export class NHProvider extends HttpProvider {
@@ -26,7 +26,7 @@ export class NHProvider extends HttpProvider {
         return res;
     }
     async downloadSegment(root, startIndex, endIndx) {
-        const seg = await super.request({
+        var seg = await super.request({
             method: 'zgs_downloadSegment',
             params: [root, startIndex, endIndx],
         });
@@ -66,6 +66,7 @@ export class NHProvider extends HttpProvider {
                 endIndex = numChunks;
             }
             var segment = await this.downloadSegment(root, startIndex, endIndex);
+            var segArray = decodeBase64(segment);
             if (segment == null) {
                 return new Error('Failed to download segment');
             }
@@ -73,10 +74,10 @@ export class NHProvider extends HttpProvider {
                 const lastChunkSize = size % DEFAULT_CHUNK_SIZE;
                 if (lastChunkSize > 0) {
                     const paddings = DEFAULT_CHUNK_SIZE - lastChunkSize;
-                    segment = segment.slice(0, segment.length - paddings);
+                    segArray = segArray.slice(0, segArray.length - paddings);
                 }
             }
-            fs.appendFileSync(filePath, segment);
+            fs.appendFileSync(filePath, segArray);
         }
         return null;
     }
@@ -145,6 +146,7 @@ export class NHProvider extends HttpProvider {
         if (checkExist(filePath)) {
             return new Error('Wrong path, provide a file path which does not exist.');
         }
+        console.log('file info:', info.tx.size);
         let err = await this.downloadFileHelper(root, filePath, info.tx.size, proof);
         return err;
     }

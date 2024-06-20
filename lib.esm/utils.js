@@ -1,19 +1,24 @@
 import { Flow__factory } from './contracts/flow/index.js';
-import * as fs from 'fs';
+import fs from 'fs';
+import path from 'path';
 export function getFlowContract(address, signer) {
     return Flow__factory.connect(address, signer);
 }
-export function checkExist(path) {
-    let statSync = fs.statSync(path);
-    if (statSync.isFile()) {
+export function checkExist(inputPath) {
+    const dirName = path.dirname(inputPath);
+    if (!fs.existsSync(dirName)) {
         return true;
     }
-    if (statSync.isDirectory()) {
+    if (fs.existsSync(inputPath) && fs.lstatSync(inputPath).isDirectory()) {
         return true;
     }
-    return false;
+    // Check if the directory exists and the file does not exist
+    if (!fs.existsSync(inputPath)) {
+        return false;
+    }
+    return true;
 }
 export function GetSplitNum(total, unit) {
-    return (total - 1) / unit + 1;
+    return Math.floor((total - 1) / unit + 1);
 }
 //# sourceMappingURL=utils.js.map

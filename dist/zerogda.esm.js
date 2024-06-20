@@ -1,4 +1,5 @@
-import * as fs from 'fs';
+import fs from 'fs';
+import path from 'path';
 import { open } from 'node:fs/promises';
 
 /* Do NOT modify this file; see /src.ts/_admin/update-version.ts */
@@ -629,6 +630,14 @@ function toBeArray(_value) {
 }
 
 // utils/base64-browser
+function decodeBase64(textData) {
+    textData = atob(textData);
+    const data = new Uint8Array(textData.length);
+    for (let i = 0; i < textData.length; i++) {
+        data[i] = textData.charCodeAt(i);
+    }
+    return getBytes(data);
+}
 function encodeBase64(_data) {
     const data = getBytes(_data);
     let textData = "";
@@ -12039,18 +12048,22 @@ var index = /*#__PURE__*/Object.freeze({
 function getFlowContract(address, signer) {
     return Flow__factory.connect(address, signer);
 }
-function checkExist(path) {
-    let statSync = fs.statSync(path);
-    if (statSync.isFile()) {
+function checkExist(inputPath) {
+    const dirName = path.dirname(inputPath);
+    if (!fs.existsSync(dirName)) {
         return true;
     }
-    if (statSync.isDirectory()) {
+    if (fs.existsSync(inputPath) && fs.lstatSync(inputPath).isDirectory()) {
         return true;
     }
-    return false;
+    // Check if the directory exists and the file does not exist
+    if (!fs.existsSync(inputPath)) {
+        return false;
+    }
+    return true;
 }
 function GetSplitNum(total, unit) {
-    return (total - 1) / unit + 1;
+    return Math.floor((total - 1) / unit + 1);
 }
 
 class NHProvider extends HttpProvider {
@@ -12076,7 +12089,7 @@ class NHProvider extends HttpProvider {
         return res;
     }
     async downloadSegment(root, startIndex, endIndx) {
-        const seg = await super.request({
+        var seg = await super.request({
             method: 'zgs_downloadSegment',
             params: [root, startIndex, endIndx],
         });
@@ -12116,6 +12129,7 @@ class NHProvider extends HttpProvider {
                 endIndex = numChunks;
             }
             var segment = await this.downloadSegment(root, startIndex, endIndex);
+            var segArray = decodeBase64(segment);
             if (segment == null) {
                 return new Error('Failed to download segment');
             }
@@ -12123,10 +12137,10 @@ class NHProvider extends HttpProvider {
                 const lastChunkSize = size % DEFAULT_CHUNK_SIZE;
                 if (lastChunkSize > 0) {
                     const paddings = DEFAULT_CHUNK_SIZE - lastChunkSize;
-                    segment = segment.slice(0, segment.length - paddings);
+                    segArray = segArray.slice(0, segArray.length - paddings);
                 }
             }
-            fs.appendFileSync(filePath, segment);
+            fs.appendFileSync(filePath, segArray);
         }
         return null;
     }
@@ -12195,6 +12209,7 @@ class NHProvider extends HttpProvider {
         if (checkExist(filePath)) {
             return new Error('Wrong path, provide a file path which does not exist.');
         }
+        console.log('file info:', info.tx.size);
         let err = await this.downloadFileHelper(root, filePath, info.tx.size, proof);
         return err;
     }

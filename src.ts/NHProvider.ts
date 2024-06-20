@@ -1,8 +1,8 @@
 import { Bytes } from "@ethersproject/bytes";
-import { encodeBase64 } from "ethers";
+import { decodeBase64, encodeBase64 } from "ethers";
 import { HttpProvider } from "open-jsonrpc-provider";
 import { AbstractFile } from "./file/AbstractFile.js";
-import * as fs from 'fs';
+import fs from 'fs';
 import {
     DEFAULT_SEGMENT_SIZE,
     DEFAULT_SEGMENT_MAX_CHUNKS,
@@ -87,7 +87,7 @@ export class NHProvider extends HttpProvider {
     }
 
     async downloadSegment(root: Hash, startIndex: number, endIndx: number): Promise<Segment> {
-        const seg = await super.request({
+        var seg = await super.request({
             method: 'zgs_downloadSegment',
             params: [root, startIndex, endIndx],
         });
@@ -133,6 +133,7 @@ export class NHProvider extends HttpProvider {
             }
             
             var segment: Segment = await this.downloadSegment(root, startIndex, endIndex);
+            var segArray = decodeBase64(segment);
 
             if (segment == null) {
                 return new Error('Failed to download segment');
@@ -142,11 +143,11 @@ export class NHProvider extends HttpProvider {
                 const lastChunkSize = size % DEFAULT_CHUNK_SIZE;
                 if (lastChunkSize > 0) {
                     const paddings = DEFAULT_CHUNK_SIZE - lastChunkSize;
-                    segment = segment.slice(0, segment.length - paddings);
+                    segArray = segArray.slice(0, segArray.length - paddings);
                 }
             }
 
-            fs.appendFileSync(filePath, segment);
+            fs.appendFileSync(filePath, segArray);
         }
         return null;
     }
