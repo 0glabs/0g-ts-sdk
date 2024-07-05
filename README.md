@@ -8,7 +8,7 @@ This is the JavaScript SDK for 0g-storage. Features include:
 - [x] File upload
 - [x] Support browser environment
 - [ ] Tests for different environments
-- [ ] File download
+- [x] File download
 
 ## Install
 
