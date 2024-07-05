@@ -1,6 +1,6 @@
-# zerog-ts-sdk
+# 0g-ts-sdk
 
-This is the JavaScript SDK for zerog-storage. Features include:
+This is the JavaScript SDK for 0g-storage. Features include:
 
 - [x] File Merkle Tree Class
 - [x] Flow Contract Types
@@ -61,7 +61,7 @@ await tx.wait();
 console.log(tx.hash);
 ```
 
-Upload file to zerog-storage:
+Upload file to 0g-storage:
 
 ```js
 import { NHProvider } from 'zerog-da-sdk';
@@ -70,6 +70,12 @@ const nhRpc = 'https://rpc-storage-testnet.0g.ai';
 const nhProvider = new NHProvider(nhRpc);
 
 await nhProvider.uploadFile(file);
+```
+
+Download file from 0g-storage
+
+```js
+await nhProvider.downloadFile(<file_root_hash>, <file_path>, false);
 ```
 
 ### Browser environment example:
