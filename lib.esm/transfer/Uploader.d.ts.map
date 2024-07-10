@@ -1,0 +1,1 @@
+{"version":3,"file":"Uploader.d.ts","sourceRoot":"","sources":["../../src.ts/transfer/Uploader.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,YAAY,EAAE,MAAM,yBAAyB,CAAC;AAMvD,OAAO,EAAE,WAAW,EAAE,MAAM,kBAAkB,CAAC;AAI/C,qBAAa,QAAQ;IACjB,IAAI,EAAE,WAAW,CAAC;gBAEN,IAAI,EAAE,WAAW;IAIvB,UAAU,CAAC,IAAI,EAAE,YAAY,EAAE,QAAQ,GAAE,MAAU,GAAG,OAAO,CAAC,KAAK,GAAG,IAAI,CAAC;CA8DpF"}
