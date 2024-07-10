@@ -34,7 +34,7 @@ export var NHProofErrors;
 })(NHProofErrors || (NHProofErrors = {}));
 // Proof represents a merkle tree proof of target content, e.g. chunk or segment of file.
 export class NeuraProof {
-    // Lemma is made up of 3 parts to keep consistent with zerog-rust:
+    // Lemma is made up of 3 parts to keep consistent with 0g-rust:
     // 1. Target content hash (leaf node).
     // 2. Hashes from bottom to top of sibling nodes.
     // 3. Root hash.

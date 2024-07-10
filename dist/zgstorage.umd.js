@@ -1,7 +1,7 @@
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('node:fs/promises')) :
 	typeof define === 'function' && define.amd ? define(['exports', 'node:fs/promises'], factory) :
-	(global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.zerogda = {}, global.promises));
+	(global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.zgstorage = {}, global.promises));
 })(this, (function (exports, promises) { 'use strict';
 
 	var fs = {};
@@ -12606,7 +12606,7 @@
 	})(exports.NHProofErrors || (exports.NHProofErrors = {}));
 	// Proof represents a merkle tree proof of target content, e.g. chunk or segment of file.
 	class NeuraProof {
-	    // Lemma is made up of 3 parts to keep consistent with zerog-rust:
+	    // Lemma is made up of 3 parts to keep consistent with 0g-rust:
 	    // 1. Target content hash (leaf node).
 	    // 2. Hashes from bottom to top of sibling nodes.
 	    // 3. Root hash.

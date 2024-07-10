@@ -1,66 +1,66 @@
-import { Bytes } from "@ethersproject/bytes";
+import { Bytes } from '@ethersproject/bytes'
 
-export type Hash = string;
+export type Hash = string
 
-export type Base64 = string;
+export type Base64 = string
 
-export type Segment = Base64;
+export type Segment = Base64
 
-export type MerkleNode = [number, Hash];
+export type MerkleNode = [number, Hash]
 
 export interface Status {
-    connectedPeers: number;
+    connectedPeers: number
 }
 
 // can direct use NeuraProof
 export interface FileProof {
-    lemma: Hash[];
-    path: boolean[];
+    lemma: Hash[]
+    path: boolean[]
 }
 
 export interface SegmentWithProof {
-    root: Hash;
-    data: Base64;
-    index: number;
-    proof: FileProof;
-    fileSize: number;
+    root: Hash
+    data: Base64
+    index: number
+    proof: FileProof
+    fileSize: number
 }
 
 export interface Transaction {
-    streamIds: BigInt[];
-    data: Bytes;  // Vec<u8>
-    dataMerkleRoot: Hash;
-    merkleNodes: MerkleNode[];
-    startEntryIndex: number;
-    size: number;
-    seq: number;
+    streamIds: BigInt[]
+    data: Bytes // Vec<u8>
+    dataMerkleRoot: Hash
+    merkleNodes: MerkleNode[]
+    startEntryIndex: number
+    size: number
+    seq: number
 }
 
 export interface FileInfo {
-    tx: Transaction;
-    finalized: boolean;
-    isCached: boolean;
-    uploadedSegNum: number;
+    tx: Transaction
+    finalized: boolean
+    isCached: boolean
+    uploadedSegNum: number
 }
 
 export interface Metadata {
-    root: Hash;
-    fileSize: number;
-    offsite: number;
+    root: Hash
+    fileSize: number
+    offsite: number
 }
 
 /**
  * StorageKV types
  */
 export interface Value {
-    version: number;
-    data: Bytes;
-    size: number;
+    version: number
+    data: Bytes
+    size: number
 }
 
 export interface KeyValue {
-    version: number;
-    data: Bytes;
-    size: number;
-    key: Bytes;
+    version: number
+    data: Bytes
+    size: number
+    key: Bytes
 }
