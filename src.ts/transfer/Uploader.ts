@@ -1,34 +1,69 @@
-import { AbstractFile } from '../file/AbstractFile.js'
 import {
     DEFAULT_SEGMENT_SIZE,
     DEFAULT_SEGMENT_MAX_CHUNKS,
     DEFAULT_CHUNK_SIZE,
+    TESTNET_FLOW_ADDRESS,
 } from '../constant.js'
-import { StorageNode } from '../node/index.js'
-import { encodeBase64 } from 'ethers'
-import { SegmentWithProof } from '../node/types.js'
+import { StorageNode, SegmentWithProof } from '../node/index.js'
+import { Flow } from '../contracts/flow/Flow.js'
+import { getFlowContract, WaitForReceipt } from '../utils.js'
+import { RetryOpts } from '../types.js'
+import { NHFile, NHMerkleTree } from '../file/index.js'
+import { encodeBase64, ethers } from 'ethers'
 
 export class Uploader {
     node: StorageNode
+    provider: ethers.JsonRpcProvider
+    flow: Flow
+    signer: ethers.Wallet
 
-    constructor(node: StorageNode) {
+    constructor(node: StorageNode, providerRpc: string, privateKey: string) {
         this.node = node
+
+        this.provider = new ethers.JsonRpcProvider(providerRpc)
+        this.signer = new ethers.Wallet(privateKey, this.provider)
+
+        this.flow = getFlowContract(TESTNET_FLOW_ADDRESS, this.signer)
     }
 
     async uploadFile(
-        file: AbstractFile,
-        segIndex: number = 0
+        file: NHFile,
+        tag: ethers.BytesLike,
+        segIndex: number = 0,
+        opts: {} = {},
+        retryOpts?: RetryOpts
     ): Promise<Error | null> {
-        const [tree, err] = await file.merkleTree()
-        if (tree == null || err != null) {
+        var [tree, err] = await file.merkleTree()
+        if (err != null || tree == null || tree.rootHash() == null) {
             return err
         }
-        /*
-            todo: check if file is already uploaded
-            1. calculate root hash of file
-            2. get file info by root hash
-            3. check file is finalized
-        */
+
+        const fileInfo = this.node.getFileInfo(tree.rootHash() as string)
+        if (fileInfo != null) {
+            return new Error('File already uploaded')
+        }
+
+        var [submission, err] = await file.createSubmission(tag)
+        if (err != null || submission == null) {
+            return err
+        }
+
+        let tx = await this.flow.submit(submission, opts)
+        await tx.wait()
+
+        let receipt = WaitForReceipt(this.provider, tx.hash, retryOpts)
+        if (receipt == null) {
+            return new Error('Failed to submit transaction')
+        }
+
+        return await this.uploadFileHelper(file, tree, segIndex)
+    }
+
+    async uploadFileHelper(
+        file: NHFile,
+        tree: NHMerkleTree,
+        segIndex: number = 0
+    ): Promise<Error | null> {
         const iter = file.iterateWithOffsetAndBatch(
             segIndex * DEFAULT_SEGMENT_SIZE,
             DEFAULT_SEGMENT_SIZE,

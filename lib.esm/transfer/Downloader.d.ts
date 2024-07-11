@@ -1,5 +1,5 @@
-import { StorageNode } from "../node/index.js";
-import { Hash } from "../node/types.js";
+import { StorageNode } from '../node/index.js';
+import { Hash } from '../node/types.js';
 export declare class Downloader {
     node: StorageNode;
     constructor(node: StorageNode);

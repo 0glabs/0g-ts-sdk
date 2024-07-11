@@ -1,7 +1,7 @@
 /// <reference types="node" />
-import { FileHandle } from "node:fs/promises";
-import { Iterator } from "./Iterator/index.js";
-import { AbstractFile } from "./AbstractFile.js";
+import { FileHandle } from 'node:fs/promises';
+import { Iterator } from './Iterator/index.js';
+import { AbstractFile } from './AbstractFile.js';
 export declare class NHFile extends AbstractFile {
     fd: FileHandle | null;
     fileSize: number;

@@ -1,5 +1,5 @@
 import { BytesLike } from 'ethers'
-import { NHMerkleTree } from '../NHMerkleTree.js'
+import { NHMerkleTree } from './NHMerkleTree.js'
 import {
     SubmissionNodeStruct,
     SubmissionStruct,

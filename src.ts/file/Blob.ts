@@ -1,7 +1,7 @@
 import { Iterator, BlobIterator } from './Iterator/index.js'
 import { AbstractFile } from './AbstractFile.js'
 
-export class NHBlob extends AbstractFile {
+export class Blob extends AbstractFile {
     blob: File | null = null // @see https://developer.mozilla.org/en-US/docs/Web/API/File/File
     fileSize: number = 0
 

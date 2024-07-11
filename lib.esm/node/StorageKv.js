@@ -1,4 +1,4 @@
-import { HttpProvider } from "open-jsonrpc-provider";
+import { HttpProvider } from 'open-jsonrpc-provider';
 export class StorageKv extends HttpProvider {
     constructor(url) {
         super({ url });

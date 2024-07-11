@@ -1,6 +1,6 @@
-import { BlobIterator } from "./Iterator/index.js";
-import { AbstractFile } from "./AbstractFile.js";
-export class NHBlob extends AbstractFile {
+import { BlobIterator } from './Iterator/index.js';
+import { AbstractFile } from './AbstractFile.js';
+export class Blob extends AbstractFile {
     blob = null; // @see https://developer.mozilla.org/en-US/docs/Web/API/File/File
     fileSize = 0;
     constructor(blob) {
@@ -12,4 +12,4 @@ export class NHBlob extends AbstractFile {
         return new BlobIterator(this.blob, this.size(), offset, batch, flowPadding);
     }
 }
-//# sourceMappingURL=NHBlob.js.map
+//# sourceMappingURL=Blob.js.map

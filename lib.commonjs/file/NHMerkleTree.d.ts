@@ -1,4 +1,4 @@
-import { type BytesLike } from "@ethersproject/bytes";
+import { type BytesLike } from '@ethersproject/bytes';
 export declare class LeafNode {
     hash: string;
     parent: LeafNode | null;

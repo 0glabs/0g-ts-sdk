@@ -1,5 +1,5 @@
-import { HttpProvider } from "open-jsonrpc-provider";
-import { FileInfo, Hash, Segment, SegmentWithProof, Status } from "./types.js";
+import { HttpProvider } from 'open-jsonrpc-provider';
+import { FileInfo, Hash, Segment, SegmentWithProof, Status } from './types.js';
 export declare class StorageNode extends HttpProvider {
     constructor(url: string);
     getStatus(): Promise<Status>;

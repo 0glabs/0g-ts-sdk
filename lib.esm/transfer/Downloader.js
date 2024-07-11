@@ -1,7 +1,7 @@
 import fs from 'fs';
-import { DEFAULT_SEGMENT_SIZE, DEFAULT_SEGMENT_MAX_CHUNKS, DEFAULT_CHUNK_SIZE, } from "../constant.js";
-import { GetSplitNum, checkExist } from "../utils.js";
-import { decodeBase64 } from "ethers";
+import { DEFAULT_SEGMENT_SIZE, DEFAULT_SEGMENT_MAX_CHUNKS, DEFAULT_CHUNK_SIZE, } from '../constant.js';
+import { GetSplitNum, checkExist } from '../utils.js';
+import { decodeBase64 } from 'ethers';
 export class Downloader {
     node;
     constructor(node) {

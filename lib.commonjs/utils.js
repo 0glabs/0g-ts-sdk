@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.GetSplitNum = exports.checkExist = exports.getFlowContract = void 0;
+exports.WaitForReceipt = exports.GetSplitNum = exports.checkExist = exports.getFlowContract = void 0;
 const tslib_1 = require("tslib");
 const index_js_1 = require("./contracts/flow/index.js");
 const fs_1 = tslib_1.__importDefault(require("fs"));
@@ -28,4 +28,22 @@ function GetSplitNum(total, unit) {
     return Math.floor((total - 1) / unit + 1);
 }
 exports.GetSplitNum = GetSplitNum;
+const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+async function WaitForReceipt(provider, txHash, opts) {
+    var receipt;
+    if (opts === undefined) {
+        opts = { Retries: 10, Interval: 5 };
+    }
+    let nTries = 0;
+    while (nTries < opts.Retries) {
+        receipt = await provider.getTransactionReceipt(txHash);
+        if (receipt !== null && receipt.status == 1) {
+            return receipt;
+        }
+        await delay(opts.Interval * 1000);
+        nTries++;
+    }
+    return null;
+}
+exports.WaitForReceipt = WaitForReceipt;
 //# sourceMappingURL=utils.js.map

@@ -1,9 +1,6 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.NHMerkleTree = exports.NeuraProof = exports.NHProofErrors = exports.LeafNode = void 0;
-const keccak256_1 = require("@ethersproject/keccak256");
-const bytes_1 = require("@ethersproject/bytes");
-class LeafNode {
+import { keccak256 } from '@ethersproject/keccak256';
+import { hexConcat } from '@ethersproject/bytes';
+export class LeafNode {
     hash; // hex string
     parent = null;
     left = null;
@@ -13,7 +10,7 @@ class LeafNode {
     }
     // content should be a hex string
     static fromContent(content) {
-        return new LeafNode((0, keccak256_1.keccak256)(content));
+        return new LeafNode(keccak256(content));
     }
     static fromLeftAndRight(left, right) {
         const node = new LeafNode(keccak256Hash(left.hash, right.hash));
@@ -27,18 +24,17 @@ class LeafNode {
         return this.parent !== null && this.parent.left === this;
     }
 }
-exports.LeafNode = LeafNode;
-var NHProofErrors;
+export var NHProofErrors;
 (function (NHProofErrors) {
     NHProofErrors["WRONG_FORMAT"] = "invalid merkle proof format";
     NHProofErrors["ROOT_MISMATCH"] = "merkle proof root mismatch";
     NHProofErrors["CONTENT_MISMATCH"] = "merkle proof content mismatch";
     NHProofErrors["POSITION_MISMATCH"] = "merkle proof position mismatch";
     NHProofErrors["VALIDATION_FAILURE"] = "failed to validate merkle proof";
-})(NHProofErrors || (exports.NHProofErrors = NHProofErrors = {}));
+})(NHProofErrors || (NHProofErrors = {}));
 // Proof represents a merkle tree proof of target content, e.g. chunk or segment of file.
-class NeuraProof {
-    // Lemma is made up of 3 parts to keep consistent with 0g-rust:
+export class NeuraProof {
+    // Lemma is made up of 3 parts to keep consistent with zerog-rust:
     // 1. Target content hash (leaf node).
     // 2. Hashes from bottom to top of sibling nodes.
     // 3. Root hash.
@@ -64,7 +60,7 @@ class NeuraProof {
         return null;
     }
     validate(rootHash, content, position, numLeafNodes) {
-        const contentHash = (0, keccak256_1.keccak256)(content);
+        const contentHash = keccak256(content);
         return this.validateHash(rootHash, contentHash, position, numLeafNodes);
     }
     validateHash(rootHash, contentHash, position, numLeafNodes) {
@@ -75,7 +71,8 @@ class NeuraProof {
         if (contentHash !== this.lemma[0]) {
             return NHProofErrors.CONTENT_MISMATCH;
         }
-        if (this.lemma.length > 1 && rootHash !== this.lemma[this.lemma.length - 1]) {
+        if (this.lemma.length > 1 &&
+            rootHash !== this.lemma[this.lemma.length - 1]) {
             return NHProofErrors.ROOT_MISMATCH;
         }
         const proofPosition = this.calculateProofPosition(numLeafNodes);
@@ -118,8 +115,7 @@ class NeuraProof {
         return position;
     }
 }
-exports.NeuraProof = NeuraProof;
-class NHMerkleTree {
+export class NHMerkleTree {
     root = null;
     leaves = [];
     constructor(root = null, leaves = []) {
@@ -198,8 +194,7 @@ class NHMerkleTree {
         return this;
     }
 }
-exports.NHMerkleTree = NHMerkleTree;
 function keccak256Hash(...hashes) {
-    return (0, keccak256_1.keccak256)((0, bytes_1.hexConcat)(hashes));
+    return keccak256(hexConcat(hashes));
 }
 //# sourceMappingURL=NHMerkleTree.js.map

@@ -21,4 +21,21 @@ export function checkExist(inputPath) {
 export function GetSplitNum(total, unit) {
     return Math.floor((total - 1) / unit + 1);
 }
+const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+export async function WaitForReceipt(provider, txHash, opts) {
+    var receipt;
+    if (opts === undefined) {
+        opts = { Retries: 10, Interval: 5 };
+    }
+    let nTries = 0;
+    while (nTries < opts.Retries) {
+        receipt = await provider.getTransactionReceipt(txHash);
+        if (receipt !== null && receipt.status == 1) {
+            return receipt;
+        }
+        await delay(opts.Interval * 1000);
+        nTries++;
+    }
+    return null;
+}
 //# sourceMappingURL=utils.js.map

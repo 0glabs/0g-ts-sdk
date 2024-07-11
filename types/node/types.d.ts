@@ -1,4 +1,4 @@
-import { Bytes } from "@ethersproject/bytes";
+import { Bytes } from '@ethersproject/bytes';
 export type Hash = string;
 export type Base64 = string;
 export type Segment = Base64;
