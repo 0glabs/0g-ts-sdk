@@ -17,7 +17,8 @@ export class Uploader {
         if (err != null || tree == null || tree.rootHash() == null) {
             return err;
         }
-        const fileInfo = this.node.getFileInfo(tree.rootHash());
+        const fileInfo = await this.node.getFileInfo(tree.rootHash());
+        console.log('fileInfo', fileInfo);
         if (fileInfo != null) {
             return new Error('File already uploaded');
         }

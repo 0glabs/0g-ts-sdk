@@ -13,7 +13,7 @@ This is the JavaScript SDK for 0g-storage. Features include:
 ## Install
 
 ```sh
-npm install 0g-da-sdk ethers
+npm install 0g-ts-sdk ethers
 ```
 
 `ethers` is a peer dependency of this project.
@@ -25,7 +25,7 @@ npm install 0g-da-sdk ethers
 Use `NHFile` to create a file object, then call `merkleTree` method to get the merkle tree of the file.
 
 ```js
-import { NHFile } from '0g-da-sdk';
+import { NHFile } from '0g-ts-sdk';
 
 const file = await NHFile.fromFilePath('path/to/file');
 const [tree, err] = await file.merkleTree();
@@ -38,7 +38,7 @@ await file.close();
 Create and submit submission:
 
 ```js
-import { getFlowContract, TESTNET_FLOW_ADDRESS } from '0g-da-sdk';
+import { getFlowContract, TESTNET_FLOW_ADDRESS } from '0g-ts-sdk';
 import { ethers } from 'ethers';
 
 // create ethers signer from private key and rpc endpoint
@@ -64,7 +64,7 @@ console.log(tx.hash);
 Upload file to 0g-storage:
 
 ```js
-import { NHProvider } from '0g-da-sdk';
+import { NHProvider } from '0g-ts-sdk';
 
 const nhRpc = 'https://rpc-storage-testnet.0g.ai';
 const nhProvider = new NHProvider(nhRpc);
@@ -104,7 +104,7 @@ Create and submit submission:
 ```js
 // create ethers signer from private key and rpc endpoint
 import { BrowserProvider } from 'ethers';  // or from ethers.js url
-import { getFlowContract, TESTNET_FLOW_ADDRESS } from '0g-da-sdk';
+import { getFlowContract, TESTNET_FLOW_ADDRESS } from '0g-ts-sdk';
 let provider = new BrowserProvider(window.ethereum) // metamask need to be installed
 let signer = await provider.getSigner();
 
