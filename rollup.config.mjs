@@ -9,7 +9,7 @@ export default [
     {
         input: 'lib.esm/index.js',
         output: {
-            file: 'dist/zerogda.esm.js',
+            file: 'dist/zgstorage.esm.js',
             format: 'esm'
         },
         treeshake: true,
@@ -21,9 +21,9 @@ export default [
     {
         input: 'lib.esm/index.js',
         output: {
-            file: 'dist/zerogda.umd.js',
+            file: 'dist/zgstorage.umd.js',
             format: 'umd',
-            name: 'zerogda'
+            name: 'zgstorage'
         },
         treeshake: true,
         plugins: [

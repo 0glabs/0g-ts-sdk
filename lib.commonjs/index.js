@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
-tslib_1.__exportStar(require("./NHProvider.js"), exports);
-tslib_1.__exportStar(require("./NHMerkleTree.js"), exports);
+tslib_1.__exportStar(require("./transfer/index.js"), exports);
+tslib_1.__exportStar(require("./node/index.js"), exports);
 tslib_1.__exportStar(require("./file/index.js"), exports);
 tslib_1.__exportStar(require("./contracts/flow/index.js"), exports);
 tslib_1.__exportStar(require("./utils.js"), exports);

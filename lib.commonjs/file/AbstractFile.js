@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AbstractFile = void 0;
-const NHMerkleTree_js_1 = require("../NHMerkleTree.js");
+const NHMerkleTree_js_1 = require("./NHMerkleTree.js");
 const constant_js_1 = require("../constant.js");
 const utils_js_1 = require("./utils.js");
 class AbstractFile {
@@ -59,7 +59,7 @@ class AbstractFile {
         const submission = {
             length: this.size(),
             tags: tags,
-            nodes: []
+            nodes: [],
         };
         const nodes = this.splitNodes();
         let offset = 0;
@@ -115,7 +115,7 @@ class AbstractFile {
         const height = Math.log2(numChunks);
         const node = {
             height: height,
-            root: tree.rootHash()
+            root: tree.rootHash(),
         };
         return [node, null];
     }

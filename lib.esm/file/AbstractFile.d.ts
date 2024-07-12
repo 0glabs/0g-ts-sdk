@@ -1,7 +1,7 @@
-import { BytesLike } from "ethers";
-import { NHMerkleTree } from "../NHMerkleTree.js";
-import { SubmissionNodeStruct, SubmissionStruct } from "../contracts/flow/Flow.js";
-import { Iterator } from "./Iterator/index.js";
+import { BytesLike } from 'ethers';
+import { NHMerkleTree } from './NHMerkleTree.js';
+import { SubmissionNodeStruct, SubmissionStruct } from '../contracts/flow/Flow.js';
+import { Iterator } from './Iterator/index.js';
 export declare abstract class AbstractFile {
     fileSize: number;
     static segmentRoot(segment: Uint8Array, emptyChunksPadded?: number): string;

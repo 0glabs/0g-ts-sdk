@@ -1,6 +1,6 @@
-import { NHMerkleTree } from "../NHMerkleTree.js";
-import { DEFAULT_CHUNK_SIZE, DEFAULT_SEGMENT_SIZE, DEFAULT_SEGMENT_MAX_CHUNKS, EMPTY_CHUNK_HASH, ZERO_HASH, } from "../constant.js";
-import { computePaddedSize, numSplits } from "./utils.js";
+import { NHMerkleTree } from './NHMerkleTree.js';
+import { DEFAULT_CHUNK_SIZE, DEFAULT_SEGMENT_SIZE, DEFAULT_SEGMENT_MAX_CHUNKS, EMPTY_CHUNK_HASH, ZERO_HASH, } from '../constant.js';
+import { computePaddedSize, numSplits } from './utils.js';
 export class AbstractFile {
     fileSize = 0;
     // constructor() {}
@@ -56,7 +56,7 @@ export class AbstractFile {
         const submission = {
             length: this.size(),
             tags: tags,
-            nodes: []
+            nodes: [],
         };
         const nodes = this.splitNodes();
         let offset = 0;
@@ -112,7 +112,7 @@ export class AbstractFile {
         const height = Math.log2(numChunks);
         const node = {
             height: height,
-            root: tree.rootHash()
+            root: tree.rootHash(),
         };
         return [node, null];
     }

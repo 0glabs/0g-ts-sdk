@@ -1,7 +1,7 @@
-import { keccak256 } from "@ethersproject/keccak256";
-export const TESTNET_FLOW_ADDRESS = '0xb8F03061969da6Ad38f0a4a9f8a86bE71dA3c8E7';
+import { keccak256 } from '@ethersproject/keccak256';
+export const TESTNET_FLOW_ADDRESS = '0x8873cc79c5b3b5666535C825205C9a128B1D75F1';
 // not used anymore
-// export const TESTNET_USDT_ADDRESS = '0xe3a700dF2a8bEBeF2f0B1eE92f46d230b01401B1'; 
+// export const TESTNET_USDT_ADDRESS = '0xe3a700dF2a8bEBeF2f0B1eE92f46d230b01401B1';
 export const DEFAULT_CHUNK_SIZE = 256; // bytes
 export const DEFAULT_SEGMENT_MAX_CHUNKS = 1024;
 export const DEFAULT_SEGMENT_SIZE = DEFAULT_CHUNK_SIZE * DEFAULT_SEGMENT_MAX_CHUNKS;

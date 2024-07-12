@@ -1,6 +1,6 @@
-import { open } from "node:fs/promises";
-import { NodeFdIterator } from "./Iterator/index.js";
-import { AbstractFile } from "./AbstractFile.js";
+import { open } from 'node:fs/promises';
+import { NodeFdIterator } from './Iterator/index.js';
+import { AbstractFile } from './AbstractFile.js';
 export class NHFile extends AbstractFile {
     fd = null;
     fileSize = 0;

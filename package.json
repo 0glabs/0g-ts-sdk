@@ -1,7 +1,7 @@
 {
-  "name": "zerog-da-sdk",
+  "name": "0g-storage-sdk",
   "version": "0.1.0",
-  "description": "JS SDK for 0G DA",
+  "description": "JS SDK for 0G Storage",
   "main": "./lib.commonjs/index.js",
   "exports": {
     "require": "./lib.commonjs/index.js",
@@ -11,9 +11,10 @@
   "packageManager": "pnpm@8.7.1",
   "browser": {},
   "scripts": {
+    "format": "prettier --write src.ts/**/*.ts src.ts/*.ts",
     "test": "jest",
-    "_build-dist": "rollup -c && uglifyjs ./dist/zerogda.esm.js -o ./dist/zerogda.esm.min.js && uglifyjs ./dist/zerogda.umd.js -o ./dist/zerogda.umd.min.js",
-    "_dist-stats": "gzip -k9f -S '.gz' ./dist/zerogda.esm.min.js && gzip -k9f -S '.gz' ./dist/zerogda.umd.min.js && du -hs ./dist/*.gz && echo '' && du -hs ./dist/*.js",
+    "_build-dist": "rollup -c && uglifyjs ./dist/zgstorage.esm.js -o ./dist/zgstorage.esm.min.js && uglifyjs ./dist/zgstorage.umd.js -o ./dist/zgstorage.umd.min.js",
+    "_dist-stats": "gzip -k9f -S '.gz' ./dist/zgstorage.esm.min.js && gzip -k9f -S '.gz' ./dist/zgstorage.umd.min.js && du -hs ./dist/*.gz && echo '' && du -hs ./dist/*.js",
     "clean": "rm -rf dist lib.esm lib.commonjs types",
     "build-dist": "npm run build-esm && npm run _build-dist && npm run _dist-stats",
     "build-esm": "tsc --project tsconfig.esm.json",

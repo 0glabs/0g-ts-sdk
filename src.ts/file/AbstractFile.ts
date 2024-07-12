@@ -1,161 +1,192 @@
-import { BytesLike } from "ethers";
-import { NHMerkleTree } from "../NHMerkleTree.js";
-import { SubmissionNodeStruct, SubmissionStruct } from "../contracts/flow/Flow.js";
-import { Iterator } from "./Iterator/index.js";
-import { 
-    DEFAULT_CHUNK_SIZE, 
-    DEFAULT_SEGMENT_SIZE, 
-    DEFAULT_SEGMENT_MAX_CHUNKS, 
+import { BytesLike } from 'ethers'
+import { NHMerkleTree } from './NHMerkleTree.js'
+import {
+    SubmissionNodeStruct,
+    SubmissionStruct,
+} from '../contracts/flow/Flow.js'
+import { Iterator } from './Iterator/index.js'
+import {
+    DEFAULT_CHUNK_SIZE,
+    DEFAULT_SEGMENT_SIZE,
+    DEFAULT_SEGMENT_MAX_CHUNKS,
     EMPTY_CHUNK_HASH,
     ZERO_HASH,
-} from "../constant.js";
-import { computePaddedSize, numSplits } from "./utils.js";
+} from '../constant.js'
+import { computePaddedSize, numSplits } from './utils.js'
 
 export abstract class AbstractFile {
-    fileSize: number = 0;
+    fileSize: number = 0
 
     // constructor() {}
 
     // split a segment into chunks and compute the root hash
-    static segmentRoot(segment: Uint8Array, emptyChunksPadded: number = 0): string {
-        const tree = new NHMerkleTree();
-    
-        const dataLength = segment.length;
-        for (let offset = 0; offset < dataLength; offset += DEFAULT_CHUNK_SIZE) {
-            const chunk = segment.subarray(offset, offset + DEFAULT_CHUNK_SIZE);
-            tree.addLeaf(chunk);
+    static segmentRoot(
+        segment: Uint8Array,
+        emptyChunksPadded: number = 0
+    ): string {
+        const tree = new NHMerkleTree()
+
+        const dataLength = segment.length
+        for (
+            let offset = 0;
+            offset < dataLength;
+            offset += DEFAULT_CHUNK_SIZE
+        ) {
+            const chunk = segment.subarray(offset, offset + DEFAULT_CHUNK_SIZE)
+            tree.addLeaf(chunk)
         }
-    
+
         if (emptyChunksPadded > 0) {
             for (let i = 0; i < emptyChunksPadded; i++) {
-                tree.addLeafByHash(EMPTY_CHUNK_HASH);
+                tree.addLeafByHash(EMPTY_CHUNK_HASH)
             }
         }
-    
-        tree.build();
+
+        tree.build()
         if (tree.root !== null) {
-            return tree.rootHash() as string;
+            return tree.rootHash() as string
         }
-    
-        return ZERO_HASH; // TODO check this
+
+        return ZERO_HASH // TODO check this
     }
 
     size(): number {
-        return this.fileSize;
+        return this.fileSize
     }
 
     iterate(flowPadding: boolean): Iterator {
-        return this.iterateWithOffsetAndBatch(0, DEFAULT_SEGMENT_SIZE, flowPadding);
+        return this.iterateWithOffsetAndBatch(
+            0,
+            DEFAULT_SEGMENT_SIZE,
+            flowPadding
+        )
     }
 
-    abstract iterateWithOffsetAndBatch(offset: number, batch: number, flowPadding: boolean): Iterator;
+    abstract iterateWithOffsetAndBatch(
+        offset: number,
+        batch: number,
+        flowPadding: boolean
+    ): Iterator
 
     async merkleTree(): Promise<[NHMerkleTree | null, Error | null]> {
-        const iter = this.iterate(true);
-        const tree = new NHMerkleTree();
+        const iter = this.iterate(true)
+        const tree = new NHMerkleTree()
 
         while (true) {
-            let [ok, err] = await iter.next();
+            let [ok, err] = await iter.next()
             if (err != null) {
-                return [null, err];
+                return [null, err]
             }
 
             if (!ok) {
-                break;
+                break
             }
-            const current = iter.current();
+            const current = iter.current()
             const segRoot = AbstractFile.segmentRoot(current)
 
             tree.addLeafByHash(segRoot)
         }
 
-        return [tree.build(), null];
+        return [tree.build(), null]
     }
 
     numChunks(): number {
-        return numSplits(this.size(), DEFAULT_CHUNK_SIZE);
+        return numSplits(this.size(), DEFAULT_CHUNK_SIZE)
     }
 
     numSegments(): number {
-        return numSplits(this.size(), DEFAULT_SEGMENT_SIZE);
+        return numSplits(this.size(), DEFAULT_SEGMENT_SIZE)
     }
 
-    async createSubmission(tags: BytesLike): Promise<[SubmissionStruct|null, Error|null]> {
+    async createSubmission(
+        tags: BytesLike
+    ): Promise<[SubmissionStruct | null, Error | null]> {
         const submission: SubmissionStruct = {
             length: this.size(),
-            tags:   tags,
-            nodes: []
+            tags: tags,
+            nodes: [],
         }
 
-        const nodes = this.splitNodes();
-        let offset = 0;
+        const nodes = this.splitNodes()
+        let offset = 0
         for (let chunks of nodes) {
             let [node, err] = await this.createNode(offset, chunks)
             if (err != null) {
                 return [null, err]
             }
-            submission.nodes.push(node as SubmissionNodeStruct);
+            submission.nodes.push(node as SubmissionNodeStruct)
             offset += chunks * DEFAULT_CHUNK_SIZE
         }
-    
-        return [submission, null];
+
+        return [submission, null]
     }
 
     splitNodes(): number[] {
-        let nodes: number[] = [];
+        let nodes: number[] = []
 
-        let chunks = this.numChunks();
-        let [paddedChunks, chunksNextPow2] = computePaddedSize(chunks);
-        let nextChunkSize = chunksNextPow2;
+        let chunks = this.numChunks()
+        let [paddedChunks, chunksNextPow2] = computePaddedSize(chunks)
+        let nextChunkSize = chunksNextPow2
 
         while (paddedChunks > 0) {
             if (paddedChunks >= nextChunkSize) {
-                paddedChunks -= nextChunkSize;
-                nodes.push(nextChunkSize);
+                paddedChunks -= nextChunkSize
+                nodes.push(nextChunkSize)
             }
             nextChunkSize /= 2
         }
-        return nodes;
+        return nodes
     }
 
-    async createNode(offset: number, chunks: number): Promise<[SubmissionNodeStruct|null, Error|null]> {
+    async createNode(
+        offset: number,
+        chunks: number
+    ): Promise<[SubmissionNodeStruct | null, Error | null]> {
         let batch = chunks
         if (chunks > DEFAULT_SEGMENT_MAX_CHUNKS) {
             batch = DEFAULT_SEGMENT_MAX_CHUNKS
         }
 
-        return this.createSegmentNode(offset, DEFAULT_CHUNK_SIZE*batch, DEFAULT_CHUNK_SIZE*chunks)
+        return this.createSegmentNode(
+            offset,
+            DEFAULT_CHUNK_SIZE * batch,
+            DEFAULT_CHUNK_SIZE * chunks
+        )
     }
 
-    async createSegmentNode(offset: number, batch: number, size: number): Promise<[SubmissionNodeStruct|null, Error|null]> {
-        const iter = this.iterateWithOffsetAndBatch(offset, batch, true);
-        const tree = new NHMerkleTree();
+    async createSegmentNode(
+        offset: number,
+        batch: number,
+        size: number
+    ): Promise<[SubmissionNodeStruct | null, Error | null]> {
+        const iter = this.iterateWithOffsetAndBatch(offset, batch, true)
+        const tree = new NHMerkleTree()
 
-        for(let i = 0; i < size; ) {
-            let [ok, err] = await iter.next();
+        for (let i = 0; i < size; ) {
+            let [ok, err] = await iter.next()
             if (err != null) {
-                return [null, err];
+                return [null, err]
             }
             if (!ok) {
-                break;
+                break
             }
 
-            const current = iter.current();
+            const current = iter.current()
             const segRoot = AbstractFile.segmentRoot(current)
             tree.addLeafByHash(segRoot)
-            i += current.length;
+            i += current.length
         }
 
-        tree.build();
+        tree.build()
 
-        const numChunks = size / DEFAULT_CHUNK_SIZE;
-        const height = Math.log2(numChunks);
+        const numChunks = size / DEFAULT_CHUNK_SIZE
+        const height = Math.log2(numChunks)
 
         const node: SubmissionNodeStruct = {
             height: height,
-            root: tree.rootHash() as string
+            root: tree.rootHash() as string,
         }
 
-        return [node, null];
+        return [node, null]
     }
 }
