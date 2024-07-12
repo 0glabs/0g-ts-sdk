@@ -5,9 +5,9 @@ import {
     DEFAULT_CHUNK_SIZE,
 } from '../constant.js'
 import { GetSplitNum, checkExist } from '../utils.js'
-import { StorageNode } from '../node/index.js'
+import { StorageNode, Segment } from '../node/index.js'
 import { decodeBase64 } from 'ethers'
-import { Hash, Segment } from '../node/types.js'
+import { Hash } from '../types.js'
 
 export class Downloader {
     node: StorageNode

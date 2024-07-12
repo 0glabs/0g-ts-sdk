@@ -1,6 +1,5 @@
 import { Bytes } from '@ethersproject/bytes';
-export type Hash = string;
-export type Base64 = string;
+import { Base64, Hash } from '../types';
 export type Segment = Base64;
 export type MerkleNode = [number, Hash];
 export interface Status {
@@ -50,5 +49,13 @@ export interface KeyValue {
     data: Bytes;
     size: number;
     key: Bytes;
+}
+export interface ShardedNode {
+    url: string;
+    config: ShardConfig;
+}
+export interface ShardConfig {
+    shardId: number;
+    numShard: number;
 }
 //# sourceMappingURL=types.d.ts.map

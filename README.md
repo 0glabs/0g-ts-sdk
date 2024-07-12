@@ -35,47 +35,35 @@ if (err === null) {
 await file.close();
 ```
 
-Create and submit submission:
-
-```js
-import { getFlowContract, TESTNET_FLOW_ADDRESS } from '0g-ts-sdk';
-import { ethers } from 'ethers';
-
-// create ethers signer from private key and rpc endpoint
-const rpc = 'https://rpc-testnet.0g.ai';
-const provider = new ethers.JsonRpcProvider(rpc);
-const privateKey = 'your-private-key'; // with balance to pay for gas
-const signer = new ethers.Wallet(privateKey, provider);
-
-// get flow contract instance
-const flowContract = getFlowContract(TESTNET_FLOW_ADDRESS, signer);
-
-const tagBytes = '0x';
-const [submission, err] = await file.createSubmission(tagBytes); // check previous example for file
-if (err != null) {
-    console.log('create submission error: ', err);
-    return;
-}
-let tx = await flowContract.submit(submission);
-await tx.wait();
-console.log(tx.hash);
-```
-
 Upload file to 0g-storage:
 
 ```js
-import { NHProvider } from '0g-ts-sdk';
+import { StorageNode, Uploader } from "0g-ts-sdk";
+import { ethers } from 'ethers';
+
+const evmRpc = 'https://rpc-testnet.0g.ai';
+const provider = new ethers.JsonRpcProvider(evmRpc);
+const privateKey = ''; // with balance to pay for gas
 
 const nhRpc = 'https://rpc-storage-testnet.0g.ai';
-const nhProvider = new NHProvider(nhRpc);
+const node = new StorageNode(nhRpc);
+const uploader = new Uploader(node, evmRpc, privateKey);
 
-await nhProvider.uploadFile(file);
+err = await uploader.uploadFile(file, '0x', 0, {value: ethers.parseEther('0.1'), gasLimit: 1000000});
+if (err === null) {
+  console.log("File uploaded successfully");
+} else {
+  console.log("Error uploading file: ", err);
+}
 ```
 
 Download file from 0g-storage
 
 ```js
-await nhProvider.downloadFile(<file_root_hash>, <file_path>, false);
+import { Downloader } from "0g-ts-sdk";
+
+const downloader = new Downloader(node)
+await downloader.downloadFile(<file_root_hash>, <file_path>, false);
 ```
 
 ### Browser environment example:
@@ -84,7 +72,7 @@ Import `zgstorage.esm.js` in your html file:
 
 ```html
 <script type="module">
-  import { NHBlob, NHProvider, getFlowContract } from "./dist/zgstorage.esm.js";
+  import { Blob, NHProvider, getFlowContract } from "./dist/zgstorage.esm.js";
   // Your code here...
 </script>
 ```
@@ -92,37 +80,20 @@ Import `zgstorage.esm.js` in your html file:
 Create file object from blob:
 
 ```js
-const file = new NHBlob(blob);
+const file = new Blob(blob);
 const [tree, err] = await file.merkleTree();
 if (err === null) {
   console.log("File Root Hash: ", tree.rootHash());
 }
 ```
 
-Create and submit submission:
+File upload is same with node.js environment with the following provider change
 
 ```js
-// create ethers signer from private key and rpc endpoint
 import { BrowserProvider } from 'ethers';  // or from ethers.js url
-import { getFlowContract, TESTNET_FLOW_ADDRESS } from '0g-ts-sdk';
+
 let provider = new BrowserProvider(window.ethereum) // metamask need to be installed
-let signer = await provider.getSigner();
-
-// get flow contract instance
-const flowContract = getFlowContract(TESTNET_FLOW_ADDRESS, signer);
-
-const tagBytes = '0x';
-const [submission, err] = await file.createSubmission(tagBytes); // check previous example for file
-if (err != null) {
-    console.log('create submission error: ', err);
-    return;
-}
-let tx = await flowContract.submit(submission);
-await tx.wait();
-console.log(tx.hash);
 ```
-
-File upload is same with node.js environment.
 
 Check codes in [examples](./examples) for more details.
 

@@ -1,6 +1,13 @@
 import { HttpProvider } from 'open-jsonrpc-provider'
 
-import { FileInfo, Hash, Segment, SegmentWithProof, Status } from './types.js'
+import {
+    FileInfo,
+    Segment,
+    SegmentWithProof,
+    ShardConfig,
+    Status,
+} from './types.js'
+import { Hash } from '../types.js'
 
 export class StorageNode extends HttpProvider {
     constructor(url: string) {
@@ -65,5 +72,12 @@ export class StorageNode extends HttpProvider {
             params: [txSeq],
         })
         return info as FileInfo | null
+    }
+
+    async getShardConfig(): Promise<ShardConfig> {
+        const config = await super.request({
+            method: 'zgs_getShardConfig',
+        })
+        return config as ShardConfig
     }
 }

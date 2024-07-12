@@ -26098,6 +26098,12 @@ class StorageNode extends HttpProvider {
         });
         return info;
     }
+    async getShardConfig() {
+        const config = await super.request({
+            method: 'zgs_getShardConfig',
+        });
+        return config;
+    }
 }
 
 class StorageKv extends HttpProvider {

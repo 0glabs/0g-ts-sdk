@@ -49,5 +49,11 @@ export class StorageNode extends HttpProvider {
         });
         return info;
     }
+    async getShardConfig() {
+        const config = await super.request({
+            method: 'zgs_getShardConfig',
+        });
+        return config;
+    }
 }
 //# sourceMappingURL=StorageNode.js.map

@@ -1,6 +1,7 @@
 import { HttpProvider } from 'open-jsonrpc-provider'
 import { Bytes } from '@ethersproject/bytes'
-import { Hash, KeyValue, Value } from './types'
+import { KeyValue, Value } from './types'
+import { Hash } from '../types'
 
 export class StorageKv extends HttpProvider {
     constructor(url: string) {

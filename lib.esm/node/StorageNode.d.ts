@@ -1,5 +1,6 @@
 import { HttpProvider } from 'open-jsonrpc-provider';
-import { FileInfo, Hash, Segment, SegmentWithProof, Status } from './types.js';
+import { FileInfo, Segment, SegmentWithProof, ShardConfig, Status } from './types.js';
+import { Hash } from '../types.js';
 export declare class StorageNode extends HttpProvider {
     constructor(url: string);
     getStatus(): Promise<Status>;
@@ -9,5 +10,6 @@ export declare class StorageNode extends HttpProvider {
     downloadSegmentWithProof(root: Hash, index: number): Promise<SegmentWithProof>;
     getFileInfo(root: Hash): Promise<FileInfo | null>;
     getFileInfoByTxSeq(txSeq: number): Promise<FileInfo | null>;
+    getShardConfig(): Promise<ShardConfig>;
 }
 //# sourceMappingURL=StorageNode.d.ts.map
