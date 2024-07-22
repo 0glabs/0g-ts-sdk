@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AbstractFile = void 0;
-const NHMerkleTree_js_1 = require("./NHMerkleTree.js");
+const MerkleTree_js_1 = require("./MerkleTree.js");
 const constant_js_1 = require("../constant.js");
 const utils_js_1 = require("./utils.js");
 class AbstractFile {
@@ -9,7 +9,7 @@ class AbstractFile {
     // constructor() {}
     // split a segment into chunks and compute the root hash
     static segmentRoot(segment, emptyChunksPadded = 0) {
-        const tree = new NHMerkleTree_js_1.NHMerkleTree();
+        const tree = new MerkleTree_js_1.MerkleTree();
         const dataLength = segment.length;
         for (let offset = 0; offset < dataLength; offset += constant_js_1.DEFAULT_CHUNK_SIZE) {
             const chunk = segment.subarray(offset, offset + constant_js_1.DEFAULT_CHUNK_SIZE);
@@ -34,7 +34,7 @@ class AbstractFile {
     }
     async merkleTree() {
         const iter = this.iterate(true);
-        const tree = new NHMerkleTree_js_1.NHMerkleTree();
+        const tree = new MerkleTree_js_1.MerkleTree();
         while (true) {
             let [ok, err] = await iter.next();
             if (err != null) {
@@ -96,7 +96,7 @@ class AbstractFile {
     }
     async createSegmentNode(offset, batch, size) {
         const iter = this.iterateWithOffsetAndBatch(offset, batch, true);
-        const tree = new NHMerkleTree_js_1.NHMerkleTree();
+        const tree = new MerkleTree_js_1.MerkleTree();
         for (let i = 0; i < size;) {
             let [ok, err] = await iter.next();
             if (err != null) {

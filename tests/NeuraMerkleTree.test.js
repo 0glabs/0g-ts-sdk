@@ -1,4 +1,4 @@
-const { NHMerkleTree, LeafNode } = require('../lib.commonjs/NHMerkleTree.js');
+const { MerkleTree, LeafNode } = require('../lib.commonjs/MerkleTree.js');
 
 test("Node.fromLeftAndRight", () => {
     const left = LeafNode.fromContent(createChunkData(0));
@@ -67,7 +67,7 @@ function createChunkData(i) {
 }
 
 function createTreeByChunks(chunks) {
-    const builder = new NHMerkleTree();
+    const builder = new MerkleTree();
 
     for(let i = 0; i < chunks; i++) {
         builder.addLeaf(createChunkData(i));
@@ -77,10 +77,10 @@ function createTreeByChunks(chunks) {
 }
 
 function calculateRootBySegments(chunks, chunksPerSegment) {
-    const builder = new NHMerkleTree();
+    const builder = new MerkleTree();
 
     for (let i = 0; i < chunks; i += chunksPerSegment) {
-        const segBuilder = new NHMerkleTree();
+        const segBuilder = new ;
 
         for (let j = 0; j < chunksPerSegment; j++) {
             const index = i + j;

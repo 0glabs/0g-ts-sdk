@@ -30,7 +30,7 @@ export class LeafNode {
     }
 }
 
-export enum NHProofErrors {
+export enum ProofErrors {
     WRONG_FORMAT = 'invalid merkle proof format',
     ROOT_MISMATCH = 'merkle proof root mismatch',
     CONTENT_MISMATCH = 'merkle proof content mismatch',
@@ -39,7 +39,7 @@ export enum NHProofErrors {
 }
 
 // Proof represents a merkle tree proof of target content, e.g. chunk or segment of file.
-export class NeuraProof {
+export class Proof {
     // Lemma is made up of 3 parts to keep consistent with zerog-rust:
     // 1. Target content hash (leaf node).
     // 2. Hashes from bottom to top of sibling nodes.
@@ -55,18 +55,18 @@ export class NeuraProof {
         this.path = path
     }
 
-    validateFormat(): NHProofErrors | null {
+    validateFormat(): ProofErrors | null {
         const numSiblings = this.path.length
 
         if (numSiblings === 0) {
             if (this.lemma.length !== 1) {
-                return NHProofErrors.WRONG_FORMAT
+                return ProofErrors.WRONG_FORMAT
             }
             return null
         }
 
         if (numSiblings + 2 !== this.lemma.length) {
-            return NHProofErrors.WRONG_FORMAT
+            return ProofErrors.WRONG_FORMAT
         }
 
         return null
@@ -77,7 +77,7 @@ export class NeuraProof {
         content: BytesLike,
         position: number,
         numLeafNodes: number
-    ): NHProofErrors | null {
+    ): ProofErrors | null {
         const contentHash = keccak256(content)
         return this.validateHash(rootHash, contentHash, position, numLeafNodes)
     }
@@ -87,30 +87,30 @@ export class NeuraProof {
         contentHash: string,
         position: number,
         numLeafNodes: number
-    ): NHProofErrors | null {
+    ): ProofErrors | null {
         const formatError = this.validateFormat()
         if (formatError !== null) {
             return formatError
         }
 
         if (contentHash !== this.lemma[0]) {
-            return NHProofErrors.CONTENT_MISMATCH
+            return ProofErrors.CONTENT_MISMATCH
         }
 
         if (
             this.lemma.length > 1 &&
             rootHash !== this.lemma[this.lemma.length - 1]
         ) {
-            return NHProofErrors.ROOT_MISMATCH
+            return ProofErrors.ROOT_MISMATCH
         }
 
         const proofPosition = this.calculateProofPosition(numLeafNodes)
         if (proofPosition !== position) {
-            return NHProofErrors.POSITION_MISMATCH
+            return ProofErrors.POSITION_MISMATCH
         }
 
         if (!this.validateRoot()) {
-            return NHProofErrors.VALIDATION_FAILURE
+            return ProofErrors.VALIDATION_FAILURE
         }
 
         return null
@@ -152,7 +152,7 @@ export class NeuraProof {
     }
 }
 
-export class NHMerkleTree {
+export class MerkleTree {
     public root: LeafNode | null = null
     public leaves: LeafNode[] = []
 
@@ -165,16 +165,16 @@ export class NHMerkleTree {
         return this.root ? this.root.hash : null
     }
 
-    proofAt(i: number): NeuraProof {
+    proofAt(i: number): Proof {
         if (i < 0 || i >= this.leaves.length) {
             throw new Error('Index out of range')
         }
 
         if (this.leaves.length === 1) {
-            return new NeuraProof([this.rootHash() as string], [])
+            return new Proof([this.rootHash() as string], [])
         }
 
-        const proof = new NeuraProof()
+        const proof = new Proof()
 
         // append the target leaf node hash
         proof.lemma.push(this.leaves[i].hash)
@@ -207,7 +207,7 @@ export class NHMerkleTree {
     }
 
     // build root
-    build(): NHMerkleTree | null {
+    build(): MerkleTree | null {
         const numLeafNodes = this.leaves.length
         if (numLeafNodes === 0) {
             return null

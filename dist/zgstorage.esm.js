@@ -26512,16 +26512,16 @@ class LeafNode {
         return this.parent !== null && this.parent.left === this;
     }
 }
-var NHProofErrors;
-(function (NHProofErrors) {
-    NHProofErrors["WRONG_FORMAT"] = "invalid merkle proof format";
-    NHProofErrors["ROOT_MISMATCH"] = "merkle proof root mismatch";
-    NHProofErrors["CONTENT_MISMATCH"] = "merkle proof content mismatch";
-    NHProofErrors["POSITION_MISMATCH"] = "merkle proof position mismatch";
-    NHProofErrors["VALIDATION_FAILURE"] = "failed to validate merkle proof";
-})(NHProofErrors || (NHProofErrors = {}));
+var ProofErrors;
+(function (ProofErrors) {
+    ProofErrors["WRONG_FORMAT"] = "invalid merkle proof format";
+    ProofErrors["ROOT_MISMATCH"] = "merkle proof root mismatch";
+    ProofErrors["CONTENT_MISMATCH"] = "merkle proof content mismatch";
+    ProofErrors["POSITION_MISMATCH"] = "merkle proof position mismatch";
+    ProofErrors["VALIDATION_FAILURE"] = "failed to validate merkle proof";
+})(ProofErrors || (ProofErrors = {}));
 // Proof represents a merkle tree proof of target content, e.g. chunk or segment of file.
-class NeuraProof {
+class Proof {
     // Lemma is made up of 3 parts to keep consistent with zerog-rust:
     // 1. Target content hash (leaf node).
     // 2. Hashes from bottom to top of sibling nodes.
@@ -26538,12 +26538,12 @@ class NeuraProof {
         const numSiblings = this.path.length;
         if (numSiblings === 0) {
             if (this.lemma.length !== 1) {
-                return NHProofErrors.WRONG_FORMAT;
+                return ProofErrors.WRONG_FORMAT;
             }
             return null;
         }
         if (numSiblings + 2 !== this.lemma.length) {
-            return NHProofErrors.WRONG_FORMAT;
+            return ProofErrors.WRONG_FORMAT;
         }
         return null;
     }
@@ -26557,18 +26557,18 @@ class NeuraProof {
             return formatError;
         }
         if (contentHash !== this.lemma[0]) {
-            return NHProofErrors.CONTENT_MISMATCH;
+            return ProofErrors.CONTENT_MISMATCH;
         }
         if (this.lemma.length > 1 &&
             rootHash !== this.lemma[this.lemma.length - 1]) {
-            return NHProofErrors.ROOT_MISMATCH;
+            return ProofErrors.ROOT_MISMATCH;
         }
         const proofPosition = this.calculateProofPosition(numLeafNodes);
         if (proofPosition !== position) {
-            return NHProofErrors.POSITION_MISMATCH;
+            return ProofErrors.POSITION_MISMATCH;
         }
         if (!this.validateRoot()) {
-            return NHProofErrors.VALIDATION_FAILURE;
+            return ProofErrors.VALIDATION_FAILURE;
         }
         return null;
     }
@@ -26603,7 +26603,7 @@ class NeuraProof {
         return position;
     }
 }
-class NHMerkleTree {
+class MerkleTree {
     root = null;
     leaves = [];
     constructor(root = null, leaves = []) {
@@ -26618,9 +26618,9 @@ class NHMerkleTree {
             throw new Error('Index out of range');
         }
         if (this.leaves.length === 1) {
-            return new NeuraProof([this.rootHash()], []);
+            return new Proof([this.rootHash()], []);
         }
-        const proof = new NeuraProof();
+        const proof = new Proof();
         // append the target leaf node hash
         proof.lemma.push(this.leaves[i].hash);
         let current = this.leaves[i];
@@ -26691,7 +26691,7 @@ class AbstractFile {
     // constructor() {}
     // split a segment into chunks and compute the root hash
     static segmentRoot(segment, emptyChunksPadded = 0) {
-        const tree = new NHMerkleTree();
+        const tree = new MerkleTree();
         const dataLength = segment.length;
         for (let offset = 0; offset < dataLength; offset += DEFAULT_CHUNK_SIZE) {
             const chunk = segment.subarray(offset, offset + DEFAULT_CHUNK_SIZE);
@@ -26716,7 +26716,7 @@ class AbstractFile {
     }
     async merkleTree() {
         const iter = this.iterate(true);
-        const tree = new NHMerkleTree();
+        const tree = new MerkleTree();
         while (true) {
             let [ok, err] = await iter.next();
             if (err != null) {
@@ -26778,7 +26778,7 @@ class AbstractFile {
     }
     async createSegmentNode(offset, batch, size) {
         const iter = this.iterateWithOffsetAndBatch(offset, batch, true);
-        const tree = new NHMerkleTree();
+        const tree = new MerkleTree();
         for (let i = 0; i < size;) {
             let [ok, err] = await iter.next();
             if (err != null) {
@@ -26816,7 +26816,7 @@ let Blob$1 = class Blob extends AbstractFile {
     }
 };
 
-class NHFile extends AbstractFile {
+class ZgFile extends AbstractFile {
     fd = null;
     fileSize = 0;
     constructor(fd, fileSize) {
@@ -26826,12 +26826,12 @@ class NHFile extends AbstractFile {
     }
     static async fromNodeFileHandle(fd) {
         const stat = await fd.stat();
-        return new NHFile(fd, stat.size);
+        return new ZgFile(fd, stat.size);
     }
     // NOTE: need manually close fd after use
     static async fromFilePath(path) {
         const fd = await open(path, 'r'); // if fail, throw error
-        return await NHFile.fromNodeFileHandle(fd);
+        return await ZgFile.fromNodeFileHandle(fd);
     }
     async close() {
         await this.fd?.close();
@@ -26841,4 +26841,4 @@ class NHFile extends AbstractFile {
     }
 }
 
-export { Blob$1 as Blob, DEFAULT_CHUNK_SIZE, DEFAULT_SEGMENT_MAX_CHUNKS, DEFAULT_SEGMENT_SIZE, Downloader, EMPTY_CHUNK, EMPTY_CHUNK_HASH, Flow__factory, GetSplitNum, LeafNode, NHFile, NHMerkleTree, NHProofErrors, NeuraProof, SMALL_FILE_SIZE_THRESHOLD, StorageKv, StorageNode, TESTNET_FLOW_ADDRESS, Uploader, WaitForReceipt, ZERO_HASH, checkExist, computePaddedSize, index as factories, getFlowContract, getShardConfig, isValidConfig, nextPow2, numSplits };
+export { Blob$1 as Blob, DEFAULT_CHUNK_SIZE, DEFAULT_SEGMENT_MAX_CHUNKS, DEFAULT_SEGMENT_SIZE, Downloader, EMPTY_CHUNK, EMPTY_CHUNK_HASH, Flow__factory, GetSplitNum, LeafNode, MerkleTree, Proof, ProofErrors, SMALL_FILE_SIZE_THRESHOLD, StorageKv, StorageNode, TESTNET_FLOW_ADDRESS, Uploader, WaitForReceipt, ZERO_HASH, ZgFile, checkExist, computePaddedSize, index as factories, getFlowContract, getShardConfig, isValidConfig, nextPow2, numSplits };

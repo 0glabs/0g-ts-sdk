@@ -1,13 +1,13 @@
 import { FileHandle } from 'node:fs/promises';
 import { Iterator } from './Iterator/index.js';
 import { AbstractFile } from './AbstractFile.js';
-export declare class NHFile extends AbstractFile {
+export declare class ZgFile extends AbstractFile {
     fd: FileHandle | null;
     fileSize: number;
     constructor(fd: FileHandle, fileSize: number);
-    static fromNodeFileHandle(fd: FileHandle): Promise<NHFile>;
-    static fromFilePath(path: string): Promise<NHFile>;
+    static fromNodeFileHandle(fd: FileHandle): Promise<ZgFile>;
+    static fromFilePath(path: string): Promise<ZgFile>;
     close(): Promise<void>;
     iterateWithOffsetAndBatch(offset: number, batch: number, flowPadding: boolean): Iterator;
 }
-//# sourceMappingURL=NHFile.d.ts.map
+//# sourceMappingURL=ZgFile.d.ts.map

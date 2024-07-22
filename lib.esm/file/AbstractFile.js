@@ -1,4 +1,4 @@
-import { NHMerkleTree } from './NHMerkleTree.js';
+import { MerkleTree } from './MerkleTree.js';
 import { DEFAULT_CHUNK_SIZE, DEFAULT_SEGMENT_SIZE, DEFAULT_SEGMENT_MAX_CHUNKS, EMPTY_CHUNK_HASH, ZERO_HASH, } from '../constant.js';
 import { computePaddedSize, numSplits } from './utils.js';
 export class AbstractFile {
@@ -6,7 +6,7 @@ export class AbstractFile {
     // constructor() {}
     // split a segment into chunks and compute the root hash
     static segmentRoot(segment, emptyChunksPadded = 0) {
-        const tree = new NHMerkleTree();
+        const tree = new MerkleTree();
         const dataLength = segment.length;
         for (let offset = 0; offset < dataLength; offset += DEFAULT_CHUNK_SIZE) {
             const chunk = segment.subarray(offset, offset + DEFAULT_CHUNK_SIZE);
@@ -31,7 +31,7 @@ export class AbstractFile {
     }
     async merkleTree() {
         const iter = this.iterate(true);
-        const tree = new NHMerkleTree();
+        const tree = new MerkleTree();
         while (true) {
             let [ok, err] = await iter.next();
             if (err != null) {
@@ -93,7 +93,7 @@ export class AbstractFile {
     }
     async createSegmentNode(offset, batch, size) {
         const iter = this.iterateWithOffsetAndBatch(offset, batch, true);
-        const tree = new NHMerkleTree();
+        const tree = new MerkleTree();
         for (let i = 0; i < size;) {
             let [ok, err] = await iter.next();
             if (err != null) {

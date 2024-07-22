@@ -8,7 +8,7 @@ import { StorageNode, SegmentWithProof } from '../node/index.js'
 import { Flow } from '../contracts/flow/Flow.js'
 import { getFlowContract, WaitForReceipt } from '../utils.js'
 import { RetryOpts } from '../types.js'
-import { NHFile, NHMerkleTree } from '../file/index.js'
+import { ZgFile, MerkleTree } from '../file/index.js'
 import { encodeBase64, ethers } from 'ethers'
 import { getShardConfig } from './utils.js'
 import { UploadOption, UploadTask } from './types.js'
@@ -40,7 +40,7 @@ export class Uploader {
     }
 
     async uploadFile(
-        file: NHFile,
+        file: ZgFile,
         tag: ethers.BytesLike,
         segIndex: number = 0,
         opts: {} = {},
@@ -85,12 +85,12 @@ export class Uploader {
     }
 
     // Function to process all tasks in parallel
-    async processTasksInParallel(file: NHFile, tree: NHMerkleTree, tasks: UploadTask[]): Promise<void> {
+    async processTasksInParallel(file: ZgFile, tree: MerkleTree, tasks: UploadTask[]): Promise<void> {
         const taskPromises = tasks.map(task => this.uploadTask(file, tree, task));
         await Promise.all(taskPromises);
     }
 
-    async segmentUpload(file: NHFile, tree: NHMerkleTree, segIndex: number): Promise<UploadTask[] | null> {
+    async segmentUpload(file: ZgFile, tree: MerkleTree, segIndex: number): Promise<UploadTask[] | null> {
         const shardConfigs = await getShardConfig(this.nodes)
         if (shardConfigs == null) {
             return null
@@ -145,7 +145,7 @@ export class Uploader {
         return tasks
     }
 
-    async uploadTask(file: NHFile, tree: NHMerkleTree, uploadTask: UploadTask) {
+    async uploadTask(file: ZgFile, tree: MerkleTree, uploadTask: UploadTask) {
         const numChunks = file.numChunks()
 
         let segIndex = uploadTask.segIndex
@@ -215,8 +215,8 @@ export class Uploader {
     }
 
     async uploadFileHelper(
-        file: NHFile,
-        tree: NHMerkleTree,
+        file: ZgFile,
+        tree: MerkleTree,
         segIndex: number = 0
     ): Promise<Error | null> {
         const iter = file.iterateWithOffsetAndBatch(
