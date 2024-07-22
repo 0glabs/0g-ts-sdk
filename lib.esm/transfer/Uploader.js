@@ -22,35 +22,35 @@ export class Uploader {
     async uploadFile(file, tag, segIndex = 0, opts = {}, retryOpts) {
         var [tree, err] = await file.merkleTree();
         if (err != null || tree == null || tree.rootHash() == null) {
-            return err;
+            return [null, new Error('Failed to create Merkle tree')];
         }
         const fileInfo = await this.nodes[0].getFileInfo(tree.rootHash());
-        console.log('fileInfo', fileInfo);
         if (fileInfo != null) {
-            return new Error('File already uploaded');
+            return [null, new Error('File already exists')];
         }
         var [submission, err] = await file.createSubmission(tag);
         if (err != null || submission == null) {
-            return err;
+            return [null, new Error('Failed to create submission')];
         }
         let tx = await this.flow.submit(submission, opts);
         await tx.wait();
         let receipt = WaitForReceipt(this.provider, tx.hash, retryOpts);
         if (receipt == null) {
-            return new Error('Failed to submit transaction');
+            return [null, new Error('Failed to get transaction receipt')];
         }
         const tasks = await this.segmentUpload(file, tree, segIndex);
         if (tasks == null) {
-            return new Error('Failed to get upload tasks');
+            return [null, new Error('Failed to get upload tasks')];
         }
-        this.processTasksInParallel(file, tree, tasks)
-            .then(() => console.log('All tasks processed'))
-            .catch(error => { return error; });
-        return null;
+        // await this.processTasksInParallel(file, tree, tasks)
+        // .then(() => console.log('All tasks processed'))
+        // .catch(error => {return error});
+        await this.uploadFileHelper(file, tree, segIndex);
+        return [tx.hash, null];
     }
     // Function to process all tasks in parallel
     async processTasksInParallel(file, tree, tasks) {
-        const taskPromises = tasks.map(task => { return null; });
+        const taskPromises = tasks.map(task => this.uploadTask(file, tree, task));
         await Promise.all(taskPromises);
     }
     async segmentUpload(file, tree, segIndex) {

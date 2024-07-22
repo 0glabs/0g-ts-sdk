@@ -1,5 +1,5 @@
 {
-  "name": "0g-storage-sdk",
+  "name": "0g-ts-sdk",
   "version": "0.1.0",
   "description": "JS SDK for 0G Storage",
   "main": "./lib.commonjs/index.js",

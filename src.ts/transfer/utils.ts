@@ -1,5 +1,4 @@
-import { ShardConfig, StorageNode } from '../node'
-import { isValidConfig } from '../node/utils'
+import { ShardConfig, StorageNode, isValidConfig } from '../node/index.js'
 
 export async function getShardConfig(
     nodes: StorageNode[]

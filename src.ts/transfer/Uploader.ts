@@ -45,23 +45,22 @@ export class Uploader {
         segIndex: number = 0,
         opts: {} = {},
         retryOpts?: RetryOpts
-    ): Promise<Error | null> {
+    ): Promise<[string | null, Error | null]> {
         var [tree, err] = await file.merkleTree()
         if (err != null || tree == null || tree.rootHash() == null) {
-            return err
+            return [null, new Error('Failed to create Merkle tree')]
         }
 
         const fileInfo = await this.nodes[0].getFileInfo(
             tree.rootHash() as string
         )
-        console.log('fileInfo', fileInfo)
         if (fileInfo != null) {
-            return new Error('File already uploaded')
+            return [null, new Error('File already exists')]
         }
 
         var [submission, err] = await file.createSubmission(tag)
         if (err != null || submission == null) {
-            return err
+            return [null, new Error('Failed to create submission')]
         }
 
         let tx = await this.flow.submit(submission, opts)
@@ -69,19 +68,20 @@ export class Uploader {
 
         let receipt = WaitForReceipt(this.provider, tx.hash, retryOpts)
         if (receipt == null) {
-            return new Error('Failed to submit transaction')
+            return [null, new Error('Failed to get transaction receipt')]
         }
         
         const tasks = await this.segmentUpload(file, tree, segIndex)
         if (tasks == null) {
-            return new Error('Failed to get upload tasks')
+            return [null, new Error('Failed to get upload tasks')]
         }
 
-        this.processTasksInParallel(file, tree, tasks)
-        .then(() => console.log('All tasks processed'))
-        .catch(error => {return error});
+        // await this.processTasksInParallel(file, tree, tasks)
+        // .then(() => console.log('All tasks processed'))
+        // .catch(error => {return error});
+        await this.uploadFileHelper(file, tree, segIndex);
 
-        return null;
+        return [tx.hash, null];
     }
 
     // Function to process all tasks in parallel

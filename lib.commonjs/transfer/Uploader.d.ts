@@ -11,7 +11,7 @@ export declare class Uploader {
     signer: ethers.Wallet;
     opts: UploadOption;
     constructor(nodes: StorageNode[], providerRpc: string, privateKey: string, opts?: UploadOption);
-    uploadFile(file: NHFile, tag: ethers.BytesLike, segIndex?: number, opts?: {}, retryOpts?: RetryOpts): Promise<Error | null>;
+    uploadFile(file: NHFile, tag: ethers.BytesLike, segIndex?: number, opts?: {}, retryOpts?: RetryOpts): Promise<[string | null, Error | null]>;
     processTasksInParallel(file: NHFile, tree: NHMerkleTree, tasks: UploadTask[]): Promise<void>;
     segmentUpload(file: NHFile, tree: NHMerkleTree, segIndex: number): Promise<UploadTask[] | null>;
     uploadTask(file: NHFile, tree: NHMerkleTree, uploadTask: UploadTask): Promise<number | Error>;
