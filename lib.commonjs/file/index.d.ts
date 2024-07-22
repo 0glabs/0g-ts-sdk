@@ -1,5 +1,5 @@
 export * from './Blob.js';
-export * from './NHFile.js';
+export * from './ZgFile.js';
 export * from './utils.js';
-export * from './NHMerkleTree.js';
+export * from './MerkleTree.js';
 //# sourceMappingURL=index.d.ts.map

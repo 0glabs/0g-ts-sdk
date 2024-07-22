@@ -26749,16 +26749,16 @@
 	        return this.parent !== null && this.parent.left === this;
 	    }
 	}
-	exports.NHProofErrors = void 0;
-	(function (NHProofErrors) {
-	    NHProofErrors["WRONG_FORMAT"] = "invalid merkle proof format";
-	    NHProofErrors["ROOT_MISMATCH"] = "merkle proof root mismatch";
-	    NHProofErrors["CONTENT_MISMATCH"] = "merkle proof content mismatch";
-	    NHProofErrors["POSITION_MISMATCH"] = "merkle proof position mismatch";
-	    NHProofErrors["VALIDATION_FAILURE"] = "failed to validate merkle proof";
-	})(exports.NHProofErrors || (exports.NHProofErrors = {}));
+	exports.ProofErrors = void 0;
+	(function (ProofErrors) {
+	    ProofErrors["WRONG_FORMAT"] = "invalid merkle proof format";
+	    ProofErrors["ROOT_MISMATCH"] = "merkle proof root mismatch";
+	    ProofErrors["CONTENT_MISMATCH"] = "merkle proof content mismatch";
+	    ProofErrors["POSITION_MISMATCH"] = "merkle proof position mismatch";
+	    ProofErrors["VALIDATION_FAILURE"] = "failed to validate merkle proof";
+	})(exports.ProofErrors || (exports.ProofErrors = {}));
 	// Proof represents a merkle tree proof of target content, e.g. chunk or segment of file.
-	class NeuraProof {
+	class Proof {
 	    // Lemma is made up of 3 parts to keep consistent with zerog-rust:
 	    // 1. Target content hash (leaf node).
 	    // 2. Hashes from bottom to top of sibling nodes.
@@ -26775,12 +26775,12 @@
 	        const numSiblings = this.path.length;
 	        if (numSiblings === 0) {
 	            if (this.lemma.length !== 1) {
-	                return exports.NHProofErrors.WRONG_FORMAT;
+	                return exports.ProofErrors.WRONG_FORMAT;
 	            }
 	            return null;
 	        }
 	        if (numSiblings + 2 !== this.lemma.length) {
-	            return exports.NHProofErrors.WRONG_FORMAT;
+	            return exports.ProofErrors.WRONG_FORMAT;
 	        }
 	        return null;
 	    }
@@ -26794,18 +26794,18 @@
 	            return formatError;
 	        }
 	        if (contentHash !== this.lemma[0]) {
-	            return exports.NHProofErrors.CONTENT_MISMATCH;
+	            return exports.ProofErrors.CONTENT_MISMATCH;
 	        }
 	        if (this.lemma.length > 1 &&
 	            rootHash !== this.lemma[this.lemma.length - 1]) {
-	            return exports.NHProofErrors.ROOT_MISMATCH;
+	            return exports.ProofErrors.ROOT_MISMATCH;
 	        }
 	        const proofPosition = this.calculateProofPosition(numLeafNodes);
 	        if (proofPosition !== position) {
-	            return exports.NHProofErrors.POSITION_MISMATCH;
+	            return exports.ProofErrors.POSITION_MISMATCH;
 	        }
 	        if (!this.validateRoot()) {
-	            return exports.NHProofErrors.VALIDATION_FAILURE;
+	            return exports.ProofErrors.VALIDATION_FAILURE;
 	        }
 	        return null;
 	    }
@@ -26840,7 +26840,7 @@
 	        return position;
 	    }
 	}
-	class NHMerkleTree {
+	class MerkleTree {
 	    root = null;
 	    leaves = [];
 	    constructor(root = null, leaves = []) {
@@ -26855,9 +26855,9 @@
 	            throw new Error('Index out of range');
 	        }
 	        if (this.leaves.length === 1) {
-	            return new NeuraProof([this.rootHash()], []);
+	            return new Proof([this.rootHash()], []);
 	        }
-	        const proof = new NeuraProof();
+	        const proof = new Proof();
 	        // append the target leaf node hash
 	        proof.lemma.push(this.leaves[i].hash);
 	        let current = this.leaves[i];
@@ -26928,7 +26928,7 @@
 	    // constructor() {}
 	    // split a segment into chunks and compute the root hash
 	    static segmentRoot(segment, emptyChunksPadded = 0) {
-	        const tree = new NHMerkleTree();
+	        const tree = new MerkleTree();
 	        const dataLength = segment.length;
 	        for (let offset = 0; offset < dataLength; offset += DEFAULT_CHUNK_SIZE) {
 	            const chunk = segment.subarray(offset, offset + DEFAULT_CHUNK_SIZE);
@@ -26953,7 +26953,7 @@
 	    }
 	    async merkleTree() {
 	        const iter = this.iterate(true);
-	        const tree = new NHMerkleTree();
+	        const tree = new MerkleTree();
 	        while (true) {
 	            let [ok, err] = await iter.next();
 	            if (err != null) {
@@ -27015,7 +27015,7 @@
 	    }
 	    async createSegmentNode(offset, batch, size) {
 	        const iter = this.iterateWithOffsetAndBatch(offset, batch, true);
-	        const tree = new NHMerkleTree();
+	        const tree = new MerkleTree();
 	        for (let i = 0; i < size;) {
 	            let [ok, err] = await iter.next();
 	            if (err != null) {
@@ -27053,7 +27053,7 @@
 	    }
 	};
 
-	class NHFile extends AbstractFile {
+	class ZgFile extends AbstractFile {
 	    fd = null;
 	    fileSize = 0;
 	    constructor(fd, fileSize) {
@@ -27063,12 +27063,12 @@
 	    }
 	    static async fromNodeFileHandle(fd) {
 	        const stat = await fd.stat();
-	        return new NHFile(fd, stat.size);
+	        return new ZgFile(fd, stat.size);
 	    }
 	    // NOTE: need manually close fd after use
 	    static async fromFilePath(path) {
 	        const fd = await promises.open(path, 'r'); // if fail, throw error
-	        return await NHFile.fromNodeFileHandle(fd);
+	        return await ZgFile.fromNodeFileHandle(fd);
 	    }
 	    async close() {
 	        await this.fd?.close();
@@ -27088,9 +27088,8 @@
 	exports.Flow__factory = Flow__factory;
 	exports.GetSplitNum = GetSplitNum;
 	exports.LeafNode = LeafNode;
-	exports.NHFile = NHFile;
-	exports.NHMerkleTree = NHMerkleTree;
-	exports.NeuraProof = NeuraProof;
+	exports.MerkleTree = MerkleTree;
+	exports.Proof = Proof;
 	exports.SMALL_FILE_SIZE_THRESHOLD = SMALL_FILE_SIZE_THRESHOLD;
 	exports.StorageKv = StorageKv;
 	exports.StorageNode = StorageNode;
@@ -27098,6 +27097,7 @@
 	exports.Uploader = Uploader;
 	exports.WaitForReceipt = WaitForReceipt;
 	exports.ZERO_HASH = ZERO_HASH;
+	exports.ZgFile = ZgFile;
 	exports.checkExist = checkExist;
 	exports.computePaddedSize = computePaddedSize;
 	exports.factories = index;

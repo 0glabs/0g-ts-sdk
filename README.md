@@ -22,13 +22,13 @@ npm install 0g-ts-sdk ethers
 
 ### Node.js environment ESM example:
 
-Use `NHFile` to create a file object, then call `merkleTree` method to get the merkle tree of the file.
+Use `ZgFile` to create a file object, then call `merkleTree` method to get the merkle tree of the file.
 
 ```js
-import { NHFile } from '0g-ts-sdk';
+import { ZgFile } from '0g-ts-sdk';
 
-const file = await NHFile.fromFilePath('path/to/file');
-const [tree, err] = await file.merkleTree();
+const file = await ZgFile.fromFilePath('path/to/file');
+var [tree, err] = await file.merkleTree();
 if (err === null) {
   console.log("File Root Hash: ", tree.rootHash());
 }
@@ -42,14 +42,14 @@ import { StorageNode, Uploader } from "0g-ts-sdk";
 import { ethers } from 'ethers';
 
 const evmRpc = 'https://rpc-testnet.0g.ai';
-const provider = new ethers.JsonRpcProvider(evmRpc);
+
 const privateKey = ''; // with balance to pay for gas
 
-const nhRpc = 'https://rpc-storage-testnet.0g.ai';
-const node = new StorageNode(nhRpc);
+const rpc = 'https://rpc-storage-testnet.0g.ai';
+const node = new StorageNode(rpc);
 const uploader = new Uploader(node, evmRpc, privateKey);
 
-err = await uploader.uploadFile(file, '0x', 0, {value: ethers.parseEther('0.1'), gasLimit: 1000000});
+err = await uploader.uploadFile(file, '0x', 0, {value: ethers.parseEther('0.1')});
 if (err === null) {
   console.log("File uploaded successfully");
 } else {
@@ -72,7 +72,7 @@ Import `zgstorage.esm.js` in your html file:
 
 ```html
 <script type="module">
-  import { Blob, NHProvider, getFlowContract } from "./dist/zgstorage.esm.js";
+  import { Blob, Uploader, getFlowContract } from "./dist/zgstorage.esm.js";
   // Your code here...
 </script>
 ```

@@ -7,7 +7,7 @@
     <script type="text/javascript">
         async function go() {
             const blob = document.getElementById('uploader').files[0];
-            const file = new zgstorage.NHBlob(blob)
+            const file = new zgstorage.Blob(blob)
             console.log("fileSize", file.fileSize);
             const [tree, err] = await file.merkleTree();
             console.log(`tree is`, tree.rootHash());

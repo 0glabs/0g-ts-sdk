@@ -1,5 +1,5 @@
 import { BytesLike } from 'ethers'
-import { NHMerkleTree } from './NHMerkleTree.js'
+import { MerkleTree } from './MerkleTree.js'
 import {
     SubmissionNodeStruct,
     SubmissionStruct,
@@ -24,7 +24,7 @@ export abstract class AbstractFile {
         segment: Uint8Array,
         emptyChunksPadded: number = 0
     ): string {
-        const tree = new NHMerkleTree()
+        const tree = new MerkleTree()
 
         const dataLength = segment.length
         for (
@@ -68,9 +68,9 @@ export abstract class AbstractFile {
         flowPadding: boolean
     ): Iterator
 
-    async merkleTree(): Promise<[NHMerkleTree | null, Error | null]> {
+    async merkleTree(): Promise<[MerkleTree | null, Error | null]> {
         const iter = this.iterate(true)
-        const tree = new NHMerkleTree()
+        const tree = new MerkleTree()
 
         while (true) {
             let [ok, err] = await iter.next()
@@ -160,7 +160,7 @@ export abstract class AbstractFile {
         size: number
     ): Promise<[SubmissionNodeStruct | null, Error | null]> {
         const iter = this.iterateWithOffsetAndBatch(offset, batch, true)
-        const tree = new NHMerkleTree()
+        const tree = new MerkleTree()
 
         for (let i = 0; i < size; ) {
             let [ok, err] = await iter.next()

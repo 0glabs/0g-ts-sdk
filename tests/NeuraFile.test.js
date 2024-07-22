@@ -1,15 +1,15 @@
 const { exec } = require("child_process");
-const { NHFile } = require("../lib.commonjs/index.js");
+const { ZgFile } = require("../lib.commonjs/index.js");
 const { join } = require("path");
 
 test("ZegogStorageFile", async () => {
-    const file = await NHFile.fromFilePath(join(__dirname, "./example.ts"));
+    const file = await ZgFile.fromFilePath(join(__dirname, "./example.ts"));
     const [tree, err] = await file.merkleTree();
     expect(err).toBe(null);
     expect(tree?.rootHash()).toBe("0x76f3f9a729197e04a7b46c3fe0af7e56d8f0f39dacc3a36496fc9242a9beaa23");
     await file.close();
 
-    const file2 = await NHFile.fromFilePath(join(__dirname, "./example.md"));
+    const file2 = await ZgFile.fromFilePath(join(__dirname, "./example.md"));
     const [tree2, err2] = await file2.merkleTree();
     expect(err2).toBe(null);
     expect(tree2?.rootHash()).toBe("0x95034699d3a494d05642ba74ab7f07fc318070df588c8adc42a81168880cad9a"); 
@@ -17,7 +17,7 @@ test("ZegogStorageFile", async () => {
 });
 
 test("createSubmission", async () => {
-    const file = await NHFile.fromFilePath(join(__dirname, "./example.md"));
+    const file = await ZgFile.fromFilePath(join(__dirname, "./example.md"));
     const [submission, err] = await file.createSubmission("test");
     expect(err).toBe(null);
     expect(submission.length).toBe(20182);

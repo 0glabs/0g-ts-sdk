@@ -9,31 +9,31 @@ export declare class LeafNode {
     static fromLeftAndRight(left: LeafNode, right: LeafNode): LeafNode;
     isLeftSide(): boolean;
 }
-export declare enum NHProofErrors {
+export declare enum ProofErrors {
     WRONG_FORMAT = "invalid merkle proof format",
     ROOT_MISMATCH = "merkle proof root mismatch",
     CONTENT_MISMATCH = "merkle proof content mismatch",
     POSITION_MISMATCH = "merkle proof position mismatch",
     VALIDATION_FAILURE = "failed to validate merkle proof"
 }
-export declare class NeuraProof {
+export declare class Proof {
     lemma: string[];
     path: boolean[];
     constructor(lemma?: string[], path?: boolean[]);
-    validateFormat(): NHProofErrors | null;
-    validate(rootHash: string, content: BytesLike, position: number, numLeafNodes: number): NHProofErrors | null;
-    validateHash(rootHash: string, contentHash: string, position: number, numLeafNodes: number): NHProofErrors | null;
+    validateFormat(): ProofErrors | null;
+    validate(rootHash: string, content: BytesLike, position: number, numLeafNodes: number): ProofErrors | null;
+    validateHash(rootHash: string, contentHash: string, position: number, numLeafNodes: number): ProofErrors | null;
     validateRoot(): boolean;
     calculateProofPosition(numLeafNodes: number): number;
 }
-export declare class NHMerkleTree {
+export declare class MerkleTree {
     root: LeafNode | null;
     leaves: LeafNode[];
     constructor(root?: LeafNode | null, leaves?: LeafNode[]);
     rootHash(): string | null;
-    proofAt(i: number): NeuraProof;
+    proofAt(i: number): Proof;
     addLeaf(leafContent: BytesLike): void;
     addLeafByHash(leafHash: string): void;
-    build(): NHMerkleTree | null;
+    build(): MerkleTree | null;
 }
-//# sourceMappingURL=NHMerkleTree.d.ts.map
+//# sourceMappingURL=MerkleTree.d.ts.map

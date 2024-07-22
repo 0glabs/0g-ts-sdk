@@ -1,5 +1,5 @@
 import { BytesLike } from 'ethers';
-import { NHMerkleTree } from './NHMerkleTree.js';
+import { MerkleTree } from './MerkleTree.js';
 import { SubmissionNodeStruct, SubmissionStruct } from '../contracts/flow/Flow.js';
 import { Iterator } from './Iterator/index.js';
 export declare abstract class AbstractFile {
@@ -8,7 +8,7 @@ export declare abstract class AbstractFile {
     size(): number;
     iterate(flowPadding: boolean): Iterator;
     abstract iterateWithOffsetAndBatch(offset: number, batch: number, flowPadding: boolean): Iterator;
-    merkleTree(): Promise<[NHMerkleTree | null, Error | null]>;
+    merkleTree(): Promise<[MerkleTree | null, Error | null]>;
     numChunks(): number;
     numSegments(): number;
     createSubmission(tags: BytesLike): Promise<[SubmissionStruct | null, Error | null]>;
