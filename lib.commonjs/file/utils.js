@@ -1,10 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.computePaddedSize = exports.nextPow2 = exports.numSplits = void 0;
+exports.numSplits = numSplits;
+exports.nextPow2 = nextPow2;
+exports.computePaddedSize = computePaddedSize;
 function numSplits(total, unit) {
     return Math.floor((total - 1) / unit) + 1;
 }
-exports.numSplits = numSplits;
 function nextPow2(input) {
     let x = input;
     x -= 1;
@@ -17,7 +18,6 @@ function nextPow2(input) {
     x += 1;
     return x;
 }
-exports.nextPow2 = nextPow2;
 function computePaddedSize(chunks) {
     let chunksNextPow2 = nextPow2(chunks);
     if (chunksNextPow2 === chunks) {
@@ -33,5 +33,4 @@ function computePaddedSize(chunks) {
     const paddedChunks = numSplits(chunks, minChunk) * minChunk;
     return [paddedChunks, chunksNextPow2];
 }
-exports.computePaddedSize = computePaddedSize;
 //# sourceMappingURL=utils.js.map

@@ -52,6 +52,12 @@ class StorageNode extends open_jsonrpc_provider_1.HttpProvider {
         });
         return info;
     }
+    async getShardConfig() {
+        const config = await super.request({
+            method: 'zgs_getShardConfig',
+        });
+        return config;
+    }
 }
 exports.StorageNode = StorageNode;
 //# sourceMappingURL=StorageNode.js.map
