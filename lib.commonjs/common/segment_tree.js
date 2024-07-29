@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.insert = exports.pushdown = void 0;
+exports.pushdown = pushdown;
+exports.insert = insert;
 function pushdown(node) {
     if (node.childs === null) {
         node.childs = [];
@@ -19,7 +20,6 @@ function pushdown(node) {
     }
     node.lazyTags = 0;
 }
-exports.pushdown = pushdown;
 // insert a shard if it contributes to the replica
 function insert(node, numShard, shardId, expectedReplica) {
     if (node.replica >= expectedReplica) {
@@ -38,5 +38,4 @@ function insert(node, numShard, shardId, expectedReplica) {
     node.replica = Math.min(node.childs[0].replica, node.childs[1].replica);
     return inserted;
 }
-exports.insert = insert;
 //# sourceMappingURL=segment_tree.js.map

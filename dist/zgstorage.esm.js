@@ -1194,7 +1194,7 @@ const ZERO_HASH = '0x00000000000000000000000000000000000000000000000000000000000
 /**
  *  The current version of Ethers.
  */
-const version = "6.13.0";
+const version = "6.13.2";
 
 /**
  *  Property helper functions.
@@ -20990,6 +20990,7 @@ class BaseWallet extends AbstractSigner {
         return new BaseWallet(this.#signingKey, provider);
     }
     async signTransaction(tx) {
+        tx = copyRequest(tx);
         // Replace any Addressable or ENS name with an address
         const { to, from } = await resolveProperties({
             to: (tx.to ? resolveAddress(tx.to, this.provider) : undefined),

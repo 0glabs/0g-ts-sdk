@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkReplica = exports.selectNodes = void 0;
+exports.selectNodes = selectNodes;
+exports.checkReplica = checkReplica;
 const tslib_1 = require("tslib");
 const segment_tree_js_1 = require("./segment_tree.js");
 tslib_1.__exportStar(require("./types.js"), exports);
@@ -33,7 +34,6 @@ function selectNodes(nodes, expectedReplica) {
     }
     return [[], false];
 }
-exports.selectNodes = selectNodes;
 function checkReplica(shardConfigs, expectedReplica) {
     let shardedNodes = [];
     for (let i = 0; i < shardConfigs.length; i += 1) {
@@ -50,5 +50,4 @@ function checkReplica(shardConfigs, expectedReplica) {
     let [_, ok] = selectNodes(shardedNodes, expectedReplica);
     return ok;
 }
-exports.checkReplica = checkReplica;
 //# sourceMappingURL=index.js.map

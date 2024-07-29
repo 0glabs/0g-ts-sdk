@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getShardConfigs = void 0;
+exports.getShardConfigs = getShardConfigs;
 const index_js_1 = require("../node/index.js");
 async function getShardConfigs(nodes) {
     var configs = [];
@@ -13,5 +13,4 @@ async function getShardConfigs(nodes) {
     }
     return configs;
 }
-exports.getShardConfigs = getShardConfigs;
 //# sourceMappingURL=utils.js.map

@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { FileHandle } from 'node:fs/promises';
 import { Iterator } from './Iterator/index.js';
 import { AbstractFile } from './AbstractFile.js';
