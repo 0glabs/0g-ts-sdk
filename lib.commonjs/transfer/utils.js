@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getShardConfig = getShardConfig;
+exports.getShardConfigs = getShardConfigs;
 const index_js_1 = require("../node/index.js");
-async function getShardConfig(nodes) {
+async function getShardConfigs(nodes) {
     var configs = [];
     for (const cNode of nodes) {
         const cConfig = await cNode.getShardConfig();

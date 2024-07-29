@@ -1,6 +1,7 @@
-import { ShardConfig, StorageNode, isValidConfig } from '../node/index.js'
+import { ShardConfig } from '../common/index.js'
+import { StorageNode, isValidConfig } from '../node/index.js'
 
-export async function getShardConfig(
+export async function getShardConfigs(
     nodes: StorageNode[]
 ): Promise<ShardConfig[] | null> {
     var configs: ShardConfig[] = []

@@ -1,4 +1,3 @@
-export declare const TESTNET_FLOW_ADDRESS = "0x8873cc79c5b3b5666535C825205C9a128B1D75F1";
 export declare const DEFAULT_CHUNK_SIZE = 256;
 export declare const DEFAULT_SEGMENT_MAX_CHUNKS = 1024;
 export declare const DEFAULT_SEGMENT_SIZE: number;

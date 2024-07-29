@@ -11,39 +11,41 @@ class Uploader {
     flow;
     signer;
     opts;
-    constructor(nodes, providerRpc, privateKey, opts) {
+    constructor(nodes, providerRpc, privateKey, flowContract, opts) {
         this.nodes = nodes;
         this.provider = new ethers_1.ethers.JsonRpcProvider(providerRpc);
         this.signer = new ethers_1.ethers.Wallet(privateKey, this.provider);
-        this.flow = (0, utils_js_1.getFlowContract)(constant_js_1.TESTNET_FLOW_ADDRESS, this.signer);
+        this.flow = (0, utils_js_1.getFlowContract)(flowContract, this.signer);
         this.opts = opts || {
             tags: '0x',
             finalityRequired: true,
             taskSize: 10,
+            expectedReplica: 1,
+            skipTx: false,
         };
     }
     async uploadFile(file, tag, segIndex = 0, opts = {}, retryOpts) {
         var [tree, err] = await file.merkleTree();
         if (err != null || tree == null || tree.rootHash() == null) {
-            return [null, new Error('Failed to create Merkle tree')];
+            return ['', new Error('Failed to create Merkle tree')];
         }
         const fileInfo = await this.nodes[0].getFileInfo(tree.rootHash());
         if (fileInfo != null) {
-            return [null, new Error('File already exists')];
+            return ['', new Error('File already exists')];
         }
         var [submission, err] = await file.createSubmission(tag);
         if (err != null || submission == null) {
-            return [null, new Error('Failed to create submission')];
+            return ['', new Error('Failed to create submission')];
         }
         let tx = await this.flow.submit(submission, opts);
         await tx.wait();
         let receipt = (0, utils_js_1.WaitForReceipt)(this.provider, tx.hash, retryOpts);
         if (receipt == null) {
-            return [null, new Error('Failed to get transaction receipt')];
+            return ['', new Error('Failed to get transaction receipt')];
         }
         const tasks = await this.segmentUpload(file, tree, segIndex);
         if (tasks == null) {
-            return [null, new Error('Failed to get upload tasks')];
+            return ['', new Error('Failed to get upload tasks')];
         }
         // await this.processTasksInParallel(file, tree, tasks)
         // .then(() => console.log('All tasks processed'))
@@ -57,7 +59,7 @@ class Uploader {
         await Promise.all(taskPromises);
     }
     async segmentUpload(file, tree, segIndex) {
-        const shardConfigs = await (0, utils_js_2.getShardConfig)(this.nodes);
+        const shardConfigs = await (0, utils_js_2.getShardConfigs)(this.nodes);
         if (shardConfigs == null) {
             return null;
         }
