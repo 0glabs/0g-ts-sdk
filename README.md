@@ -13,7 +13,7 @@ This is the JavaScript SDK for 0g-storage. Features include:
 ## Install
 
 ```sh
-npm install 0g-ts-sdk ethers
+npm install @0glabs/0g-ts-sdk ethers
 ```
 
 `ethers` is a peer dependency of this project.
@@ -25,12 +25,16 @@ npm install 0g-ts-sdk ethers
 Use `ZgFile` to create a file object, then call `merkleTree` method to get the merkle tree of the file.
 
 ```js
-import { ZgFile } from '0g-ts-sdk';
+import { Indexer, ZgFile }  from '@0glabs/0g-ts-sdk';
+import { ethers } from 'ethers';
+import { exit } from 'process';
 
-const file = await ZgFile.fromFilePath('path/to/file');
+const file = await ZgFile.fromFilePath(<file_path>);
 var [tree, err] = await file.merkleTree();
 if (err === null) {
   console.log("File Root Hash: ", tree.rootHash());
+} else {
+  exit(1);
 }
 await file.close();
 ```
@@ -38,20 +42,16 @@ await file.close();
 Upload file to 0g-storage:
 
 ```js
-import { StorageNode, Uploader } from "0g-ts-sdk";
-import { ethers } from 'ethers';
-
 const evmRpc = 'https://rpc-testnet.0g.ai';
-
 const privateKey = ''; // with balance to pay for gas
 
-const rpc = 'https://rpc-storage-testnet.0g.ai';
-const node = new StorageNode(rpc);
-const uploader = new Uploader(node, evmRpc, privateKey);
+const indRpc = ''; // indexer rpc
 
-err = await uploader.uploadFile(file, '0x', 0, {value: ethers.parseEther('0.1')});
+const indexer = new Indexer(indRpc, evmRpc, privateKey, "0xB7e39604f47c0e4a6Ad092a281c1A8429c2440d3");
+// need to pay fees to store data in storage nodes
+var [tx, err] = await indexer.upload(file, '0x', 0, {value: ethers.parseEther('0.5'), gasLimit: 10000000});
 if (err === null) {
-  console.log("File uploaded successfully");
+  console.log("File uploaded successfully, tx: ", tx);
 } else {
   console.log("Error uploading file: ", err);
 }
@@ -60,10 +60,10 @@ if (err === null) {
 Download file from 0g-storage
 
 ```js
-import { Downloader } from "0g-ts-sdk";
-
-const downloader = new Downloader(node)
-await downloader.downloadFile(<file_root_hash>, <file_path>, false);
+err = await indexer.download(<root_hash>, <output_file>, <with_proof>);
+if (err !== null) {
+  console.log("Error downloading file: ", err);
+}
 ```
 
 ### Browser environment example:
@@ -72,7 +72,7 @@ Import `zgstorage.esm.js` in your html file:
 
 ```html
 <script type="module">
-  import { Blob, Uploader, getFlowContract } from "./dist/zgstorage.esm.js";
+  import { Blob, Indexer, getFlowContract } from "./dist/zgstorage.esm.js";
   // Your code here...
 </script>
 ```
