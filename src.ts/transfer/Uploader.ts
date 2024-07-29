@@ -2,7 +2,6 @@ import {
     DEFAULT_SEGMENT_SIZE,
     DEFAULT_SEGMENT_MAX_CHUNKS,
     DEFAULT_CHUNK_SIZE,
-    TESTNET_FLOW_ADDRESS,
 } from '../constant.js'
 import { StorageNode, SegmentWithProof } from '../node/index.js'
 import { Flow } from '../contracts/flow/Flow.js'
@@ -10,7 +9,7 @@ import { getFlowContract, WaitForReceipt } from '../utils.js'
 import { RetryOpts } from '../types.js'
 import { ZgFile, MerkleTree } from '../file/index.js'
 import { encodeBase64, ethers } from 'ethers'
-import { getShardConfig } from './utils.js'
+import { getShardConfigs } from './utils.js'
 import { UploadOption, UploadTask } from './types.js'
 
 export class Uploader {
@@ -24,6 +23,7 @@ export class Uploader {
         nodes: StorageNode[],
         providerRpc: string,
         privateKey: string,
+        flowContract: string,
         opts?: UploadOption
     ) {
         this.nodes = nodes
@@ -31,11 +31,13 @@ export class Uploader {
         this.provider = new ethers.JsonRpcProvider(providerRpc)
         this.signer = new ethers.Wallet(privateKey, this.provider)
 
-        this.flow = getFlowContract(TESTNET_FLOW_ADDRESS, this.signer)
+        this.flow = getFlowContract(flowContract, this.signer)
         this.opts = opts || {
             tags: '0x',
             finalityRequired: true,
             taskSize: 10,
+            expectedReplica: 1,
+            skipTx: false,
         }
     }
 
@@ -45,22 +47,22 @@ export class Uploader {
         segIndex: number = 0,
         opts: {} = {},
         retryOpts?: RetryOpts
-    ): Promise<[string | null, Error | null]> {
+    ): Promise<[string, Error | null]> {
         var [tree, err] = await file.merkleTree()
         if (err != null || tree == null || tree.rootHash() == null) {
-            return [null, new Error('Failed to create Merkle tree')]
+            return ['', new Error('Failed to create Merkle tree')]
         }
 
         const fileInfo = await this.nodes[0].getFileInfo(
             tree.rootHash() as string
         )
         if (fileInfo != null) {
-            return [null, new Error('File already exists')]
+            return ['', new Error('File already exists')]
         }
 
         var [submission, err] = await file.createSubmission(tag)
         if (err != null || submission == null) {
-            return [null, new Error('Failed to create submission')]
+            return ['', new Error('Failed to create submission')]
         }
 
         let tx = await this.flow.submit(submission, opts)
@@ -68,12 +70,12 @@ export class Uploader {
 
         let receipt = WaitForReceipt(this.provider, tx.hash, retryOpts)
         if (receipt == null) {
-            return [null, new Error('Failed to get transaction receipt')]
+            return ['', new Error('Failed to get transaction receipt')]
         }
         
         const tasks = await this.segmentUpload(file, tree, segIndex)
         if (tasks == null) {
-            return [null, new Error('Failed to get upload tasks')]
+            return ['', new Error('Failed to get upload tasks')]
         }
 
         // await this.processTasksInParallel(file, tree, tasks)
@@ -91,7 +93,7 @@ export class Uploader {
     }
 
     async segmentUpload(file: ZgFile, tree: MerkleTree, segIndex: number): Promise<UploadTask[] | null> {
-        const shardConfigs = await getShardConfig(this.nodes)
+        const shardConfigs = await getShardConfigs(this.nodes)
         if (shardConfigs == null) {
             return null
         }

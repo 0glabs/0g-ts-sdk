@@ -4,10 +4,10 @@ import {
     FileInfo,
     Segment,
     SegmentWithProof,
-    ShardConfig,
     Status,
 } from './types.js'
 import { Hash } from '../types.js'
+import { ShardConfig } from '../common/types.js'
 
 export class StorageNode extends HttpProvider {
     constructor(url: string) {

@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { FileHandle } from "node:fs/promises";
 import { BlobIterator } from "./BlobIterator.js";
 export declare class NodeFdIterator extends BlobIterator {

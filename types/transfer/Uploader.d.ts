@@ -10,8 +10,8 @@ export declare class Uploader {
     flow: Flow;
     signer: ethers.Wallet;
     opts: UploadOption;
-    constructor(nodes: StorageNode[], providerRpc: string, privateKey: string, opts?: UploadOption);
-    uploadFile(file: ZgFile, tag: ethers.BytesLike, segIndex?: number, opts?: {}, retryOpts?: RetryOpts): Promise<[string | null, Error | null]>;
+    constructor(nodes: StorageNode[], providerRpc: string, privateKey: string, flowContract: string, opts?: UploadOption);
+    uploadFile(file: ZgFile, tag: ethers.BytesLike, segIndex?: number, opts?: {}, retryOpts?: RetryOpts): Promise<[string, Error | null]>;
     processTasksInParallel(file: ZgFile, tree: MerkleTree, tasks: UploadTask[]): Promise<void>;
     segmentUpload(file: ZgFile, tree: MerkleTree, segIndex: number): Promise<UploadTask[] | null>;
     uploadTask(file: ZgFile, tree: MerkleTree, uploadTask: UploadTask): Promise<number | Error>;

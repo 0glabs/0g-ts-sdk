@@ -50,12 +50,7 @@ export interface KeyValue {
     size: number;
     key: Bytes;
 }
-export interface ShardedNode {
+export interface ZgsClient {
     url: string;
-    config: ShardConfig;
-}
-export interface ShardConfig {
-    shardId: number;
-    numShard: number;
 }
 //# sourceMappingURL=types.d.ts.map

@@ -1182,9 +1182,6 @@ function keccak256$1(data) {
     return '0x' + sha3.keccak_256(arrayify(data));
 }
 
-const TESTNET_FLOW_ADDRESS = '0x8873cc79c5b3b5666535C825205C9a128B1D75F1';
-// not used anymore
-// export const TESTNET_USDT_ADDRESS = '0xe3a700dF2a8bEBeF2f0B1eE92f46d230b01401B1';
 const DEFAULT_CHUNK_SIZE = 256; // bytes
 const DEFAULT_SEGMENT_MAX_CHUNKS = 1024;
 const DEFAULT_SEGMENT_SIZE = DEFAULT_CHUNK_SIZE * DEFAULT_SEGMENT_MAX_CHUNKS;
@@ -1197,7 +1194,7 @@ const ZERO_HASH = '0x00000000000000000000000000000000000000000000000000000000000
 /**
  *  The current version of Ethers.
  */
-const version = "6.13.1";
+const version = "6.13.0";
 
 /**
  *  Property helper functions.
@@ -23593,55 +23590,6 @@ async function WaitForReceipt(provider, txHash, opts) {
     return null;
 }
 
-class Downloader {
-    node;
-    constructor(node) {
-        this.node = node;
-    }
-    async downloadFileHelper(root, filePath, size, proof) {
-        const segmentOffset = 0;
-        const numChunks = GetSplitNum(size, DEFAULT_CHUNK_SIZE);
-        const numSegments = GetSplitNum(size, DEFAULT_SEGMENT_SIZE);
-        const numTasks = numSegments - segmentOffset;
-        for (let taskInd = 0; taskInd < numTasks; taskInd++) {
-            const segmentIndex = segmentOffset + taskInd;
-            const startIndex = segmentIndex * DEFAULT_SEGMENT_MAX_CHUNKS;
-            var endIndex = startIndex + DEFAULT_SEGMENT_MAX_CHUNKS;
-            if (endIndex > numChunks) {
-                endIndex = numChunks;
-            }
-            var segment = await this.node.downloadSegment(root, startIndex, endIndex);
-            var segArray = decodeBase64(segment);
-            if (segment == null) {
-                return new Error('Failed to download segment');
-            }
-            if (segmentIndex == numSegments - 1) {
-                const lastChunkSize = size % DEFAULT_CHUNK_SIZE;
-                if (lastChunkSize > 0) {
-                    const paddings = DEFAULT_CHUNK_SIZE - lastChunkSize;
-                    segArray = segArray.slice(0, segArray.length - paddings);
-                }
-            }
-            fs.appendFileSync(filePath, segArray);
-        }
-        return null;
-    }
-    async downloadFile(root, filePath, proof) {
-        const info = await this.node.getFileInfo(root);
-        if (info == null) {
-            return new Error('File not found');
-        }
-        if (!info.finalized) {
-            return new Error('File not finalized');
-        }
-        if (checkExist(filePath)) {
-            return new Error('Wrong path, provide a file path which does not exist.');
-        }
-        let err = await this.downloadFileHelper(root, filePath, info.tx.size, proof);
-        return err;
-    }
-}
-
 class JsonRpcError extends Error {
     constructor(message, code, data) {
         super(message);
@@ -26140,7 +26088,7 @@ function isValidConfig(config) {
         config.shardId < config.numShard);
 }
 
-async function getShardConfig(nodes) {
+async function getShardConfigs(nodes) {
     var configs = [];
     for (const cNode of nodes) {
         const cConfig = await cNode.getShardConfig();
@@ -26152,45 +26100,137 @@ async function getShardConfig(nodes) {
     return configs;
 }
 
+class Downloader {
+    nodes;
+    shardConfigs;
+    constructor(nodes) {
+        this.nodes = nodes;
+        this.shardConfigs = [];
+    }
+    // TODO: add proof check
+    async downloadTask(root, size, segmentOffset, taskInd, numSegments, numChunks, proof) {
+        const segmentIndex = segmentOffset + taskInd;
+        const startIndex = segmentIndex * DEFAULT_SEGMENT_MAX_CHUNKS;
+        var endIndex = startIndex + DEFAULT_SEGMENT_MAX_CHUNKS;
+        if (endIndex > numChunks) {
+            endIndex = numChunks;
+        }
+        let segment = null;
+        for (let i = 0; i < this.shardConfigs.length; i++) {
+            let nodeIndex = (taskInd + i) % this.shardConfigs.length;
+            if (segmentIndex % this.shardConfigs[nodeIndex].numShard != this.shardConfigs[nodeIndex].shardId) {
+                continue;
+            }
+            // try download from current node
+            segment = await this.nodes[nodeIndex].downloadSegment(root, startIndex, endIndex);
+            if (segment === null) {
+                continue;
+            }
+            var segArray = decodeBase64(segment);
+            if (segmentIndex == numSegments - 1) {
+                const lastChunkSize = size % DEFAULT_CHUNK_SIZE;
+                if (lastChunkSize > 0) {
+                    const paddings = DEFAULT_CHUNK_SIZE - lastChunkSize;
+                    segArray = segArray.slice(0, segArray.length - paddings);
+                }
+            }
+            return [segArray, null];
+        }
+        return [new Uint8Array(), new Error('No storage node holds segment with index ' + segmentIndex)];
+    }
+    async downloadFileHelper(root, filePath, size, proof) {
+        const shardConfigs = await getShardConfigs(this.nodes);
+        if (shardConfigs == null) {
+            return new Error('Failed to get shard configs');
+        }
+        const segmentOffset = 0;
+        const numChunks = GetSplitNum(size, DEFAULT_CHUNK_SIZE);
+        const numSegments = GetSplitNum(size, DEFAULT_SEGMENT_SIZE);
+        const numTasks = numSegments - segmentOffset;
+        for (let taskInd = 0; taskInd < numTasks; taskInd++) {
+            let [segArray, err] = await this.downloadTask(root, size, segmentOffset, taskInd, numSegments, numChunks, proof);
+            if (err != null) {
+                return err;
+            }
+            fs.appendFileSync(filePath, segArray);
+        }
+        return null;
+    }
+    async downloadFile(root, filePath, proof) {
+        var [info, err] = await this.queryFile(root);
+        if (err != null || info === null) {
+            return new Error(err?.message);
+        }
+        if (!info.finalized) {
+            return new Error('File not finalized');
+        }
+        if (checkExist(filePath)) {
+            return new Error('Wrong path, provide a file path which does not exist.');
+        }
+        let shardConfigs = await getShardConfigs(this.nodes);
+        if (shardConfigs === null) {
+            return new Error('Failed to get shard configs');
+        }
+        this.shardConfigs = shardConfigs;
+        err = await this.downloadFileHelper(root, filePath, info.tx.size, proof);
+        return err;
+    }
+    async queryFile(root) {
+        let fileInfo = null;
+        for (let node of this.nodes) {
+            const currInfo = await node.getFileInfo(root);
+            if (currInfo === null) {
+                return [null, new Error('File not found on node ' + node.url)];
+            }
+            else if (fileInfo === null) {
+                fileInfo = currInfo;
+            }
+        }
+        return [fileInfo, null];
+    }
+}
+
 class Uploader {
     nodes;
     provider;
     flow;
     signer;
     opts;
-    constructor(nodes, providerRpc, privateKey, opts) {
+    constructor(nodes, providerRpc, privateKey, flowContract, opts) {
         this.nodes = nodes;
         this.provider = new JsonRpcProvider(providerRpc);
         this.signer = new Wallet(privateKey, this.provider);
-        this.flow = getFlowContract(TESTNET_FLOW_ADDRESS, this.signer);
+        this.flow = getFlowContract(flowContract, this.signer);
         this.opts = opts || {
             tags: '0x',
             finalityRequired: true,
             taskSize: 10,
+            expectedReplica: 1,
+            skipTx: false,
         };
     }
     async uploadFile(file, tag, segIndex = 0, opts = {}, retryOpts) {
         var [tree, err] = await file.merkleTree();
         if (err != null || tree == null || tree.rootHash() == null) {
-            return [null, new Error('Failed to create Merkle tree')];
+            return ['', new Error('Failed to create Merkle tree')];
         }
         const fileInfo = await this.nodes[0].getFileInfo(tree.rootHash());
         if (fileInfo != null) {
-            return [null, new Error('File already exists')];
+            return ['', new Error('File already exists')];
         }
         var [submission, err] = await file.createSubmission(tag);
         if (err != null || submission == null) {
-            return [null, new Error('Failed to create submission')];
+            return ['', new Error('Failed to create submission')];
         }
         let tx = await this.flow.submit(submission, opts);
         await tx.wait();
         let receipt = WaitForReceipt(this.provider, tx.hash, retryOpts);
         if (receipt == null) {
-            return [null, new Error('Failed to get transaction receipt')];
+            return ['', new Error('Failed to get transaction receipt')];
         }
         const tasks = await this.segmentUpload(file, tree, segIndex);
         if (tasks == null) {
-            return [null, new Error('Failed to get upload tasks')];
+            return ['', new Error('Failed to get upload tasks')];
         }
         // await this.processTasksInParallel(file, tree, tasks)
         // .then(() => console.log('All tasks processed'))
@@ -26204,7 +26244,7 @@ class Uploader {
         await Promise.all(taskPromises);
     }
     async segmentUpload(file, tree, segIndex) {
-        const shardConfigs = await getShardConfig(this.nodes);
+        const shardConfigs = await getShardConfigs(this.nodes);
         if (shardConfigs == null) {
             return null;
         }
@@ -26335,6 +26375,150 @@ class Uploader {
             segIndex++;
         }
         return null;
+    }
+}
+
+function pushdown(node) {
+    if (node.childs === null) {
+        node.childs = [];
+        for (let i = 0; i < 2; i += 1) {
+            node.childs.push({
+                childs: null,
+                numShard: node.numShard << 1,
+                replica: 0,
+                lazyTags: 0,
+            });
+        }
+    }
+    for (let i = 0; i < 2; i += 1) {
+        node.childs[i].replica += node.lazyTags;
+        node.childs[i].lazyTags += node.lazyTags;
+    }
+    node.lazyTags = 0;
+}
+// insert a shard if it contributes to the replica
+function insert(node, numShard, shardId, expectedReplica) {
+    if (node.replica >= expectedReplica) {
+        return false;
+    }
+    if (node.numShard === numShard) {
+        node.replica += 1;
+        node.lazyTags += 1;
+        return true;
+    }
+    pushdown(node);
+    if (node.childs === null) {
+        throw new Error('node.childs is null');
+    }
+    let inserted = insert(node.childs[shardId % 2], numShard, shardId >> 1, expectedReplica);
+    node.replica = Math.min(node.childs[0].replica, node.childs[1].replica);
+    return inserted;
+}
+
+function selectNodes(nodes, expectedReplica) {
+    if (expectedReplica === 0) {
+        return [[], false];
+    }
+    nodes.sort((a, b) => {
+        if (a.config.numShard === b.config.numShard) {
+            return a.config.shardId - b.config.shardId;
+        }
+        return a.config.numShard - b.config.numShard;
+    });
+    let root = {
+        childs: null,
+        numShard: 1,
+        replica: 0,
+        lazyTags: 0,
+    };
+    let selectedNodes = [];
+    for (let i = 0; i < nodes.length; i += 1) {
+        let node = nodes[i];
+        if (insert(root, node.config.numShard, node.config.shardId, expectedReplica)) {
+            selectedNodes.push(node);
+        }
+        if (root.replica >= expectedReplica) {
+            return [selectedNodes, true];
+        }
+    }
+    return [[], false];
+}
+
+class Indexer extends HttpProvider {
+    blockchain_rpc;
+    private_key;
+    flow_contract;
+    upload_option;
+    constructor(url, blockchain_rpc, private_key, flow_contract, upload_option) {
+        super({ url });
+        this.blockchain_rpc = blockchain_rpc;
+        this.private_key = private_key;
+        this.flow_contract = flow_contract;
+        this.upload_option = upload_option;
+    }
+    async getShardedNodes() {
+        const res = await super.request({
+            method: 'indexer_getShardedNodes',
+        });
+        return res;
+    }
+    async getNodeLocations() {
+        const res = await super.request({
+            method: 'indexer_getNodeLocations',
+        });
+        return res;
+    }
+    async getFileLocations(rootHash) {
+        const res = await super.request({
+            method: 'indexer_getFileLocations',
+            params: [rootHash],
+        });
+        return res;
+    }
+    async newUploaderFromIndexerNodes(expectedReplica) {
+        let [clients, err] = await this.selectNodes(expectedReplica);
+        if (err != null) {
+            return [null, err];
+        }
+        let uploader = new Uploader(clients, this.blockchain_rpc, this.private_key, this.flow_contract, this.upload_option);
+        return [uploader, null];
+    }
+    async selectNodes(expectedReplica) {
+        let nodes = await this.getShardedNodes();
+        let [trusted, ok] = selectNodes(nodes.trusted, expectedReplica);
+        if (!ok) {
+            return [[], new Error('cannot select a subset from the returned nodes that meets the replication requirement')];
+        }
+        let clients = [];
+        trusted.forEach(node => {
+            let sn = new StorageNode(node.url);
+            clients.push(sn);
+        });
+        return [clients, null];
+    }
+    async upload(file, tag, segIndex = 0, opts, retryOpts) {
+        var expectedReplica = 1;
+        if (opts != null && opts.expectedReplica != null) {
+            expectedReplica = Math.max(1, opts.expectedReplica);
+        }
+        let [uploader, err] = await this.newUploaderFromIndexerNodes(expectedReplica);
+        if (err != null || uploader == null) {
+            return ['', new Error('failed to create uploader')];
+        }
+        return await uploader.uploadFile(file, tag, segIndex, opts, retryOpts);
+    }
+    async download(rootHash, filePath, proof) {
+        let locations = await this.getFileLocations(rootHash);
+        if (locations.length == 0) {
+            return new Error('failed to get file locations');
+        }
+        let clients = [];
+        locations.forEach(node => {
+            let sn = new StorageNode(node.url);
+            clients.push(sn);
+        });
+        let downloader = new Downloader(clients);
+        return await downloader.downloadFile(rootHash, filePath, proof);
     }
 }
 
@@ -26841,4 +27025,4 @@ class ZgFile extends AbstractFile {
     }
 }
 
-export { Blob$1 as Blob, DEFAULT_CHUNK_SIZE, DEFAULT_SEGMENT_MAX_CHUNKS, DEFAULT_SEGMENT_SIZE, Downloader, EMPTY_CHUNK, EMPTY_CHUNK_HASH, Flow__factory, GetSplitNum, LeafNode, MerkleTree, Proof, ProofErrors, SMALL_FILE_SIZE_THRESHOLD, StorageKv, StorageNode, TESTNET_FLOW_ADDRESS, Uploader, WaitForReceipt, ZERO_HASH, ZgFile, checkExist, computePaddedSize, index as factories, getFlowContract, getShardConfig, isValidConfig, nextPow2, numSplits };
+export { Blob$1 as Blob, DEFAULT_CHUNK_SIZE, DEFAULT_SEGMENT_MAX_CHUNKS, DEFAULT_SEGMENT_SIZE, Downloader, EMPTY_CHUNK, EMPTY_CHUNK_HASH, Flow__factory, GetSplitNum, Indexer, LeafNode, MerkleTree, Proof, ProofErrors, SMALL_FILE_SIZE_THRESHOLD, StorageKv, StorageNode, Uploader, WaitForReceipt, ZERO_HASH, ZgFile, checkExist, computePaddedSize, index as factories, getFlowContract, getShardConfigs, isValidConfig, nextPow2, numSplits };

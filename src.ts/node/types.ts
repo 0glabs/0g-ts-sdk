@@ -62,12 +62,6 @@ export interface KeyValue {
     key: Bytes
 }
 
-export interface ShardedNode {
+export interface ZgsClient {
     url: string
-    config: ShardConfig
-}
-
-export interface ShardConfig {
-    shardId: number
-    numShard: number
 }

@@ -1,5 +1,5 @@
 {
-  "name": "0g-ts-sdk",
+  "name": "@0glabs/0g-ts-sdk",
   "version": "0.1.0",
   "description": "JS SDK for 0G Storage",
   "main": "./lib.commonjs/index.js",
@@ -25,7 +25,7 @@
     "release": "npm run build-all && npm run gen-type-package-json && npm run build-dist"
   },
   "keywords": [],
-  "author": "",
+  "author": "0G Labs",
   "license": "ISC",
   "devDependencies": {
     "@rollup/plugin-commonjs": "^25.0.4",
@@ -50,6 +50,19 @@
     "open-jsonrpc-provider": "^0.2.1"
   },
   "peerDependencies": {
-    "ethers": "^6.13.0"
-  }
+    "ethers": "^6.13.1"
+  },
+  "types": "./lib.commonjs/index.d.ts",
+  "directories": {
+    "example": "examples",
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/0glabs/0g-ts-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/0glabs/0g-ts-sdk/issues"
+  },
+  "homepage": "https://github.com/0glabs/0g-ts-sdk#readme"
 }
