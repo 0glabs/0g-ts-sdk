@@ -5,11 +5,11 @@ import {
 } from '../constant.js'
 import { StorageNode, SegmentWithProof } from '../node/index.js'
 import { Flow } from '../contracts/flow/Flow.js'
-import { getFlowContract, WaitForReceipt } from '../utils.js'
+import { getFlowContract, getMarketContract, WaitForReceipt } from '../utils.js'
 import { RetryOpts } from '../types.js'
 import { ZgFile, MerkleTree } from '../file/index.js'
 import { encodeBase64, ethers } from 'ethers'
-import { getShardConfigs } from './utils.js'
+import { calculatePrice, getShardConfigs } from './utils.js'
 import { UploadOption, UploadTask } from './types.js'
 
 export class Uploader {
@@ -17,14 +17,16 @@ export class Uploader {
     provider: ethers.JsonRpcProvider
     flow: Flow
     signer: ethers.Wallet
-    opts: UploadOption
+    gasPrice: bigint
+    gasLimit: bigint
 
     constructor(
         nodes: StorageNode[],
         providerRpc: string,
         privateKey: string,
         flowContract: string,
-        opts?: UploadOption
+        gasPrice: bigint = BigInt('0'),
+        gasLimit: bigint = BigInt('0')
     ) {
         this.nodes = nodes
 
@@ -32,20 +34,15 @@ export class Uploader {
         this.signer = new ethers.Wallet(privateKey, this.provider)
 
         this.flow = getFlowContract(flowContract, this.signer)
-        this.opts = opts || {
-            tags: '0x',
-            finalityRequired: true,
-            taskSize: 10,
-            expectedReplica: 1,
-            skipTx: false,
-        }
+        
+        this.gasPrice = gasPrice
+        this.gasLimit = gasLimit
     }
 
     async uploadFile(
         file: ZgFile,
-        tag: ethers.BytesLike,
         segIndex: number = 0,
-        opts: {} = {},
+        opts: UploadOption,
         retryOpts?: RetryOpts
     ): Promise<[string, Error | null]> {
         var [tree, err] = await file.merkleTree()
@@ -60,12 +57,34 @@ export class Uploader {
             return ['', new Error('File already exists')]
         }
 
-        var [submission, err] = await file.createSubmission(tag)
+        var [submission, err] = await file.createSubmission(opts.tags)
         if (err != null || submission == null) {
             return ['', new Error('Failed to create submission')]
         }
 
-        let tx = await this.flow.submit(submission, opts)
+        let marketAddr = await this.flow.market()
+        let marketContract = getMarketContract(marketAddr, this.signer)
+
+        let pricePerSector = await marketContract.pricePerSector()
+        
+        let fee: bigint = BigInt('0')
+        if (opts.fee > 0) {
+            fee = opts.fee
+        } else {
+            fee = calculatePrice(submission, pricePerSector) 
+        }
+
+        var txOpts: { value: bigint, gasPrice?: bigint, gasLimit?: bigint } = { value: fee }
+        if (this.gasPrice > 0) {
+            txOpts.gasPrice = this.gasPrice
+        }
+        if (this.gasLimit > 0) {
+            txOpts.gasLimit = this.gasLimit
+        }
+
+        console.log('Submitting transaction with fee:', fee)
+
+        let tx = await this.flow.submit(submission, txOpts)
         await tx.wait()
 
         let receipt = WaitForReceipt(this.provider, tx.hash, retryOpts)
@@ -73,7 +92,7 @@ export class Uploader {
             return ['', new Error('Failed to get transaction receipt')]
         }
         
-        const tasks = await this.segmentUpload(file, tree, segIndex)
+        const tasks = await this.segmentUpload(file, tree, segIndex, opts.taskSize)
         if (tasks == null) {
             return ['', new Error('Failed to get upload tasks')]
         }
@@ -92,7 +111,7 @@ export class Uploader {
         await Promise.all(taskPromises);
     }
 
-    async segmentUpload(file: ZgFile, tree: MerkleTree, segIndex: number): Promise<UploadTask[] | null> {
+    async segmentUpload(file: ZgFile, tree: MerkleTree, segIndex: number, taskSize: number): Promise<UploadTask[] | null> {
         const shardConfigs = await getShardConfigs(this.nodes)
         if (shardConfigs == null) {
             return null
@@ -119,10 +138,11 @@ export class Uploader {
             while (segIndex < numSegments) {
                 tasks.push({
                     clientIndex,
+                    taskSize,
                     segIndex,
                     numShard: shardConfig.numShard,
                 })
-                segIndex += shardConfig.numShard * this.opts.taskSize
+                segIndex += shardConfig.numShard * taskSize
             }
             uploadTasks.push(tasks)
         }
@@ -154,7 +174,7 @@ export class Uploader {
         let startSegIndex = segIndex
         let allDataUploaded = false
         var segments: SegmentWithProof[] = []
-        for (let i = 0; i < this.opts.taskSize; i += 1) {
+        for (let i = 0; i < uploadTask.taskSize; i += 1) {
             startSegIndex = segIndex * DEFAULT_SEGMENT_MAX_CHUNKS
             if (startSegIndex >= numChunks) {
                 break

@@ -9,11 +9,12 @@ export declare class Uploader {
     provider: ethers.JsonRpcProvider;
     flow: Flow;
     signer: ethers.Wallet;
-    opts: UploadOption;
-    constructor(nodes: StorageNode[], providerRpc: string, privateKey: string, flowContract: string, opts?: UploadOption);
-    uploadFile(file: ZgFile, tag: ethers.BytesLike, segIndex?: number, opts?: {}, retryOpts?: RetryOpts): Promise<[string, Error | null]>;
+    gasPrice: bigint;
+    gasLimit: bigint;
+    constructor(nodes: StorageNode[], providerRpc: string, privateKey: string, flowContract: string, gasPrice?: bigint, gasLimit?: bigint);
+    uploadFile(file: ZgFile, segIndex: number | undefined, opts: UploadOption, retryOpts?: RetryOpts): Promise<[string, Error | null]>;
     processTasksInParallel(file: ZgFile, tree: MerkleTree, tasks: UploadTask[]): Promise<void>;
-    segmentUpload(file: ZgFile, tree: MerkleTree, segIndex: number): Promise<UploadTask[] | null>;
+    segmentUpload(file: ZgFile, tree: MerkleTree, segIndex: number, taskSize: number): Promise<UploadTask[] | null>;
     uploadTask(file: ZgFile, tree: MerkleTree, uploadTask: UploadTask): Promise<number | Error>;
     uploadFileHelper(file: ZgFile, tree: MerkleTree, segIndex?: number): Promise<Error | null>;
 }

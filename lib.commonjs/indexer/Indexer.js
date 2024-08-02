@@ -9,13 +9,11 @@ class Indexer extends open_jsonrpc_provider_1.HttpProvider {
     blockchain_rpc;
     private_key;
     flow_contract;
-    upload_option;
-    constructor(url, blockchain_rpc, private_key, flow_contract, upload_option) {
+    constructor(url, blockchain_rpc, private_key, flow_contract) {
         super({ url });
         this.blockchain_rpc = blockchain_rpc;
         this.private_key = private_key;
         this.flow_contract = flow_contract;
-        this.upload_option = upload_option;
     }
     async getShardedNodes() {
         const res = await super.request({
@@ -41,7 +39,7 @@ class Indexer extends open_jsonrpc_provider_1.HttpProvider {
         if (err != null) {
             return [null, err];
         }
-        let uploader = new index_js_2.Uploader(clients, this.blockchain_rpc, this.private_key, this.flow_contract, this.upload_option);
+        let uploader = new index_js_2.Uploader(clients, this.blockchain_rpc, this.private_key, this.flow_contract);
         return [uploader, null];
     }
     async selectNodes(expectedReplica) {
@@ -57,16 +55,26 @@ class Indexer extends open_jsonrpc_provider_1.HttpProvider {
         });
         return [clients, null];
     }
-    async upload(file, tag, segIndex = 0, opts, retryOpts) {
+    async upload(file, segIndex = 0, opts, retryOpts) {
         var expectedReplica = 1;
-        if (opts != null && opts.expectedReplica != null) {
+        if (opts != undefined && opts.expectedReplica != null) {
             expectedReplica = Math.max(1, opts.expectedReplica);
         }
         let [uploader, err] = await this.newUploaderFromIndexerNodes(expectedReplica);
         if (err != null || uploader == null) {
             return ['', new Error('failed to create uploader')];
         }
-        return await uploader.uploadFile(file, tag, segIndex, opts, retryOpts);
+        if (opts === undefined) {
+            opts = {
+                tags: '0x',
+                finalityRequired: true,
+                taskSize: 10,
+                expectedReplica: 1,
+                skipTx: false,
+                fee: BigInt('0'),
+            };
+        }
+        return await uploader.uploadFile(file, segIndex, opts, retryOpts);
     }
     async download(rootHash, filePath, proof) {
         let locations = await this.getFileLocations(rootHash);

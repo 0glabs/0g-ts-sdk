@@ -1,8 +1,12 @@
 import { Flow__factory } from './contracts/flow/index.js';
+import { FixedPrice__factory } from './contracts/market/index.js';
 import fs from 'fs';
 import path from 'path';
 export function getFlowContract(address, signer) {
     return Flow__factory.connect(address, signer);
+}
+export function getMarketContract(address, signer) {
+    return FixedPrice__factory.connect(address, signer);
 }
 export function checkExist(inputPath) {
     const dirName = path.dirname(inputPath);

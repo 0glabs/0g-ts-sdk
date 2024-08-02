@@ -21,6 +21,7 @@
     "build-cjs": "tsc --project tsconfig.commonjs.json",
     "build-all": "npm run clean && tsc -b tsconfig.esm.json tsconfig.commonjs.json tsconfig.types.json",
     "gen-type-package-json": "echo '{\"type\": \"commonjs\"}' > ./lib.commonjs/package.json && echo '{\"type\": \"module\"}' > ./lib.esm/package.json",
+    "gen-contract-type-market": "typechain --target ethers-v6 --node16-modules --out-dir src.ts/contracts/market '../0g-storage-contracts/artifacts/contracts/market/FixedPrice.sol/FixedPrice.json'",
     "gen-contract-type-flow": "typechain --target ethers-v6 --node16-modules --out-dir src.ts/contracts/flow '../0g-storage-contracts/artifacts/contracts/dataFlow/Flow.sol/Flow.json'",
     "release": "npm run build-all && npm run gen-type-package-json && npm run build-dist"
   },
