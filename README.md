@@ -49,7 +49,7 @@ const indRpc = ''; // indexer rpc
 
 const indexer = new Indexer(indRpc, evmRpc, privateKey, "0xB7e39604f47c0e4a6Ad092a281c1A8429c2440d3");
 // need to pay fees to store data in storage nodes
-var [tx, err] = await indexer.upload(file, '0x', 0, {value: ethers.parseEther('0.5'), gasLimit: 10000000});
+var [tx, err] = await indexer.upload(file, 0);
 if (err === null) {
   console.log("File uploaded successfully, tx: ", tx);
 } else {
@@ -72,7 +72,7 @@ Import `zgstorage.esm.js` in your html file:
 
 ```html
 <script type="module">
-  import { Blob, Indexer, getFlowContract } from "./dist/zgstorage.esm.js";
+  import { Blob, Indexer } from "./dist/zgstorage.esm.js";
   // Your code here...
 </script>
 ```
