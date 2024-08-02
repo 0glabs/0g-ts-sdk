@@ -1,6 +1,7 @@
 import { ethers } from 'ethers';
 export interface UploadTask {
     clientIndex: number;
+    taskSize: number;
     segIndex: number;
     numShard: number;
 }
@@ -10,5 +11,6 @@ export interface UploadOption {
     taskSize: number;
     expectedReplica: number;
     skipTx: boolean;
+    fee: bigint;
 }
 //# sourceMappingURL=types.d.ts.map

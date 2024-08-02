@@ -1,15 +1,20 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getFlowContract = getFlowContract;
+exports.getMarketContract = getMarketContract;
 exports.checkExist = checkExist;
 exports.GetSplitNum = GetSplitNum;
 exports.WaitForReceipt = WaitForReceipt;
 const tslib_1 = require("tslib");
 const index_js_1 = require("./contracts/flow/index.js");
+const index_js_2 = require("./contracts/market/index.js");
 const fs_1 = tslib_1.__importDefault(require("fs"));
 const path_1 = tslib_1.__importDefault(require("path"));
 function getFlowContract(address, signer) {
     return index_js_1.Flow__factory.connect(address, signer);
+}
+function getMarketContract(address, signer) {
+    return index_js_2.FixedPrice__factory.connect(address, signer);
 }
 function checkExist(inputPath) {
     const dirName = path_1.default.dirname(inputPath);

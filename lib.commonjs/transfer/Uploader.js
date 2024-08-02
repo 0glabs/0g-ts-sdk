@@ -10,21 +10,17 @@ class Uploader {
     provider;
     flow;
     signer;
-    opts;
-    constructor(nodes, providerRpc, privateKey, flowContract, opts) {
+    gasPrice;
+    gasLimit;
+    constructor(nodes, providerRpc, privateKey, flowContract, gasPrice = BigInt('0'), gasLimit = BigInt('0')) {
         this.nodes = nodes;
         this.provider = new ethers_1.ethers.JsonRpcProvider(providerRpc);
         this.signer = new ethers_1.ethers.Wallet(privateKey, this.provider);
         this.flow = (0, utils_js_1.getFlowContract)(flowContract, this.signer);
-        this.opts = opts || {
-            tags: '0x',
-            finalityRequired: true,
-            taskSize: 10,
-            expectedReplica: 1,
-            skipTx: false,
-        };
+        this.gasPrice = gasPrice;
+        this.gasLimit = gasLimit;
     }
-    async uploadFile(file, tag, segIndex = 0, opts = {}, retryOpts) {
+    async uploadFile(file, segIndex = 0, opts, retryOpts) {
         var [tree, err] = await file.merkleTree();
         if (err != null || tree == null || tree.rootHash() == null) {
             return ['', new Error('Failed to create Merkle tree')];
@@ -33,17 +29,35 @@ class Uploader {
         if (fileInfo != null) {
             return ['', new Error('File already exists')];
         }
-        var [submission, err] = await file.createSubmission(tag);
+        var [submission, err] = await file.createSubmission(opts.tags);
         if (err != null || submission == null) {
             return ['', new Error('Failed to create submission')];
         }
-        let tx = await this.flow.submit(submission, opts);
+        let marketAddr = await this.flow.market();
+        let marketContract = (0, utils_js_1.getMarketContract)(marketAddr, this.signer);
+        let pricePerSector = await marketContract.pricePerSector();
+        let fee = BigInt('0');
+        if (opts.fee > 0) {
+            fee = opts.fee;
+        }
+        else {
+            fee = (0, utils_js_2.calculatePrice)(submission, pricePerSector);
+        }
+        var txOpts = { value: fee };
+        if (this.gasPrice > 0) {
+            txOpts.gasPrice = this.gasPrice;
+        }
+        if (this.gasLimit > 0) {
+            txOpts.gasLimit = this.gasLimit;
+        }
+        console.log('Submitting transaction with fee:', fee);
+        let tx = await this.flow.submit(submission, txOpts);
         await tx.wait();
         let receipt = (0, utils_js_1.WaitForReceipt)(this.provider, tx.hash, retryOpts);
         if (receipt == null) {
             return ['', new Error('Failed to get transaction receipt')];
         }
-        const tasks = await this.segmentUpload(file, tree, segIndex);
+        const tasks = await this.segmentUpload(file, tree, segIndex, opts.taskSize);
         if (tasks == null) {
             return ['', new Error('Failed to get upload tasks')];
         }
@@ -58,7 +72,7 @@ class Uploader {
         const taskPromises = tasks.map(task => this.uploadTask(file, tree, task));
         await Promise.all(taskPromises);
     }
-    async segmentUpload(file, tree, segIndex) {
+    async segmentUpload(file, tree, segIndex, taskSize) {
         const shardConfigs = await (0, utils_js_2.getShardConfigs)(this.nodes);
         if (shardConfigs == null) {
             return null;
@@ -77,10 +91,11 @@ class Uploader {
             while (segIndex < numSegments) {
                 tasks.push({
                     clientIndex,
+                    taskSize,
                     segIndex,
                     numShard: shardConfig.numShard,
                 });
-                segIndex += shardConfig.numShard * this.opts.taskSize;
+                segIndex += shardConfig.numShard * taskSize;
             }
             uploadTasks.push(tasks);
         }
@@ -101,7 +116,7 @@ class Uploader {
         let startSegIndex = segIndex;
         let allDataUploaded = false;
         var segments = [];
-        for (let i = 0; i < this.opts.taskSize; i += 1) {
+        for (let i = 0; i < uploadTask.taskSize; i += 1) {
             startSegIndex = segIndex * constant_js_1.DEFAULT_SEGMENT_MAX_CHUNKS;
             if (startSegIndex >= numChunks) {
                 break;

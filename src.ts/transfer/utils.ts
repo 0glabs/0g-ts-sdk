@@ -1,4 +1,5 @@
 import { ShardConfig } from '../common/index.js'
+import { SubmissionStruct } from '../contracts/flow/Flow.js'
 import { StorageNode, isValidConfig } from '../node/index.js'
 
 export async function getShardConfigs(
@@ -15,3 +16,16 @@ export async function getShardConfigs(
 
     return configs
 }
+
+export function calculatePrice(
+    submission: SubmissionStruct,
+    pricePerSector: bigint
+): bigint {
+    let sectors: number = 0
+    for (const node of submission.nodes) {
+        sectors += 1 << Number(node.height.toString())
+    }
+
+    return BigInt(sectors) * pricePerSector
+}
+

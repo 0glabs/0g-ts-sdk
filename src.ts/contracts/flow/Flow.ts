@@ -89,51 +89,65 @@ export type EpochRangeWithContextDigestStructOutput = [
 export interface FlowInterface extends Interface {
   getFunction(
     nameOrSignature:
+      | "DEFAULT_ADMIN_ROLE"
+      | "PAUSER_ROLE"
       | "batchSubmit"
       | "blocksPerEpoch"
-      | "book"
-      | "commitRoot"
-      | "currentLength"
       | "epoch"
       | "epochStartPosition"
       | "firstBlock"
       | "getContext"
       | "getEpochRange"
+      | "getRoleAdmin"
+      | "getRoleMember"
+      | "getRoleMemberCount"
+      | "grantRole"
+      | "hasRole"
+      | "initialize"
+      | "initialized"
       | "makeContext"
       | "makeContextFixedTimes"
       | "makeContextWithResult"
-      | "nextAlign"
-      | "nextPow2"
+      | "market"
       | "numSubmissions"
+      | "pause"
       | "paused"
       | "queryContextAtPosition"
-      | "root"
+      | "renounceRole"
+      | "revokeRole"
       | "rootHistory"
       | "submissionIndex"
       | "submit"
-      | "unstagedHeight"
-      | "zeros"
+      | "supportsInterface"
+      | "tree"
+      | "unpause"
   ): FunctionFragment;
 
   getEvent(
-    nameOrSignatureOrTopic: "NewEpoch" | "Paused" | "Submit" | "Unpaused"
+    nameOrSignatureOrTopic:
+      | "NewEpoch"
+      | "Paused"
+      | "RoleAdminChanged"
+      | "RoleGranted"
+      | "RoleRevoked"
+      | "Submit"
+      | "Unpaused"
   ): EventFragment;
 
+  encodeFunctionData(
+    functionFragment: "DEFAULT_ADMIN_ROLE",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "PAUSER_ROLE",
+    values?: undefined
+  ): string;
   encodeFunctionData(
     functionFragment: "batchSubmit",
     values: [SubmissionStruct[]]
   ): string;
   encodeFunctionData(
     functionFragment: "blocksPerEpoch",
-    values?: undefined
-  ): string;
-  encodeFunctionData(functionFragment: "book", values?: undefined): string;
-  encodeFunctionData(
-    functionFragment: "commitRoot",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "currentLength",
     values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "epoch", values?: undefined): string;
@@ -154,6 +168,34 @@ export interface FlowInterface extends Interface {
     values: [BytesLike]
   ): string;
   encodeFunctionData(
+    functionFragment: "getRoleAdmin",
+    values: [BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getRoleMember",
+    values: [BytesLike, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getRoleMemberCount",
+    values: [BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "grantRole",
+    values: [BytesLike, AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "hasRole",
+    values: [BytesLike, AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "initialize",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "initialized",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "makeContext",
     values?: undefined
   ): string;
@@ -165,24 +207,25 @@ export interface FlowInterface extends Interface {
     functionFragment: "makeContextWithResult",
     values?: undefined
   ): string;
-  encodeFunctionData(
-    functionFragment: "nextAlign",
-    values: [BigNumberish, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "nextPow2",
-    values: [BigNumberish]
-  ): string;
+  encodeFunctionData(functionFragment: "market", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "numSubmissions",
     values?: undefined
   ): string;
+  encodeFunctionData(functionFragment: "pause", values?: undefined): string;
   encodeFunctionData(functionFragment: "paused", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "queryContextAtPosition",
     values: [BigNumberish]
   ): string;
-  encodeFunctionData(functionFragment: "root", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "renounceRole",
+    values: [BytesLike, AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "revokeRole",
+    values: [BytesLike, AddressLike]
+  ): string;
   encodeFunctionData(
     functionFragment: "rootHistory",
     values?: undefined
@@ -196,23 +239,26 @@ export interface FlowInterface extends Interface {
     values: [SubmissionStruct]
   ): string;
   encodeFunctionData(
-    functionFragment: "unstagedHeight",
-    values?: undefined
+    functionFragment: "supportsInterface",
+    values: [BytesLike]
   ): string;
-  encodeFunctionData(functionFragment: "zeros", values: [BigNumberish]): string;
+  encodeFunctionData(functionFragment: "tree", values?: undefined): string;
+  encodeFunctionData(functionFragment: "unpause", values?: undefined): string;
 
+  decodeFunctionResult(
+    functionFragment: "DEFAULT_ADMIN_ROLE",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "PAUSER_ROLE",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "batchSubmit",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
     functionFragment: "blocksPerEpoch",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "book", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "commitRoot", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "currentLength",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "epoch", data: BytesLike): Result;
@@ -227,6 +273,25 @@ export interface FlowInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "getRoleAdmin",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getRoleMember",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getRoleMemberCount",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "grantRole", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "hasRole", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "initialized",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "makeContext",
     data: BytesLike
   ): Result;
@@ -238,18 +303,22 @@ export interface FlowInterface extends Interface {
     functionFragment: "makeContextWithResult",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "nextAlign", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "nextPow2", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "market", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "numSubmissions",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "pause", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "paused", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "queryContextAtPosition",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "root", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "renounceRole",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "revokeRole", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "rootHistory",
     data: BytesLike
@@ -260,10 +329,11 @@ export interface FlowInterface extends Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "submit", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "unstagedHeight",
+    functionFragment: "supportsInterface",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "zeros", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "tree", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "unpause", data: BytesLike): Result;
 }
 
 export namespace NewEpochEvent {
@@ -302,6 +372,64 @@ export namespace PausedEvent {
   export type OutputTuple = [account: string];
   export interface OutputObject {
     account: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace RoleAdminChangedEvent {
+  export type InputTuple = [
+    role: BytesLike,
+    previousAdminRole: BytesLike,
+    newAdminRole: BytesLike
+  ];
+  export type OutputTuple = [
+    role: string,
+    previousAdminRole: string,
+    newAdminRole: string
+  ];
+  export interface OutputObject {
+    role: string;
+    previousAdminRole: string;
+    newAdminRole: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace RoleGrantedEvent {
+  export type InputTuple = [
+    role: BytesLike,
+    account: AddressLike,
+    sender: AddressLike
+  ];
+  export type OutputTuple = [role: string, account: string, sender: string];
+  export interface OutputObject {
+    role: string;
+    account: string;
+    sender: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace RoleRevokedEvent {
+  export type InputTuple = [
+    role: BytesLike,
+    account: AddressLike,
+    sender: AddressLike
+  ];
+  export type OutputTuple = [role: string, account: string, sender: string];
+  export interface OutputObject {
+    role: string;
+    account: string;
+    sender: string;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -395,6 +523,10 @@ export interface Flow extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
+  DEFAULT_ADMIN_ROLE: TypedContractMethod<[], [string], "view">;
+
+  PAUSER_ROLE: TypedContractMethod<[], [string], "view">;
+
   batchSubmit: TypedContractMethod<
     [submissions: SubmissionStruct[]],
     [
@@ -410,12 +542,6 @@ export interface Flow extends BaseContract {
 
   blocksPerEpoch: TypedContractMethod<[], [bigint], "view">;
 
-  book: TypedContractMethod<[], [string], "view">;
-
-  commitRoot: TypedContractMethod<[], [void], "nonpayable">;
-
-  currentLength: TypedContractMethod<[], [bigint], "view">;
-
   epoch: TypedContractMethod<[], [bigint], "view">;
 
   epochStartPosition: TypedContractMethod<[], [bigint], "view">;
@@ -429,6 +555,32 @@ export interface Flow extends BaseContract {
     [EpochRangeStructOutput],
     "view"
   >;
+
+  getRoleAdmin: TypedContractMethod<[role: BytesLike], [string], "view">;
+
+  getRoleMember: TypedContractMethod<
+    [role: BytesLike, index: BigNumberish],
+    [string],
+    "view"
+  >;
+
+  getRoleMemberCount: TypedContractMethod<[role: BytesLike], [bigint], "view">;
+
+  grantRole: TypedContractMethod<
+    [role: BytesLike, account: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
+  hasRole: TypedContractMethod<
+    [role: BytesLike, account: AddressLike],
+    [boolean],
+    "view"
+  >;
+
+  initialize: TypedContractMethod<[market_: AddressLike], [void], "nonpayable">;
+
+  initialized: TypedContractMethod<[], [boolean], "view">;
 
   makeContext: TypedContractMethod<[], [void], "nonpayable">;
 
@@ -444,15 +596,11 @@ export interface Flow extends BaseContract {
     "nonpayable"
   >;
 
-  nextAlign: TypedContractMethod<
-    [_length: BigNumberish, alignExp: BigNumberish],
-    [bigint],
-    "view"
-  >;
-
-  nextPow2: TypedContractMethod<[_length: BigNumberish], [bigint], "view">;
+  market: TypedContractMethod<[], [string], "view">;
 
   numSubmissions: TypedContractMethod<[], [bigint], "view">;
+
+  pause: TypedContractMethod<[], [void], "nonpayable">;
 
   paused: TypedContractMethod<[], [boolean], "view">;
 
@@ -462,7 +610,17 @@ export interface Flow extends BaseContract {
     "nonpayable"
   >;
 
-  root: TypedContractMethod<[], [string], "view">;
+  renounceRole: TypedContractMethod<
+    [role: BytesLike, account: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
+  revokeRole: TypedContractMethod<
+    [role: BytesLike, account: AddressLike],
+    [void],
+    "nonpayable"
+  >;
 
   rootHistory: TypedContractMethod<[], [string], "view">;
 
@@ -474,14 +632,30 @@ export interface Flow extends BaseContract {
     "payable"
   >;
 
-  unstagedHeight: TypedContractMethod<[], [bigint], "view">;
+  supportsInterface: TypedContractMethod<
+    [interfaceId: BytesLike],
+    [boolean],
+    "view"
+  >;
 
-  zeros: TypedContractMethod<[height: BigNumberish], [string], "view">;
+  tree: TypedContractMethod<
+    [],
+    [[bigint, bigint] & { currentLength: bigint; unstagedHeight: bigint }],
+    "view"
+  >;
+
+  unpause: TypedContractMethod<[], [void], "nonpayable">;
 
   getFunction<T extends ContractMethod = ContractMethod>(
     key: string | FunctionFragment
   ): T;
 
+  getFunction(
+    nameOrSignature: "DEFAULT_ADMIN_ROLE"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "PAUSER_ROLE"
+  ): TypedContractMethod<[], [string], "view">;
   getFunction(
     nameOrSignature: "batchSubmit"
   ): TypedContractMethod<
@@ -500,15 +674,6 @@ export interface Flow extends BaseContract {
     nameOrSignature: "blocksPerEpoch"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
-    nameOrSignature: "book"
-  ): TypedContractMethod<[], [string], "view">;
-  getFunction(
-    nameOrSignature: "commitRoot"
-  ): TypedContractMethod<[], [void], "nonpayable">;
-  getFunction(
-    nameOrSignature: "currentLength"
-  ): TypedContractMethod<[], [bigint], "view">;
-  getFunction(
     nameOrSignature: "epoch"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
@@ -524,6 +689,39 @@ export interface Flow extends BaseContract {
     nameOrSignature: "getEpochRange"
   ): TypedContractMethod<[digest: BytesLike], [EpochRangeStructOutput], "view">;
   getFunction(
+    nameOrSignature: "getRoleAdmin"
+  ): TypedContractMethod<[role: BytesLike], [string], "view">;
+  getFunction(
+    nameOrSignature: "getRoleMember"
+  ): TypedContractMethod<
+    [role: BytesLike, index: BigNumberish],
+    [string],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "getRoleMemberCount"
+  ): TypedContractMethod<[role: BytesLike], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "grantRole"
+  ): TypedContractMethod<
+    [role: BytesLike, account: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
+    nameOrSignature: "hasRole"
+  ): TypedContractMethod<
+    [role: BytesLike, account: AddressLike],
+    [boolean],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "initialize"
+  ): TypedContractMethod<[market_: AddressLike], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "initialized"
+  ): TypedContractMethod<[], [boolean], "view">;
+  getFunction(
     nameOrSignature: "makeContext"
   ): TypedContractMethod<[], [void], "nonpayable">;
   getFunction(
@@ -533,18 +731,14 @@ export interface Flow extends BaseContract {
     nameOrSignature: "makeContextWithResult"
   ): TypedContractMethod<[], [MineContextStructOutput], "nonpayable">;
   getFunction(
-    nameOrSignature: "nextAlign"
-  ): TypedContractMethod<
-    [_length: BigNumberish, alignExp: BigNumberish],
-    [bigint],
-    "view"
-  >;
-  getFunction(
-    nameOrSignature: "nextPow2"
-  ): TypedContractMethod<[_length: BigNumberish], [bigint], "view">;
+    nameOrSignature: "market"
+  ): TypedContractMethod<[], [string], "view">;
   getFunction(
     nameOrSignature: "numSubmissions"
   ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "pause"
+  ): TypedContractMethod<[], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "paused"
   ): TypedContractMethod<[], [boolean], "view">;
@@ -556,8 +750,19 @@ export interface Flow extends BaseContract {
     "nonpayable"
   >;
   getFunction(
-    nameOrSignature: "root"
-  ): TypedContractMethod<[], [string], "view">;
+    nameOrSignature: "renounceRole"
+  ): TypedContractMethod<
+    [role: BytesLike, account: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
+    nameOrSignature: "revokeRole"
+  ): TypedContractMethod<
+    [role: BytesLike, account: AddressLike],
+    [void],
+    "nonpayable"
+  >;
   getFunction(
     nameOrSignature: "rootHistory"
   ): TypedContractMethod<[], [string], "view">;
@@ -572,11 +777,18 @@ export interface Flow extends BaseContract {
     "payable"
   >;
   getFunction(
-    nameOrSignature: "unstagedHeight"
-  ): TypedContractMethod<[], [bigint], "view">;
+    nameOrSignature: "supportsInterface"
+  ): TypedContractMethod<[interfaceId: BytesLike], [boolean], "view">;
   getFunction(
-    nameOrSignature: "zeros"
-  ): TypedContractMethod<[height: BigNumberish], [string], "view">;
+    nameOrSignature: "tree"
+  ): TypedContractMethod<
+    [],
+    [[bigint, bigint] & { currentLength: bigint; unstagedHeight: bigint }],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "unpause"
+  ): TypedContractMethod<[], [void], "nonpayable">;
 
   getEvent(
     key: "NewEpoch"
@@ -591,6 +803,27 @@ export interface Flow extends BaseContract {
     PausedEvent.InputTuple,
     PausedEvent.OutputTuple,
     PausedEvent.OutputObject
+  >;
+  getEvent(
+    key: "RoleAdminChanged"
+  ): TypedContractEvent<
+    RoleAdminChangedEvent.InputTuple,
+    RoleAdminChangedEvent.OutputTuple,
+    RoleAdminChangedEvent.OutputObject
+  >;
+  getEvent(
+    key: "RoleGranted"
+  ): TypedContractEvent<
+    RoleGrantedEvent.InputTuple,
+    RoleGrantedEvent.OutputTuple,
+    RoleGrantedEvent.OutputObject
+  >;
+  getEvent(
+    key: "RoleRevoked"
+  ): TypedContractEvent<
+    RoleRevokedEvent.InputTuple,
+    RoleRevokedEvent.OutputTuple,
+    RoleRevokedEvent.OutputObject
   >;
   getEvent(
     key: "Submit"
@@ -628,6 +861,39 @@ export interface Flow extends BaseContract {
       PausedEvent.InputTuple,
       PausedEvent.OutputTuple,
       PausedEvent.OutputObject
+    >;
+
+    "RoleAdminChanged(bytes32,bytes32,bytes32)": TypedContractEvent<
+      RoleAdminChangedEvent.InputTuple,
+      RoleAdminChangedEvent.OutputTuple,
+      RoleAdminChangedEvent.OutputObject
+    >;
+    RoleAdminChanged: TypedContractEvent<
+      RoleAdminChangedEvent.InputTuple,
+      RoleAdminChangedEvent.OutputTuple,
+      RoleAdminChangedEvent.OutputObject
+    >;
+
+    "RoleGranted(bytes32,address,address)": TypedContractEvent<
+      RoleGrantedEvent.InputTuple,
+      RoleGrantedEvent.OutputTuple,
+      RoleGrantedEvent.OutputObject
+    >;
+    RoleGranted: TypedContractEvent<
+      RoleGrantedEvent.InputTuple,
+      RoleGrantedEvent.OutputTuple,
+      RoleGrantedEvent.OutputObject
+    >;
+
+    "RoleRevoked(bytes32,address,address)": TypedContractEvent<
+      RoleRevokedEvent.InputTuple,
+      RoleRevokedEvent.OutputTuple,
+      RoleRevokedEvent.OutputObject
+    >;
+    RoleRevoked: TypedContractEvent<
+      RoleRevokedEvent.InputTuple,
+      RoleRevokedEvent.OutputTuple,
+      RoleRevokedEvent.OutputObject
     >;
 
     "Submit(address,bytes32,uint256,uint256,uint256,tuple)": TypedContractEvent<

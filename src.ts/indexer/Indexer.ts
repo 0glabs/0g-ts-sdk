@@ -1,5 +1,4 @@
 import { HttpProvider } from 'open-jsonrpc-provider'
-import { ethers } from 'ethers'
 import { IpLocation, ShardedNodes } from './types.js'
 import { selectNodes, ShardedNode } from '../common/index.js'
 import { UploadOption, Uploader, Downloader } from '../transfer/index.js'
@@ -11,14 +10,12 @@ export class Indexer extends HttpProvider {
     blockchain_rpc: string
     private_key: string
     flow_contract: string
-    upload_option?: UploadOption
 
-    constructor(url: string, blockchain_rpc: string, private_key: string, flow_contract: string, upload_option?: UploadOption) {
+    constructor(url: string, blockchain_rpc: string, private_key: string, flow_contract: string) {
         super({ url })
         this.blockchain_rpc = blockchain_rpc
         this.private_key = private_key
         this.flow_contract = flow_contract
-        this.upload_option = upload_option
     }
 
     async getShardedNodes(): Promise<ShardedNodes> {
@@ -49,7 +46,7 @@ export class Indexer extends HttpProvider {
             return [null, err]
         }
 
-        let uploader: Uploader = new Uploader(clients, this.blockchain_rpc, this.private_key, this.flow_contract, this.upload_option)
+        let uploader: Uploader = new Uploader(clients, this.blockchain_rpc, this.private_key, this.flow_contract)
         return [uploader, null]
     }
 
@@ -70,20 +67,30 @@ export class Indexer extends HttpProvider {
 
     async upload(
         file: ZgFile,
-        tag: ethers.BytesLike,
         segIndex: number = 0,
         opts?: UploadOption,
         retryOpts?: RetryOpts
     ): Promise<[string, Error | null]> {
         var expectedReplica = 1
-        if (opts != null && opts.expectedReplica != null) {
+        if (opts != undefined && opts.expectedReplica != null) {
             expectedReplica = Math.max(1, opts.expectedReplica)
         }
         let [uploader, err] = await this.newUploaderFromIndexerNodes(expectedReplica)
         if (err != null || uploader == null) {
             return ['', new Error('failed to create uploader')]
         }
-        return await uploader.uploadFile(file, tag, segIndex, opts, retryOpts)
+        if (opts === undefined) {
+            opts = {
+                tags: '0x',
+                finalityRequired: true,
+                taskSize: 10,
+                expectedReplica: 1,
+                skipTx: false,
+                fee: BigInt('0'),
+            }
+        }
+
+        return await uploader.uploadFile(file, segIndex, opts, retryOpts)
     }
 
     async download(

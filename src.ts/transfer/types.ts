@@ -2,6 +2,7 @@ import { ethers } from 'ethers'
 
 export interface UploadTask {
     clientIndex: number
+    taskSize: number
     segIndex: number
     numShard: number
 }
@@ -12,4 +13,5 @@ export interface UploadOption {
     taskSize: number // number of segment to upload in single rpc request
     expectedReplica: number // expected number of replications
     skipTx: boolean // skip sending transaction on chain, this can set to true only if the data has already settled on chain before
+    fee: bigint // fee to pay for data storage
 }
