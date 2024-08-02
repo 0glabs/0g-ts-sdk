@@ -107,4 +107,5 @@ Make sure [0g-storage-contracts](https://github.com/0glabs/0g-storage-contracts)
 
 ```sh
 pnpm gen-contract-type-flow
+pnpm gen-contract-type-market
 ```
