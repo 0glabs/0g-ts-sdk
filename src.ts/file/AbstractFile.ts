@@ -162,7 +162,7 @@ export abstract class AbstractFile {
         const iter = this.iterateWithOffsetAndBatch(offset, batch, true)
         const tree = new MerkleTree()
 
-        for (let i = 0; i < size; ) {
+        for (let i = 0; i < size;) {
             let [ok, err] = await iter.next()
             if (err != null) {
                 return [null, err]
