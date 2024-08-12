@@ -3,15 +3,20 @@ import { IpLocation, ShardedNodes } from './types.js'
 import { selectNodes, ShardedNode } from '../common/index.js'
 import { UploadOption, Uploader, Downloader } from '../transfer/index.js'
 import { StorageNode } from '../node/index.js'
-import { ZgFile } from '../file/index.js'
 import { RetryOpts } from '../types.js'
+import { AbstractFile } from '../file/AbstractFile.js'
 
 export class Indexer extends HttpProvider {
     blockchain_rpc: string
     private_key: string
     flow_contract: string
 
-    constructor(url: string, blockchain_rpc: string, private_key: string, flow_contract: string) {
+    constructor(
+        url: string,
+        blockchain_rpc: string,
+        private_key: string,
+        flow_contract: string
+    ) {
         super({ url })
         this.blockchain_rpc = blockchain_rpc
         this.private_key = private_key
@@ -40,24 +45,38 @@ export class Indexer extends HttpProvider {
         return res as ShardedNode[]
     }
 
-    async newUploaderFromIndexerNodes(expectedReplica: number): Promise<[Uploader | null, Error | null]> {
+    async newUploaderFromIndexerNodes(
+        expectedReplica: number
+    ): Promise<[Uploader | null, Error | null]> {
         let [clients, err] = await this.selectNodes(expectedReplica)
         if (err != null) {
             return [null, err]
         }
 
-        let uploader: Uploader = new Uploader(clients, this.blockchain_rpc, this.private_key, this.flow_contract)
+        let uploader: Uploader = new Uploader(
+            clients,
+            this.blockchain_rpc,
+            this.private_key,
+            this.flow_contract
+        )
         return [uploader, null]
     }
 
-    async selectNodes(expectedReplica: number): Promise<[StorageNode[], Error | null]> {
+    async selectNodes(
+        expectedReplica: number
+    ): Promise<[StorageNode[], Error | null]> {
         let nodes: ShardedNodes = await this.getShardedNodes()
         let [trusted, ok] = selectNodes(nodes.trusted, expectedReplica)
         if (!ok) {
-            return [[], new Error('cannot select a subset from the returned nodes that meets the replication requirement')]
+            return [
+                [],
+                new Error(
+                    'cannot select a subset from the returned nodes that meets the replication requirement'
+                ),
+            ]
         }
         let clients: StorageNode[] = []
-        trusted.forEach(node => {
+        trusted.forEach((node) => {
             let sn = new StorageNode(node.url)
             clients.push(sn)
         })
@@ -66,7 +85,7 @@ export class Indexer extends HttpProvider {
     }
 
     async upload(
-        file: ZgFile,
+        file: AbstractFile,
         segIndex: number = 0,
         opts?: UploadOption,
         retryOpts?: RetryOpts
@@ -75,7 +94,9 @@ export class Indexer extends HttpProvider {
         if (opts != undefined && opts.expectedReplica != null) {
             expectedReplica = Math.max(1, opts.expectedReplica)
         }
-        let [uploader, err] = await this.newUploaderFromIndexerNodes(expectedReplica)
+        let [uploader, err] = await this.newUploaderFromIndexerNodes(
+            expectedReplica
+        )
         if (err != null || uploader == null) {
             return ['', new Error('failed to create uploader')]
         }
@@ -96,14 +117,14 @@ export class Indexer extends HttpProvider {
     async download(
         rootHash: string,
         filePath: string,
-        proof: boolean,
+        proof: boolean
     ): Promise<Error | null> {
         let locations = await this.getFileLocations(rootHash)
         if (locations.length == 0) {
             return new Error('failed to get file locations')
         }
         let clients: StorageNode[] = []
-        locations.forEach(node => {
+        locations.forEach((node) => {
             let sn = new StorageNode(node.url)
             clients.push(sn)
         })

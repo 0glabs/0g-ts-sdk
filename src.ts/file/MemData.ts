@@ -1,13 +1,13 @@
 import { Iterator, MemIterator } from './Iterator/index.js'
 import { AbstractFile } from './AbstractFile.js'
-import { Bytes } from '@ethersproject/bytes'
 
 export class MemData extends AbstractFile {
-
     fileSize: number = 0
+    data: ArrayLike<number>
 
-    constructor(data: Bytes) {
+    constructor(data: ArrayLike<number>) {
         super()
+        this.data = data
         this.fileSize = data.length
     }
 
@@ -16,12 +16,8 @@ export class MemData extends AbstractFile {
         batch: number,
         flowPadding: boolean
     ): Iterator {
-        return new MemIterator(
-            new Uint8Array(0),
-            this.size(),
-            offset,
-            batch,
-            flowPadding
-        )
+        const data = new Uint8Array(this.data)
+
+        return new MemIterator(data, this.size(), offset, batch, flowPadding)
     }
 }

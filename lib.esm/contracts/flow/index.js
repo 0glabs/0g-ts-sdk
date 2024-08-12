@@ -1,3 +1,3 @@
 export * as factories from "./factories/index.js";
-export { Flow__factory } from "./factories/Flow__factory.js";
+export { FixedPriceFlow__factory } from "./factories/FixedPriceFlow__factory.js";
 //# sourceMappingURL=index.js.map

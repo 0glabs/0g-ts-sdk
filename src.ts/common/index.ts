@@ -1,10 +1,13 @@
-import { insert, SegmentTreeNode } from './segment_tree.js';
-import { ShardConfig, ShardedNode } from './types.js';
+import { insert, SegmentTreeNode } from './segment_tree.js'
+import { ShardConfig, ShardedNode } from './types.js'
 
-export * from './types.js';
-export * from './segment_tree.js';
+export * from './types.js'
+export * from './segment_tree.js'
 
-export function selectNodes(nodes: ShardedNode[], expectedReplica: number): [ShardedNode[], boolean] {
+export function selectNodes(
+    nodes: ShardedNode[],
+    expectedReplica: number
+): [ShardedNode[], boolean] {
     if (expectedReplica === 0) {
         return [[], false]
     }
@@ -15,16 +18,23 @@ export function selectNodes(nodes: ShardedNode[], expectedReplica: number): [Sha
         return a.config.numShard - b.config.numShard
     })
     let root: SegmentTreeNode = {
-        childs:  null,
-		numShard: 1,
-		replica:  0,
-		lazyTags: 0,
-	}
+        childs: null,
+        numShard: 1,
+        replica: 0,
+        lazyTags: 0,
+    }
 
     let selectedNodes: ShardedNode[] = []
     for (let i = 0; i < nodes.length; i += 1) {
         let node = nodes[i]
-        if (insert(root, node.config.numShard, node.config.shardId, expectedReplica)) {
+        if (
+            insert(
+                root,
+                node.config.numShard,
+                node.config.shardId,
+                expectedReplica
+            )
+        ) {
             selectedNodes.push(node)
         }
         if (root.replica >= expectedReplica) {
@@ -35,7 +45,10 @@ export function selectNodes(nodes: ShardedNode[], expectedReplica: number): [Sha
     return [[], false]
 }
 
-export function checkReplica(shardConfigs: ShardConfig[], expectedReplica: number): boolean {
+export function checkReplica(
+    shardConfigs: ShardConfig[],
+    expectedReplica: number
+): boolean {
     let shardedNodes: ShardedNode[] = []
     for (let i = 0; i < shardConfigs.length; i += 1) {
         shardedNodes.push({

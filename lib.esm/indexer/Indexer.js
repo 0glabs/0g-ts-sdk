@@ -43,10 +43,13 @@ export class Indexer extends HttpProvider {
         let nodes = await this.getShardedNodes();
         let [trusted, ok] = selectNodes(nodes.trusted, expectedReplica);
         if (!ok) {
-            return [[], new Error('cannot select a subset from the returned nodes that meets the replication requirement')];
+            return [
+                [],
+                new Error('cannot select a subset from the returned nodes that meets the replication requirement'),
+            ];
         }
         let clients = [];
-        trusted.forEach(node => {
+        trusted.forEach((node) => {
             let sn = new StorageNode(node.url);
             clients.push(sn);
         });
@@ -79,7 +82,7 @@ export class Indexer extends HttpProvider {
             return new Error('failed to get file locations');
         }
         let clients = [];
-        locations.forEach(node => {
+        locations.forEach((node) => {
             let sn = new StorageNode(node.url);
             clients.push(sn);
         });

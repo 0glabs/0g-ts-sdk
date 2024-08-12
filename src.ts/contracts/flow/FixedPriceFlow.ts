@@ -86,7 +86,7 @@ export type EpochRangeWithContextDigestStructOutput = [
   digest: string
 ] & { start: bigint; end: bigint; digest: string };
 
-export interface FlowInterface extends Interface {
+export interface FixedPriceFlowInterface extends Interface {
   getFunction(
     nameOrSignature:
       | "DEFAULT_ADMIN_ROLE"
@@ -480,11 +480,11 @@ export namespace UnpausedEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
-export interface Flow extends BaseContract {
-  connect(runner?: ContractRunner | null): Flow;
+export interface FixedPriceFlow extends BaseContract {
+  connect(runner?: ContractRunner | null): FixedPriceFlow;
   waitForDeployment(): Promise<this>;
 
-  interface: FlowInterface;
+  interface: FixedPriceFlowInterface;
 
   queryFilter<TCEvent extends TypedContractEvent>(
     event: TCEvent,

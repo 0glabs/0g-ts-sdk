@@ -4,18 +4,19 @@ import {
     DEFAULT_CHUNK_SIZE,
 } from '../constant.js'
 import { StorageNode, SegmentWithProof } from '../node/index.js'
-import { Flow } from '../contracts/flow/Flow.js'
+import { FixedPriceFlow } from '../contracts/flow/FixedPriceFlow.js'
 import { getFlowContract, getMarketContract, WaitForReceipt } from '../utils.js'
 import { RetryOpts } from '../types.js'
-import { ZgFile, MerkleTree } from '../file/index.js'
+import { MerkleTree } from '../file/index.js'
 import { encodeBase64, ethers } from 'ethers'
 import { calculatePrice, getShardConfigs } from './utils.js'
 import { UploadOption, UploadTask } from './types.js'
+import { AbstractFile } from '../file/AbstractFile.js'
 
 export class Uploader {
     nodes: StorageNode[]
     provider: ethers.JsonRpcProvider
-    flow: Flow
+    flow: FixedPriceFlow
     signer: ethers.Wallet
     gasPrice: bigint
     gasLimit: bigint
@@ -34,13 +35,13 @@ export class Uploader {
         this.signer = new ethers.Wallet(privateKey, this.provider)
 
         this.flow = getFlowContract(flowContract, this.signer)
-        
+
         this.gasPrice = gasPrice
         this.gasLimit = gasLimit
     }
 
     async uploadFile(
-        file: ZgFile,
+        file: AbstractFile,
         segIndex: number = 0,
         opts: UploadOption,
         retryOpts?: RetryOpts
@@ -66,15 +67,17 @@ export class Uploader {
         let marketContract = getMarketContract(marketAddr, this.signer)
 
         let pricePerSector = await marketContract.pricePerSector()
-        
+
         let fee: bigint = BigInt('0')
         if (opts.fee > 0) {
             fee = opts.fee
         } else {
-            fee = calculatePrice(submission, pricePerSector) 
+            fee = calculatePrice(submission, pricePerSector)
         }
 
-        var txOpts: { value: bigint, gasPrice?: bigint, gasLimit?: bigint } = { value: fee }
+        var txOpts: { value: bigint; gasPrice?: bigint; gasLimit?: bigint } = {
+            value: fee,
+        }
         if (this.gasPrice > 0) {
             txOpts.gasPrice = this.gasPrice
         }
@@ -91,27 +94,45 @@ export class Uploader {
         if (receipt == null) {
             return ['', new Error('Failed to get transaction receipt')]
         }
-        
-        const tasks = await this.segmentUpload(file, tree, segIndex, opts.taskSize)
+
+        const tasks = await this.segmentUpload(
+            file,
+            tree,
+            segIndex,
+            opts.taskSize
+        )
         if (tasks == null) {
             return ['', new Error('Failed to get upload tasks')]
         }
 
-        // await this.processTasksInParallel(file, tree, tasks)
-        // .then(() => console.log('All tasks processed'))
-        // .catch(error => {return error});
-        await this.uploadFileHelper(file, tree, segIndex);
+        await this.processTasksInParallel(file, tree, tasks)
+            .then(() => console.log('All tasks processed'))
+            .catch((error) => {
+                return error
+            })
+        // await this.uploadFileHelper(file, tree, segIndex)
 
-        return [tx.hash, null];
+        return [tx.hash, null]
     }
 
     // Function to process all tasks in parallel
-    async processTasksInParallel(file: ZgFile, tree: MerkleTree, tasks: UploadTask[]): Promise<void> {
-        const taskPromises = tasks.map(task => this.uploadTask(file, tree, task));
-        await Promise.all(taskPromises);
+    async processTasksInParallel(
+        file: AbstractFile,
+        tree: MerkleTree,
+        tasks: UploadTask[]
+    ): Promise<void> {
+        const taskPromises = tasks.map((task) =>
+            this.uploadTask(file, tree, task)
+        )
+        await Promise.all(taskPromises)
     }
 
-    async segmentUpload(file: ZgFile, tree: MerkleTree, segIndex: number, taskSize: number): Promise<UploadTask[] | null> {
+    async segmentUpload(
+        file: AbstractFile,
+        tree: MerkleTree,
+        segIndex: number,
+        taskSize: number
+    ): Promise<UploadTask[] | null> {
         const shardConfigs = await getShardConfigs(this.nodes)
         if (shardConfigs == null) {
             return null
@@ -167,7 +188,11 @@ export class Uploader {
         return tasks
     }
 
-    async uploadTask(file: ZgFile, tree: MerkleTree, uploadTask: UploadTask) {
+    async uploadTask(
+        file: AbstractFile,
+        tree: MerkleTree,
+        uploadTask: UploadTask
+    ) {
         const numChunks = file.numChunks()
 
         let segIndex = uploadTask.segIndex
@@ -230,14 +255,16 @@ export class Uploader {
         }
 
         try {
-            return await this.nodes[uploadTask.clientIndex].uploadSegments(segments)
+            return await this.nodes[uploadTask.clientIndex].uploadSegments(
+                segments
+            )
         } catch (e) {
             return e as Error
         }
     }
 
     async uploadFileHelper(
-        file: ZgFile,
+        file: AbstractFile,
         tree: MerkleTree,
         segIndex: number = 0
     ): Promise<Error | null> {

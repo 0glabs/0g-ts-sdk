@@ -1,12 +1,12 @@
 import { ethers, Signer } from 'ethers'
-import { Flow__factory } from './contracts/flow/index.js'
+import { FixedPriceFlow__factory } from './contracts/flow/index.js'
 import { FixedPrice__factory } from './contracts/market/index.js'
 import fs from 'fs'
 import path from 'path'
 import { RetryOpts } from './types.js'
 
 export function getFlowContract(address: string, signer: Signer) {
-    return Flow__factory.connect(address, signer)
+    return FixedPriceFlow__factory.connect(address, signer)
 }
 
 export function getMarketContract(address: string, signer: Signer) {

@@ -28,7 +28,7 @@ export class Downloader {
         taskInd: number,
         numSegments: number,
         numChunks: number,
-        proof: boolean,
+        proof: boolean
     ): Promise<[Uint8Array, Error | null]> {
         const segmentIndex = segmentOffset + taskInd
         const startIndex = segmentIndex * DEFAULT_SEGMENT_MAX_CHUNKS
@@ -39,7 +39,10 @@ export class Downloader {
         let segment: Segment | null = null
         for (let i = 0; i < this.shardConfigs.length; i++) {
             let nodeIndex = (taskInd + i) % this.shardConfigs.length
-            if (segmentIndex%this.shardConfigs[nodeIndex].numShard != this.shardConfigs[nodeIndex].shardId) {
+            if (
+                segmentIndex % this.shardConfigs[nodeIndex].numShard !=
+                this.shardConfigs[nodeIndex].shardId
+            ) {
                 continue
             }
             // try download from current node
@@ -52,9 +55,9 @@ export class Downloader {
             if (segment === null) {
                 continue
             }
-    
+
             var segArray = decodeBase64(segment)
-    
+
             if (segmentIndex == numSegments - 1) {
                 const lastChunkSize = size % DEFAULT_CHUNK_SIZE
                 if (lastChunkSize > 0) {
@@ -65,7 +68,12 @@ export class Downloader {
             return [segArray, null]
         }
 
-        return [new Uint8Array(), new Error('No storage node holds segment with index ' + segmentIndex)]
+        return [
+            new Uint8Array(),
+            new Error(
+                'No storage node holds segment with index ' + segmentIndex
+            ),
+        ]
     }
 
     async downloadFileHelper(
@@ -74,7 +82,6 @@ export class Downloader {
         size: number,
         proof: boolean
     ): Promise<Error | null> {
-
         const shardConfigs = await getShardConfigs(this.nodes)
         if (shardConfigs == null) {
             return new Error('Failed to get shard configs')
@@ -128,12 +135,7 @@ export class Downloader {
         }
         this.shardConfigs = shardConfigs
 
-        err = await this.downloadFileHelper(
-            root,
-            filePath,
-            info.tx.size,
-            proof
-        )
+        err = await this.downloadFileHelper(root, filePath, info.tx.size, proof)
 
         return err
     }

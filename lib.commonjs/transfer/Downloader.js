@@ -25,7 +25,8 @@ class Downloader {
         let segment = null;
         for (let i = 0; i < this.shardConfigs.length; i++) {
             let nodeIndex = (taskInd + i) % this.shardConfigs.length;
-            if (segmentIndex % this.shardConfigs[nodeIndex].numShard != this.shardConfigs[nodeIndex].shardId) {
+            if (segmentIndex % this.shardConfigs[nodeIndex].numShard !=
+                this.shardConfigs[nodeIndex].shardId) {
                 continue;
             }
             // try download from current node
@@ -43,7 +44,10 @@ class Downloader {
             }
             return [segArray, null];
         }
-        return [new Uint8Array(), new Error('No storage node holds segment with index ' + segmentIndex)];
+        return [
+            new Uint8Array(),
+            new Error('No storage node holds segment with index ' + segmentIndex),
+        ];
     }
     async downloadFileHelper(root, filePath, size, proof) {
         const shardConfigs = await (0, utils_js_2.getShardConfigs)(this.nodes);

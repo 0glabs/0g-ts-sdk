@@ -1,5 +1,5 @@
 import { ShardConfig } from '../common/index.js'
-import { SubmissionStruct } from '../contracts/flow/Flow.js'
+import { SubmissionStruct } from '../contracts/flow/FixedPriceFlow.js'
 import { StorageNode, isValidConfig } from '../node/index.js'
 
 export async function getShardConfigs(
@@ -28,4 +28,3 @@ export function calculatePrice(
 
     return BigInt(sectors) * pricePerSector
 }
-
