@@ -1,4 +1,4 @@
-export type { Flow } from "./Flow.js";
+export type { FixedPriceFlow } from "./FixedPriceFlow.js";
 export * as factories from "./factories/index.js";
-export { Flow__factory } from "./factories/Flow__factory.js";
+export { FixedPriceFlow__factory } from "./factories/FixedPriceFlow__factory.js";
 //# sourceMappingURL=index.d.ts.map

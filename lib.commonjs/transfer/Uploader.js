@@ -43,7 +43,9 @@ class Uploader {
         else {
             fee = (0, utils_js_2.calculatePrice)(submission, pricePerSector);
         }
-        var txOpts = { value: fee };
+        var txOpts = {
+            value: fee,
+        };
         if (this.gasPrice > 0) {
             txOpts.gasPrice = this.gasPrice;
         }
@@ -61,15 +63,15 @@ class Uploader {
         if (tasks == null) {
             return ['', new Error('Failed to get upload tasks')];
         }
-        // await this.processTasksInParallel(file, tree, tasks)
-        // .then(() => console.log('All tasks processed'))
-        // .catch(error => {return error});
-        await this.uploadFileHelper(file, tree, segIndex);
+        await this.processTasksInParallel(file, tree, tasks)
+            .then(() => console.log('All tasks processed'))
+            .catch(error => { return error; });
+        // await this.uploadFileHelper(file, tree, segIndex)
         return [tx.hash, null];
     }
     // Function to process all tasks in parallel
     async processTasksInParallel(file, tree, tasks) {
-        const taskPromises = tasks.map(task => this.uploadTask(file, tree, task));
+        const taskPromises = tasks.map((task) => this.uploadTask(file, tree, task));
         await Promise.all(taskPromises);
     }
     async segmentUpload(file, tree, segIndex, taskSize) {

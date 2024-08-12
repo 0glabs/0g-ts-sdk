@@ -1,4 +1,4 @@
-import { ShardedNode } from "../common/types";
+import { ShardedNode } from '../common/types';
 export interface IpLocation {
     city: number;
     region: string;

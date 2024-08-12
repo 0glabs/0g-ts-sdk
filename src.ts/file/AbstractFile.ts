@@ -3,7 +3,7 @@ import { MerkleTree } from './MerkleTree.js'
 import {
     SubmissionNodeStruct,
     SubmissionStruct,
-} from '../contracts/flow/Flow.js'
+} from '../contracts/flow/FixedPriceFlow.js'
 import { Iterator } from './Iterator/index.js'
 import {
     DEFAULT_CHUNK_SIZE,

@@ -67,7 +67,7 @@ export type EpochRangeWithContextDigestStructOutput = [
     end: bigint;
     digest: string;
 };
-export interface FlowInterface extends Interface {
+export interface FixedPriceFlowInterface extends Interface {
     getFunction(nameOrSignature: "DEFAULT_ADMIN_ROLE" | "PAUSER_ROLE" | "batchSubmit" | "blocksPerEpoch" | "epoch" | "epochStartPosition" | "firstBlock" | "getContext" | "getEpochRange" | "getRoleAdmin" | "getRoleMember" | "getRoleMemberCount" | "grantRole" | "hasRole" | "initialize" | "initialized" | "makeContext" | "makeContextFixedTimes" | "makeContextWithResult" | "market" | "numSubmissions" | "pause" | "paused" | "queryContextAtPosition" | "renounceRole" | "revokeRole" | "rootHistory" | "submissionIndex" | "submit" | "supportsInterface" | "tree" | "unpause"): FunctionFragment;
     getEvent(nameOrSignatureOrTopic: "NewEpoch" | "Paused" | "RoleAdminChanged" | "RoleGranted" | "RoleRevoked" | "Submit" | "Unpaused"): EventFragment;
     encodeFunctionData(functionFragment: "DEFAULT_ADMIN_ROLE", values?: undefined): string;
@@ -272,10 +272,10 @@ export declare namespace UnpausedEvent {
     type Log = TypedEventLog<Event>;
     type LogDescription = TypedLogDescription<Event>;
 }
-export interface Flow extends BaseContract {
-    connect(runner?: ContractRunner | null): Flow;
+export interface FixedPriceFlow extends BaseContract {
+    connect(runner?: ContractRunner | null): FixedPriceFlow;
     waitForDeployment(): Promise<this>;
-    interface: FlowInterface;
+    interface: FixedPriceFlowInterface;
     queryFilter<TCEvent extends TypedContractEvent>(event: TCEvent, fromBlockOrBlockhash?: string | number | undefined, toBlock?: string | number | undefined): Promise<Array<TypedEventLog<TCEvent>>>;
     queryFilter<TCEvent extends TypedContractEvent>(filter: TypedDeferredTopicFilter<TCEvent>, fromBlockOrBlockhash?: string | number | undefined, toBlock?: string | number | undefined): Promise<Array<TypedEventLog<TCEvent>>>;
     on<TCEvent extends TypedContractEvent>(event: TCEvent, listener: TypedListener<TCEvent>): Promise<this>;
@@ -495,4 +495,4 @@ export interface Flow extends BaseContract {
         Unpaused: TypedContractEvent<UnpausedEvent.InputTuple, UnpausedEvent.OutputTuple, UnpausedEvent.OutputObject>;
     };
 }
-//# sourceMappingURL=Flow.d.ts.map
+//# sourceMappingURL=FixedPriceFlow.d.ts.map

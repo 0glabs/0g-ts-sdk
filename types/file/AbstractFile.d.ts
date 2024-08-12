@@ -1,6 +1,6 @@
 import { BytesLike } from 'ethers';
 import { MerkleTree } from './MerkleTree.js';
-import { SubmissionNodeStruct, SubmissionStruct } from '../contracts/flow/Flow.js';
+import { SubmissionNodeStruct, SubmissionStruct } from '../contracts/flow/FixedPriceFlow.js';
 import { Iterator } from './Iterator/index.js';
 export declare abstract class AbstractFile {
     fileSize: number;

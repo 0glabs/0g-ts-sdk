@@ -1,5 +1,4 @@
-import { ShardConfig } from "../common/types";
-
+import { ShardConfig } from '../common/types'
 
 export function isValidConfig(config: ShardConfig): boolean {
     // NumShard should be larger than zero and be power of 2

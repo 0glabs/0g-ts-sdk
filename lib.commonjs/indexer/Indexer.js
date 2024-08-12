@@ -46,10 +46,13 @@ class Indexer extends open_jsonrpc_provider_1.HttpProvider {
         let nodes = await this.getShardedNodes();
         let [trusted, ok] = (0, index_js_1.selectNodes)(nodes.trusted, expectedReplica);
         if (!ok) {
-            return [[], new Error('cannot select a subset from the returned nodes that meets the replication requirement')];
+            return [
+                [],
+                new Error('cannot select a subset from the returned nodes that meets the replication requirement'),
+            ];
         }
         let clients = [];
-        trusted.forEach(node => {
+        trusted.forEach((node) => {
             let sn = new index_js_3.StorageNode(node.url);
             clients.push(sn);
         });
@@ -82,7 +85,7 @@ class Indexer extends open_jsonrpc_provider_1.HttpProvider {
             return new Error('failed to get file locations');
         }
         let clients = [];
-        locations.forEach(node => {
+        locations.forEach((node) => {
             let sn = new index_js_3.StorageNode(node.url);
             clients.push(sn);
         });

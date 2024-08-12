@@ -1,11 +1,6 @@
 import { HttpProvider } from 'open-jsonrpc-provider'
 
-import {
-    FileInfo,
-    Segment,
-    SegmentWithProof,
-    Status,
-} from './types.js'
+import { FileInfo, Segment, SegmentWithProof, Status } from './types.js'
 import { Hash } from '../types.js'
 import { ShardConfig } from '../common/types.js'
 
