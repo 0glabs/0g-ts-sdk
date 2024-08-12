@@ -2,7 +2,7 @@ import { Iterator, MemIterator } from './Iterator/index.js'
 import { AbstractFile } from './AbstractFile.js'
 import { Bytes } from '@ethersproject/bytes'
 
-export class ZgFile extends AbstractFile {
+export class MemData extends AbstractFile {
 
     fileSize: number = 0
 

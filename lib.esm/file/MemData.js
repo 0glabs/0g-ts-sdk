@@ -1,6 +1,6 @@
 import { MemIterator } from './Iterator/index.js';
 import { AbstractFile } from './AbstractFile.js';
-export class ZgFile extends AbstractFile {
+export class MemData extends AbstractFile {
     fileSize = 0;
     constructor(data) {
         super();
