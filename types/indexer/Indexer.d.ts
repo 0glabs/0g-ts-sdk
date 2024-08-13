@@ -6,10 +6,10 @@ import { StorageNode } from '../node/index.js';
 import { RetryOpts } from '../types.js';
 import { AbstractFile } from '../file/AbstractFile.js';
 export declare class Indexer extends HttpProvider {
-    blockchain_rpc: string;
-    private_key: string;
-    flow_contract: string;
-    constructor(url: string, blockchain_rpc: string, private_key: string, flow_contract: string);
+    blockchain_rpc: string | undefined;
+    private_key: string | undefined;
+    flow_contract: string | undefined;
+    constructor(url: string, blockchain_rpc?: string, private_key?: string, flow_contract?: string);
     getShardedNodes(): Promise<ShardedNodes>;
     getNodeLocations(): Promise<Map<string, IpLocation>>;
     getFileLocations(rootHash: string): Promise<ShardedNode[]>;

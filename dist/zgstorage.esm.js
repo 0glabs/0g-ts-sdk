@@ -26900,7 +26900,9 @@ class Uploader {
         }
         await this.processTasksInParallel(file, tree, tasks)
             .then(() => console.log('All tasks processed'))
-            .catch(error => { return error; });
+            .catch((error) => {
+            return error;
+        });
         // await this.uploadFileHelper(file, tree, segIndex)
         return [tx.hash, null];
     }
@@ -27165,6 +27167,9 @@ class Indexer extends HttpProvider {
         return [clients, null];
     }
     async upload(file, segIndex = 0, opts, retryOpts) {
+        if (this.blockchain_rpc === undefined || this.private_key === undefined || this.flow_contract === undefined) {
+            return ['', new Error('missing rpc, private key or flow contract')];
+        }
         var expectedReplica = 1;
         if (opts != undefined && opts.expectedReplica != null) {
             expectedReplica = Math.max(1, opts.expectedReplica);
