@@ -7,15 +7,15 @@ import { RetryOpts } from '../types.js'
 import { AbstractFile } from '../file/AbstractFile.js'
 
 export class Indexer extends HttpProvider {
-    blockchain_rpc: string
-    private_key: string
-    flow_contract: string
+    blockchain_rpc: string | undefined
+    private_key: string | undefined
+    flow_contract: string | undefined
 
     constructor(
         url: string,
-        blockchain_rpc: string,
-        private_key: string,
-        flow_contract: string
+        blockchain_rpc?: string,
+        private_key?: string,
+        flow_contract?: string
     ) {
         super({ url })
         this.blockchain_rpc = blockchain_rpc
@@ -55,9 +55,9 @@ export class Indexer extends HttpProvider {
 
         let uploader: Uploader = new Uploader(
             clients,
-            this.blockchain_rpc,
-            this.private_key,
-            this.flow_contract
+            this.blockchain_rpc!,
+            this.private_key!,
+            this.flow_contract!
         )
         return [uploader, null]
     }
@@ -90,6 +90,10 @@ export class Indexer extends HttpProvider {
         opts?: UploadOption,
         retryOpts?: RetryOpts
     ): Promise<[string, Error | null]> {
+        if (this.blockchain_rpc === undefined || this.private_key === undefined || this.flow_contract === undefined) {
+            return ['', new Error('missing rpc, private key or flow contract')]
+        }
+
         var expectedReplica = 1
         if (opts != undefined && opts.expectedReplica != null) {
             expectedReplica = Math.max(1, opts.expectedReplica)

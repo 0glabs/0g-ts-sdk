@@ -62,7 +62,9 @@ export class Uploader {
         }
         await this.processTasksInParallel(file, tree, tasks)
             .then(() => console.log('All tasks processed'))
-            .catch(error => { return error; });
+            .catch((error) => {
+            return error;
+        });
         // await this.uploadFileHelper(file, tree, segIndex)
         return [tx.hash, null];
     }
