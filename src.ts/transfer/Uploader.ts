@@ -24,7 +24,7 @@ export class Uploader {
     constructor(
         nodes: StorageNode[],
         providerRpc: string,
-        privateKey: string,
+        signer: ethers.Wallet,
         flowContract: string,
         gasPrice: bigint = BigInt('0'),
         gasLimit: bigint = BigInt('0')
@@ -32,7 +32,7 @@ export class Uploader {
         this.nodes = nodes
 
         this.provider = new ethers.JsonRpcProvider(providerRpc)
-        this.signer = new ethers.Wallet(privateKey, this.provider)
+        this.signer = signer
 
         this.flow = getFlowContract(flowContract, this.signer)
 

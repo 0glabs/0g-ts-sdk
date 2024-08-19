@@ -1639,7 +1639,7 @@
 	 *
 	 *  @_subsection: api/utils:Math Helpers  [about-maths]
 	 */
-	const BN_0$9 = BigInt(0);
+	const BN_0$8 = BigInt(0);
 	const BN_1$3 = BigInt(1);
 	//const BN_Max256 = (BN_1 << BigInt(256)) - BN_1;
 	// IEEE 754 support 53-bits of mantissa
@@ -1653,7 +1653,7 @@
 	function fromTwos(_value, _width) {
 	    const value = getUint(_value, "value");
 	    const width = BigInt(getNumber(_width, "width"));
-	    assert((value >> width) === BN_0$9, "overflow", "NUMERIC_FAULT", {
+	    assert((value >> width) === BN_0$8, "overflow", "NUMERIC_FAULT", {
 	        operation: "fromTwos", fault: "overflow", value: _value
 	    });
 	    // Top bit set; treat as a negative value
@@ -1673,7 +1673,7 @@
 	    let value = getBigInt(_value, "value");
 	    const width = BigInt(getNumber(_width, "width"));
 	    const limit = (BN_1$3 << (width - BN_1$3));
-	    if (value < BN_0$9) {
+	    if (value < BN_0$8) {
 	        value = -value;
 	        assert(value <= limit, "too low", "NUMERIC_FAULT", {
 	            operation: "toTwos", fault: "overflow", value: _value
@@ -1729,12 +1729,12 @@
 	 */
 	function getUint(value, name) {
 	    const result = getBigInt(value, name);
-	    assert(result >= BN_0$9, "unsigned value cannot be negative", "NUMERIC_FAULT", {
+	    assert(result >= BN_0$8, "unsigned value cannot be negative", "NUMERIC_FAULT", {
 	        fault: "overflow", operation: "getUint", value
 	    });
 	    return result;
 	}
-	const Nibbles$1 = "0123456789abcdef";
+	const Nibbles = "0123456789abcdef";
 	/*
 	 * Converts %%value%% to a BigInt. If %%value%% is a Uint8Array, it
 	 * is treated as Big Endian data.
@@ -1743,8 +1743,8 @@
 	    if (value instanceof Uint8Array) {
 	        let result = "0x0";
 	        for (const v of value) {
-	            result += Nibbles$1[v >> 4];
-	            result += Nibbles$1[v & 0x0f];
+	            result += Nibbles[v >> 4];
+	            result += Nibbles[v & 0x0f];
 	        }
 	        return BigInt(result);
 	    }
@@ -1815,7 +1815,7 @@
 	 */
 	function toBeArray(_value) {
 	    const value = getUint(_value, "value");
-	    if (value === BN_0$9) {
+	    if (value === BN_0$8) {
 	        return new Uint8Array([]);
 	    }
 	    let hex = value.toString(16);
@@ -1861,19 +1861,7 @@
 	 *  @_subsection: api/utils:Base58 Encoding [about-base58]
 	 */
 	const Alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-	let Lookup = null;
-	function getAlpha(letter) {
-	    if (Lookup == null) {
-	        Lookup = {};
-	        for (let i = 0; i < Alphabet.length; i++) {
-	            Lookup[Alphabet[i]] = BigInt(i);
-	        }
-	    }
-	    const result = Lookup[letter];
-	    assertArgument(result != null, `invalid base58 value`, "letter", letter);
-	    return result;
-	}
-	const BN_0$8 = BigInt(0);
+	BigInt(0);
 	const BN_58 = BigInt(58);
 	/**
 	 *  Encode %%value%% as a Base58-encoded string.
@@ -1892,17 +1880,6 @@
 	            break;
 	        }
 	        result = Alphabet[0] + result;
-	    }
-	    return result;
-	}
-	/**
-	 *  Decode the Base58-encoded %%value%%.
-	 */
-	function decodeBase58(value) {
-	    let result = BN_0$8;
-	    for (let i = 0; i < value.length; i++) {
-	        result *= BN_58;
-	        result += getAlpha(value[i]);
 	    }
 	    return result;
 	}
@@ -2257,7 +2234,7 @@
 	const reData = new RegExp("^data:([^;:]*)?(;base64)?,(.*)$", "i");
 	const reIpfs = new RegExp("^ipfs:/\/(ipfs/)?(.*)$", "i");
 	// If locked, new Gateways cannot be added
-	let locked$5 = false;
+	let locked$1 = false;
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URLs
 	async function dataGatewayFunc(url, signal) {
 	    try {
@@ -2810,7 +2787,7 @@
 	     *  registration.
 	     */
 	    static lockConfig() {
-	        locked$5 = true;
+	        locked$1 = true;
 	    }
 	    /**
 	     *  Get the current Gateway function for %%scheme%%.
@@ -2831,7 +2808,7 @@
 	        if (scheme === "http" || scheme === "https") {
 	            throw new Error(`cannot intercept ${scheme}; use registerGetUrl`);
 	        }
-	        if (locked$5) {
+	        if (locked$1) {
 	            throw new Error("gateways locked");
 	        }
 	        Gateways[scheme] = func;
@@ -2845,7 +2822,7 @@
 	     *  throws.
 	     */
 	    static registerGetUrl(getUrl) {
-	        if (locked$5) {
+	        if (locked$1) {
 	            throw new Error("gateways locked");
 	        }
 	        defaultGetUrlFunc = getUrl;
@@ -3199,35 +3176,6 @@
 	}
 
 	/**
-	 *  Explain UUID and link to RFC here.
-	 *
-	 *  @_subsection: api/utils:UUID  [about-uuid]
-	 */
-	/**
-	 *  Returns the version 4 [[link-uuid]] for the %%randomBytes%%.
-	 *
-	 *  @see: https://www.ietf.org/rfc/rfc4122.txt (Section 4.4)
-	 */
-	function uuidV4(randomBytes) {
-	    const bytes = getBytes(randomBytes, "randomBytes");
-	    // Section: 4.1.3:
-	    // - time_hi_and_version[12:16] = 0b0100
-	    bytes[6] = (bytes[6] & 0x0f) | 0x40;
-	    // Section 4.4
-	    // - clock_seq_hi_and_reserved[6] = 0b0
-	    // - clock_seq_hi_and_reserved[7] = 0b1
-	    bytes[8] = (bytes[8] & 0x3f) | 0x80;
-	    const value = hexlify(bytes);
-	    return [
-	        value.substring(2, 10),
-	        value.substring(10, 14),
-	        value.substring(14, 18),
-	        value.substring(18, 22),
-	        value.substring(22, 34),
-	    ].join("-");
-	}
-
-	/**
 	 * @_ignore:
 	 */
 	const WordSize = 32;
@@ -3235,7 +3183,7 @@
 	// Properties used to immediate pass through to the underlying object
 	// - `then` is used to detect if an object is a Promise for await
 	const passProperties$1 = ["then"];
-	const _guard$4 = {};
+	const _guard$2 = {};
 	const resultNames = new WeakMap();
 	function getNames(result) {
 	    return resultNames.get(result);
@@ -3294,7 +3242,7 @@
 	        let items = args[1];
 	        let names = (args[2] || []).slice();
 	        let wrap = true;
-	        if (guard !== _guard$4) {
+	        if (guard !== _guard$2) {
 	            items = args;
 	            names = [];
 	            wrap = false;
@@ -3435,7 +3383,7 @@
 	            result.push(this[i]);
 	            names.push(_names[i]);
 	        }
-	        return new Result(_guard$4, result, names);
+	        return new Result(_guard$2, result, names);
 	    }
 	    /**
 	     *  @_ignore
@@ -3453,7 +3401,7 @@
 	                names.push(_names[i]);
 	            }
 	        }
-	        return new Result(_guard$4, result, names);
+	        return new Result(_guard$2, result, names);
 	    }
 	    /**
 	     *  @_ignore
@@ -3493,7 +3441,7 @@
 	     *  also accessible by its corresponding name in %%keys%%.
 	     */
 	    static fromItems(items, keys) {
-	        return new Result(_guard$4, items, keys);
+	        return new Result(_guard$2, items, keys);
 	    }
 	}
 	function getValue$1(value) {
@@ -3686,7 +3634,7 @@
 	    }
 	}
 
-	const crypto$1 = typeof globalThis === 'object' && 'crypto' in globalThis ? globalThis.crypto : undefined;
+	const crypto = typeof globalThis === 'object' && 'crypto' in globalThis ? globalThis.crypto : undefined;
 
 	/*! noble-hashes - MIT License (c) 2022 Paul Miller (paulmillr.com) */
 	// We use WebCrypto aka globalThis.crypto, which exists in browsers and node.js 16+.
@@ -3706,23 +3654,6 @@
 	const isLE = new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 0x44;
 	if (!isLE)
 	    throw new Error('Non little-endian hardware is not supported');
-	// There is no setImmediate in browser and setTimeout is slow.
-	// call of async fn will return Promise, which will be fullfiled only on
-	// next scheduler queue processing step and this is exactly what we need.
-	const nextTick = async () => { };
-	// Returns control to thread each 'tick' ms to avoid blocking
-	async function asyncLoop(iters, tick, cb) {
-	    let ts = Date.now();
-	    for (let i = 0; i < iters; i++) {
-	        cb(i);
-	        // Date.now() is not monotonic, so in case if clock goes backwards we return return control too
-	        const diff = Date.now() - ts;
-	        if (diff >= 0 && diff < tick)
-	            continue;
-	        await nextTick();
-	        ts += diff;
-	    }
-	}
 	/**
 	 * @example utf8ToBytes('abc') // new Uint8Array([97, 98, 99])
 	 */
@@ -3764,13 +3695,6 @@
 	        return this._cloneInto();
 	    }
 	}
-	const toStr = {}.toString;
-	function checkOpts(defaults, opts) {
-	    if (opts !== undefined && toStr.call(opts) !== '[object Object]')
-	        throw new Error('Options should be object or undefined');
-	    const merged = Object.assign(defaults, opts);
-	    return merged;
-	}
 	function wrapConstructor(hashCons) {
 	    const hashC = (msg) => hashCons().update(toBytes(msg)).digest();
 	    const tmp = hashCons();
@@ -3782,9 +3706,9 @@
 	/**
 	 * Secure PRNG. Uses `crypto.getRandomValues`, which defers to OS.
 	 */
-	function randomBytes$2(bytesLength = 32) {
-	    if (crypto$1 && typeof crypto$1.getRandomValues === 'function') {
-	        return crypto$1.getRandomValues(new Uint8Array(bytesLength));
+	function randomBytes(bytesLength = 32) {
+	    if (crypto && typeof crypto.getRandomValues === 'function') {
+	        return crypto.getRandomValues(new Uint8Array(bytesLength));
 	    }
 	    throw new Error('crypto.getRandomValues must be defined');
 	}
@@ -3863,65 +3787,6 @@
 	 */
 	const hmac = (hash, key, message) => new HMAC(hash, key).update(message).digest();
 	hmac.create = (hash, key) => new HMAC(hash, key);
-
-	// Common prologue and epilogue for sync/async functions
-	function pbkdf2Init(hash$1, _password, _salt, _opts) {
-	    hash(hash$1);
-	    const opts = checkOpts({ dkLen: 32, asyncTick: 10 }, _opts);
-	    const { c, dkLen, asyncTick } = opts;
-	    number(c);
-	    number(dkLen);
-	    number(asyncTick);
-	    if (c < 1)
-	        throw new Error('PBKDF2: iterations (c) should be >= 1');
-	    const password = toBytes(_password);
-	    const salt = toBytes(_salt);
-	    // DK = PBKDF2(PRF, Password, Salt, c, dkLen);
-	    const DK = new Uint8Array(dkLen);
-	    // U1 = PRF(Password, Salt + INT_32_BE(i))
-	    const PRF = hmac.create(hash$1, password);
-	    const PRFSalt = PRF._cloneInto().update(salt);
-	    return { c, dkLen, asyncTick, DK, PRF, PRFSalt };
-	}
-	function pbkdf2Output(PRF, PRFSalt, DK, prfW, u) {
-	    PRF.destroy();
-	    PRFSalt.destroy();
-	    if (prfW)
-	        prfW.destroy();
-	    u.fill(0);
-	    return DK;
-	}
-	/**
-	 * PBKDF2-HMAC: RFC 2898 key derivation function
-	 * @param hash - hash function that would be used e.g. sha256
-	 * @param password - password from which a derived key is generated
-	 * @param salt - cryptographic salt
-	 * @param opts - {c, dkLen} where c is work factor and dkLen is output message size
-	 */
-	function pbkdf2$1(hash, password, salt, opts) {
-	    const { c, dkLen, DK, PRF, PRFSalt } = pbkdf2Init(hash, password, salt, opts);
-	    let prfW; // Working copy
-	    const arr = new Uint8Array(4);
-	    const view = createView(arr);
-	    const u = new Uint8Array(PRF.outputLen);
-	    // DK = T1 + T2 + ⋯ + Tdklen/hlen
-	    for (let ti = 1, pos = 0; pos < dkLen; ti++, pos += PRF.outputLen) {
-	        // Ti = F(Password, Salt, c, i)
-	        const Ti = DK.subarray(pos, pos + PRF.outputLen);
-	        view.setInt32(0, ti, false);
-	        // F(Password, Salt, c, i) = U1 ^ U2 ^ ⋯ ^ Uc
-	        // U1 = PRF(Password, Salt + INT_32_BE(i))
-	        (prfW = PRFSalt._cloneInto(prfW)).update(arr).digestInto(u);
-	        Ti.set(u.subarray(0, Ti.length));
-	        for (let ui = 1; ui < c; ui++) {
-	            // Uc = PRF(Password, Uc−1)
-	            PRF._cloneInto(prfW).update(u).digestInto(u);
-	            for (let i = 0; i < Ti.length; i++)
-	                Ti[i] ^= u[i];
-	        }
-	    }
-	    return pbkdf2Output(PRF, PRFSalt, DK, prfW, u);
-	}
 
 	// Polyfill for Safari 14
 	function setBigUint64(view, byteOffset, value, isLE) {
@@ -4201,11 +4066,10 @@
 	    rotlSH, rotlSL, rotlBH, rotlBL,
 	    add, add3L, add3H, add4L, add4H, add5H, add5L,
 	};
-	var u64$1 = u64;
 
 	// Round contants (first 32 bits of the fractional parts of the cube roots of the first 80 primes 2..409):
 	// prettier-ignore
-	const [SHA512_Kh, SHA512_Kl] = /* @__PURE__ */ (() => u64$1.split([
+	const [SHA512_Kh, SHA512_Kl] = /* @__PURE__ */ (() => u64.split([
 	    '0x428a2f98d728ae22', '0x7137449123ef65cd', '0xb5c0fbcfec4d3b2f', '0xe9b5dba58189dbbc',
 	    '0x3956c25bf348b538', '0x59f111f1b605d019', '0x923f82a4af194f9b', '0xab1c5ed5da6d8118',
 	    '0xd807aa98a3030242', '0x12835b0145706fbe', '0x243185be4ee4b28c', '0x550c7dc3d5ffb4e2',
@@ -4288,16 +4152,16 @@
 	            // s0 := (w[i-15] rightrotate 1) xor (w[i-15] rightrotate 8) xor (w[i-15] rightshift 7)
 	            const W15h = SHA512_W_H[i - 15] | 0;
 	            const W15l = SHA512_W_L[i - 15] | 0;
-	            const s0h = u64$1.rotrSH(W15h, W15l, 1) ^ u64$1.rotrSH(W15h, W15l, 8) ^ u64$1.shrSH(W15h, W15l, 7);
-	            const s0l = u64$1.rotrSL(W15h, W15l, 1) ^ u64$1.rotrSL(W15h, W15l, 8) ^ u64$1.shrSL(W15h, W15l, 7);
+	            const s0h = u64.rotrSH(W15h, W15l, 1) ^ u64.rotrSH(W15h, W15l, 8) ^ u64.shrSH(W15h, W15l, 7);
+	            const s0l = u64.rotrSL(W15h, W15l, 1) ^ u64.rotrSL(W15h, W15l, 8) ^ u64.shrSL(W15h, W15l, 7);
 	            // s1 := (w[i-2] rightrotate 19) xor (w[i-2] rightrotate 61) xor (w[i-2] rightshift 6)
 	            const W2h = SHA512_W_H[i - 2] | 0;
 	            const W2l = SHA512_W_L[i - 2] | 0;
-	            const s1h = u64$1.rotrSH(W2h, W2l, 19) ^ u64$1.rotrBH(W2h, W2l, 61) ^ u64$1.shrSH(W2h, W2l, 6);
-	            const s1l = u64$1.rotrSL(W2h, W2l, 19) ^ u64$1.rotrBL(W2h, W2l, 61) ^ u64$1.shrSL(W2h, W2l, 6);
+	            const s1h = u64.rotrSH(W2h, W2l, 19) ^ u64.rotrBH(W2h, W2l, 61) ^ u64.shrSH(W2h, W2l, 6);
+	            const s1l = u64.rotrSL(W2h, W2l, 19) ^ u64.rotrBL(W2h, W2l, 61) ^ u64.shrSL(W2h, W2l, 6);
 	            // SHA256_W[i] = s0 + s1 + SHA256_W[i - 7] + SHA256_W[i - 16];
-	            const SUMl = u64$1.add4L(s0l, s1l, SHA512_W_L[i - 7], SHA512_W_L[i - 16]);
-	            const SUMh = u64$1.add4H(SUMl, s0h, s1h, SHA512_W_H[i - 7], SHA512_W_H[i - 16]);
+	            const SUMl = u64.add4L(s0l, s1l, SHA512_W_L[i - 7], SHA512_W_L[i - 16]);
+	            const SUMh = u64.add4H(SUMl, s0h, s1h, SHA512_W_H[i - 7], SHA512_W_H[i - 16]);
 	            SHA512_W_H[i] = SUMh | 0;
 	            SHA512_W_L[i] = SUMl | 0;
 	        }
@@ -4305,19 +4169,19 @@
 	        // Compression function main loop, 80 rounds
 	        for (let i = 0; i < 80; i++) {
 	            // S1 := (e rightrotate 14) xor (e rightrotate 18) xor (e rightrotate 41)
-	            const sigma1h = u64$1.rotrSH(Eh, El, 14) ^ u64$1.rotrSH(Eh, El, 18) ^ u64$1.rotrBH(Eh, El, 41);
-	            const sigma1l = u64$1.rotrSL(Eh, El, 14) ^ u64$1.rotrSL(Eh, El, 18) ^ u64$1.rotrBL(Eh, El, 41);
+	            const sigma1h = u64.rotrSH(Eh, El, 14) ^ u64.rotrSH(Eh, El, 18) ^ u64.rotrBH(Eh, El, 41);
+	            const sigma1l = u64.rotrSL(Eh, El, 14) ^ u64.rotrSL(Eh, El, 18) ^ u64.rotrBL(Eh, El, 41);
 	            //const T1 = (H + sigma1 + Chi(E, F, G) + SHA256_K[i] + SHA256_W[i]) | 0;
 	            const CHIh = (Eh & Fh) ^ (~Eh & Gh);
 	            const CHIl = (El & Fl) ^ (~El & Gl);
 	            // T1 = H + sigma1 + Chi(E, F, G) + SHA512_K[i] + SHA512_W[i]
 	            // prettier-ignore
-	            const T1ll = u64$1.add5L(Hl, sigma1l, CHIl, SHA512_Kl[i], SHA512_W_L[i]);
-	            const T1h = u64$1.add5H(T1ll, Hh, sigma1h, CHIh, SHA512_Kh[i], SHA512_W_H[i]);
+	            const T1ll = u64.add5L(Hl, sigma1l, CHIl, SHA512_Kl[i], SHA512_W_L[i]);
+	            const T1h = u64.add5H(T1ll, Hh, sigma1h, CHIh, SHA512_Kh[i], SHA512_W_H[i]);
 	            const T1l = T1ll | 0;
 	            // S0 := (a rightrotate 28) xor (a rightrotate 34) xor (a rightrotate 39)
-	            const sigma0h = u64$1.rotrSH(Ah, Al, 28) ^ u64$1.rotrBH(Ah, Al, 34) ^ u64$1.rotrBH(Ah, Al, 39);
-	            const sigma0l = u64$1.rotrSL(Ah, Al, 28) ^ u64$1.rotrBL(Ah, Al, 34) ^ u64$1.rotrBL(Ah, Al, 39);
+	            const sigma0h = u64.rotrSH(Ah, Al, 28) ^ u64.rotrBH(Ah, Al, 34) ^ u64.rotrBH(Ah, Al, 39);
+	            const sigma0l = u64.rotrSL(Ah, Al, 28) ^ u64.rotrBL(Ah, Al, 34) ^ u64.rotrBL(Ah, Al, 39);
 	            const MAJh = (Ah & Bh) ^ (Ah & Ch) ^ (Bh & Ch);
 	            const MAJl = (Al & Bl) ^ (Al & Cl) ^ (Bl & Cl);
 	            Hh = Gh | 0;
@@ -4326,26 +4190,26 @@
 	            Gl = Fl | 0;
 	            Fh = Eh | 0;
 	            Fl = El | 0;
-	            ({ h: Eh, l: El } = u64$1.add(Dh | 0, Dl | 0, T1h | 0, T1l | 0));
+	            ({ h: Eh, l: El } = u64.add(Dh | 0, Dl | 0, T1h | 0, T1l | 0));
 	            Dh = Ch | 0;
 	            Dl = Cl | 0;
 	            Ch = Bh | 0;
 	            Cl = Bl | 0;
 	            Bh = Ah | 0;
 	            Bl = Al | 0;
-	            const All = u64$1.add3L(T1l, sigma0l, MAJl);
-	            Ah = u64$1.add3H(All, T1h, sigma0h, MAJh);
+	            const All = u64.add3L(T1l, sigma0l, MAJl);
+	            Ah = u64.add3H(All, T1h, sigma0h, MAJh);
 	            Al = All | 0;
 	        }
 	        // Add the compressed chunk to the current hash value
-	        ({ h: Ah, l: Al } = u64$1.add(this.Ah | 0, this.Al | 0, Ah | 0, Al | 0));
-	        ({ h: Bh, l: Bl } = u64$1.add(this.Bh | 0, this.Bl | 0, Bh | 0, Bl | 0));
-	        ({ h: Ch, l: Cl } = u64$1.add(this.Ch | 0, this.Cl | 0, Ch | 0, Cl | 0));
-	        ({ h: Dh, l: Dl } = u64$1.add(this.Dh | 0, this.Dl | 0, Dh | 0, Dl | 0));
-	        ({ h: Eh, l: El } = u64$1.add(this.Eh | 0, this.El | 0, Eh | 0, El | 0));
-	        ({ h: Fh, l: Fl } = u64$1.add(this.Fh | 0, this.Fl | 0, Fh | 0, Fl | 0));
-	        ({ h: Gh, l: Gl } = u64$1.add(this.Gh | 0, this.Gl | 0, Gh | 0, Gl | 0));
-	        ({ h: Hh, l: Hl } = u64$1.add(this.Hh | 0, this.Hl | 0, Hh | 0, Hl | 0));
+	        ({ h: Ah, l: Al } = u64.add(this.Ah | 0, this.Al | 0, Ah | 0, Al | 0));
+	        ({ h: Bh, l: Bl } = u64.add(this.Bh | 0, this.Bl | 0, Bh | 0, Bl | 0));
+	        ({ h: Ch, l: Cl } = u64.add(this.Ch | 0, this.Cl | 0, Ch | 0, Cl | 0));
+	        ({ h: Dh, l: Dl } = u64.add(this.Dh | 0, this.Dl | 0, Dh | 0, Dl | 0));
+	        ({ h: Eh, l: El } = u64.add(this.Eh | 0, this.El | 0, Eh | 0, El | 0));
+	        ({ h: Fh, l: Fl } = u64.add(this.Fh | 0, this.Fl | 0, Fh | 0, Fl | 0));
+	        ({ h: Gh, l: Gl } = u64.add(this.Gh | 0, this.Gl | 0, Gh | 0, Gl | 0));
+	        ({ h: Hh, l: Hl } = u64.add(this.Hh | 0, this.Hl | 0, Hh | 0, Hl | 0));
 	        this.set(Ah, Al, Bh, Bl, Ch, Cl, Dh, Dl, Eh, El, Fh, Fl, Gh, Gl, Hh, Hl);
 	    }
 	    roundClean() {
@@ -4373,7 +4237,7 @@
 	    throw new Error('unable to locate global object');
 	}
 	const anyGlobal = getGlobal();
-	const crypto = anyGlobal.crypto || anyGlobal.msCrypto;
+	anyGlobal.crypto || anyGlobal.msCrypto;
 	function createHash(algo) {
 	    switch (algo) {
 	        case "sha256": return sha256$1.create();
@@ -4381,70 +4245,6 @@
 	    }
 	    assertArgument(false, "invalid hashing algorithm name", "algorithm", algo);
 	}
-	function createHmac(_algo, key) {
-	    const algo = ({ sha256: sha256$1, sha512 }[_algo]);
-	    assertArgument(algo != null, "invalid hmac algorithm", "algorithm", _algo);
-	    return hmac.create(algo, key);
-	}
-	function pbkdf2Sync(password, salt, iterations, keylen, _algo) {
-	    const algo = ({ sha256: sha256$1, sha512 }[_algo]);
-	    assertArgument(algo != null, "invalid pbkdf2 algorithm", "algorithm", _algo);
-	    return pbkdf2$1(algo, password, salt, { c: iterations, dkLen: keylen });
-	}
-	function randomBytes$1(length) {
-	    assert(crypto != null, "platform does not support secure random numbers", "UNSUPPORTED_OPERATION", {
-	        operation: "randomBytes"
-	    });
-	    assertArgument(Number.isInteger(length) && length > 0 && length <= 1024, "invalid length", "length", length);
-	    const result = new Uint8Array(length);
-	    crypto.getRandomValues(result);
-	    return result;
-	}
-
-	/**
-	 *  An **HMAC** enables verification that a given key was used
-	 *  to authenticate a payload.
-	 *
-	 *  See: [[link-wiki-hmac]]
-	 *
-	 *  @_subsection: api/crypto:HMAC  [about-hmac]
-	 */
-	let locked$4 = false;
-	const _computeHmac = function (algorithm, key, data) {
-	    return createHmac(algorithm, key).update(data).digest();
-	};
-	let __computeHmac = _computeHmac;
-	/**
-	 *  Return the HMAC for %%data%% using the %%key%% key with the underlying
-	 *  %%algo%% used for compression.
-	 *
-	 *  @example:
-	 *    key = id("some-secret")
-	 *
-	 *    // Compute the HMAC
-	 *    computeHmac("sha256", key, "0x1337")
-	 *    //_result:
-	 *
-	 *    // To compute the HMAC of UTF-8 data, the data must be
-	 *    // converted to UTF-8 bytes
-	 *    computeHmac("sha256", key, toUtf8Bytes("Hello World"))
-	 *    //_result:
-	 *
-	 */
-	function computeHmac(algorithm, _key, _data) {
-	    const key = getBytes(_key, "key");
-	    const data = getBytes(_data, "data");
-	    return hexlify(__computeHmac(algorithm, key, data));
-	}
-	computeHmac._ = _computeHmac;
-	computeHmac.lock = function () { locked$4 = true; };
-	computeHmac.register = function (func) {
-	    if (locked$4) {
-	        throw new Error("computeHmac is locked");
-	    }
-	    __computeHmac = func;
-	};
-	Object.freeze(computeHmac);
 
 	// SHA3 (keccak) is based on a new design: basically, the internal state is bigger than output size.
 	// It's called a sponge function.
@@ -4642,7 +4442,7 @@
 	 *
 	 *  @_subsection: api/crypto:Hash Functions [about-crypto-hashing]
 	 */
-	let locked$3 = false;
+	let locked = false;
 	const _keccak256 = function (data) {
 	    return keccak_256(data);
 	};
@@ -4674,543 +4474,14 @@
 	    return hexlify(__keccak256(data));
 	}
 	keccak256._ = _keccak256;
-	keccak256.lock = function () { locked$3 = true; };
+	keccak256.lock = function () { locked = true; };
 	keccak256.register = function (func) {
-	    if (locked$3) {
+	    if (locked) {
 	        throw new TypeError("keccak256 is locked");
 	    }
 	    __keccak256 = func;
 	};
 	Object.freeze(keccak256);
-
-	// https://homes.esat.kuleuven.be/~bosselae/ripemd160.html
-	// https://homes.esat.kuleuven.be/~bosselae/ripemd160/pdf/AB-9601/AB-9601.pdf
-	const Rho = /* @__PURE__ */ new Uint8Array([7, 4, 13, 1, 10, 6, 15, 3, 12, 0, 9, 5, 2, 14, 11, 8]);
-	const Id = /* @__PURE__ */ Uint8Array.from({ length: 16 }, (_, i) => i);
-	const Pi = /* @__PURE__ */ Id.map((i) => (9 * i + 5) % 16);
-	let idxL = [Id];
-	let idxR = [Pi];
-	for (let i = 0; i < 4; i++)
-	    for (let j of [idxL, idxR])
-	        j.push(j[i].map((k) => Rho[k]));
-	const shifts = /* @__PURE__ */ [
-	    [11, 14, 15, 12, 5, 8, 7, 9, 11, 13, 14, 15, 6, 7, 9, 8],
-	    [12, 13, 11, 15, 6, 9, 9, 7, 12, 15, 11, 13, 7, 8, 7, 7],
-	    [13, 15, 14, 11, 7, 7, 6, 8, 13, 14, 13, 12, 5, 5, 6, 9],
-	    [14, 11, 12, 14, 8, 6, 5, 5, 15, 12, 15, 14, 9, 9, 8, 6],
-	    [15, 12, 13, 13, 9, 5, 8, 6, 14, 11, 12, 11, 8, 6, 5, 5],
-	].map((i) => new Uint8Array(i));
-	const shiftsL = /* @__PURE__ */ idxL.map((idx, i) => idx.map((j) => shifts[i][j]));
-	const shiftsR = /* @__PURE__ */ idxR.map((idx, i) => idx.map((j) => shifts[i][j]));
-	const Kl = /* @__PURE__ */ new Uint32Array([
-	    0x00000000, 0x5a827999, 0x6ed9eba1, 0x8f1bbcdc, 0xa953fd4e,
-	]);
-	const Kr = /* @__PURE__ */ new Uint32Array([
-	    0x50a28be6, 0x5c4dd124, 0x6d703ef3, 0x7a6d76e9, 0x00000000,
-	]);
-	// The rotate left (circular left shift) operation for uint32
-	const rotl$1 = (word, shift) => (word << shift) | (word >>> (32 - shift));
-	// It's called f() in spec.
-	function f(group, x, y, z) {
-	    if (group === 0)
-	        return x ^ y ^ z;
-	    else if (group === 1)
-	        return (x & y) | (~x & z);
-	    else if (group === 2)
-	        return (x | ~y) ^ z;
-	    else if (group === 3)
-	        return (x & z) | (y & ~z);
-	    else
-	        return x ^ (y | ~z);
-	}
-	// Temporary buffer, not used to store anything between runs
-	const BUF = /* @__PURE__ */ new Uint32Array(16);
-	class RIPEMD160 extends SHA2 {
-	    constructor() {
-	        super(64, 20, 8, true);
-	        this.h0 = 0x67452301 | 0;
-	        this.h1 = 0xefcdab89 | 0;
-	        this.h2 = 0x98badcfe | 0;
-	        this.h3 = 0x10325476 | 0;
-	        this.h4 = 0xc3d2e1f0 | 0;
-	    }
-	    get() {
-	        const { h0, h1, h2, h3, h4 } = this;
-	        return [h0, h1, h2, h3, h4];
-	    }
-	    set(h0, h1, h2, h3, h4) {
-	        this.h0 = h0 | 0;
-	        this.h1 = h1 | 0;
-	        this.h2 = h2 | 0;
-	        this.h3 = h3 | 0;
-	        this.h4 = h4 | 0;
-	    }
-	    process(view, offset) {
-	        for (let i = 0; i < 16; i++, offset += 4)
-	            BUF[i] = view.getUint32(offset, true);
-	        // prettier-ignore
-	        let al = this.h0 | 0, ar = al, bl = this.h1 | 0, br = bl, cl = this.h2 | 0, cr = cl, dl = this.h3 | 0, dr = dl, el = this.h4 | 0, er = el;
-	        // Instead of iterating 0 to 80, we split it into 5 groups
-	        // And use the groups in constants, functions, etc. Much simpler
-	        for (let group = 0; group < 5; group++) {
-	            const rGroup = 4 - group;
-	            const hbl = Kl[group], hbr = Kr[group]; // prettier-ignore
-	            const rl = idxL[group], rr = idxR[group]; // prettier-ignore
-	            const sl = shiftsL[group], sr = shiftsR[group]; // prettier-ignore
-	            for (let i = 0; i < 16; i++) {
-	                const tl = (rotl$1(al + f(group, bl, cl, dl) + BUF[rl[i]] + hbl, sl[i]) + el) | 0;
-	                al = el, el = dl, dl = rotl$1(cl, 10) | 0, cl = bl, bl = tl; // prettier-ignore
-	            }
-	            // 2 loops are 10% faster
-	            for (let i = 0; i < 16; i++) {
-	                const tr = (rotl$1(ar + f(rGroup, br, cr, dr) + BUF[rr[i]] + hbr, sr[i]) + er) | 0;
-	                ar = er, er = dr, dr = rotl$1(cr, 10) | 0, cr = br, br = tr; // prettier-ignore
-	            }
-	        }
-	        // Add the compressed chunk to the current hash value
-	        this.set((this.h1 + cl + dr) | 0, (this.h2 + dl + er) | 0, (this.h3 + el + ar) | 0, (this.h4 + al + br) | 0, (this.h0 + bl + cr) | 0);
-	    }
-	    roundClean() {
-	        BUF.fill(0);
-	    }
-	    destroy() {
-	        this.destroyed = true;
-	        this.buffer.fill(0);
-	        this.set(0, 0, 0, 0, 0);
-	    }
-	}
-	/**
-	 * RIPEMD-160 - a hash function from 1990s.
-	 * @param message - msg that would be hashed
-	 */
-	const ripemd160$1 = /* @__PURE__ */ wrapConstructor(() => new RIPEMD160());
-
-	let locked$2 = false;
-	const _ripemd160 = function (data) {
-	    return ripemd160$1(data);
-	};
-	let __ripemd160 = _ripemd160;
-	/**
-	 *  Compute the cryptographic RIPEMD-160 hash of %%data%%.
-	 *
-	 *  @_docloc: api/crypto:Hash Functions
-	 *  @returns DataHexstring
-	 *
-	 *  @example:
-	 *    ripemd160("0x")
-	 *    //_result:
-	 *
-	 *    ripemd160("0x1337")
-	 *    //_result:
-	 *
-	 *    ripemd160(new Uint8Array([ 0x13, 0x37 ]))
-	 *    //_result:
-	 *
-	 */
-	function ripemd160(_data) {
-	    const data = getBytes(_data, "data");
-	    return hexlify(__ripemd160(data));
-	}
-	ripemd160._ = _ripemd160;
-	ripemd160.lock = function () { locked$2 = true; };
-	ripemd160.register = function (func) {
-	    if (locked$2) {
-	        throw new TypeError("ripemd160 is locked");
-	    }
-	    __ripemd160 = func;
-	};
-	Object.freeze(ripemd160);
-
-	/**
-	 *  A **Password-Based Key-Derivation Function** is designed to create
-	 *  a sequence of bytes suitible as a **key** from a human-rememberable
-	 *  password.
-	 *
-	 *  @_subsection: api/crypto:Passwords  [about-pbkdf]
-	 */
-	let locked$1 = false;
-	const _pbkdf2 = function (password, salt, iterations, keylen, algo) {
-	    return pbkdf2Sync(password, salt, iterations, keylen, algo);
-	};
-	let __pbkdf2 = _pbkdf2;
-	/**
-	 *  Return the [[link-pbkdf2]] for %%keylen%% bytes for %%password%% using
-	 *  the %%salt%% and using %%iterations%% of %%algo%%.
-	 *
-	 *  This PBKDF is outdated and should not be used in new projects, but is
-	 *  required to decrypt older files.
-	 *
-	 *  @example:
-	 *    // The password must be converted to bytes, and it is generally
-	 *    // best practices to ensure the string has been normalized. Many
-	 *    // formats explicitly indicate the normalization form to use.
-	 *    password = "hello"
-	 *    passwordBytes = toUtf8Bytes(password, "NFKC")
-	 *
-	 *    salt = id("some-salt")
-	 *
-	 *    // Compute the PBKDF2
-	 *    pbkdf2(passwordBytes, salt, 1024, 16, "sha256")
-	 *    //_result:
-	 */
-	function pbkdf2(_password, _salt, iterations, keylen, algo) {
-	    const password = getBytes(_password, "password");
-	    const salt = getBytes(_salt, "salt");
-	    return hexlify(__pbkdf2(password, salt, iterations, keylen, algo));
-	}
-	pbkdf2._ = _pbkdf2;
-	pbkdf2.lock = function () { locked$1 = true; };
-	pbkdf2.register = function (func) {
-	    if (locked$1) {
-	        throw new Error("pbkdf2 is locked");
-	    }
-	    __pbkdf2 = func;
-	};
-	Object.freeze(pbkdf2);
-
-	/**
-	 *  A **Cryptographically Secure Random Value** is one that has been
-	 *  generated with additional care take to prevent side-channels
-	 *  from allowing others to detect it and prevent others from through
-	 *  coincidence generate the same values.
-	 *
-	 *  @_subsection: api/crypto:Random Values  [about-crypto-random]
-	 */
-	let locked = false;
-	const _randomBytes = function (length) {
-	    return new Uint8Array(randomBytes$1(length));
-	};
-	let __randomBytes = _randomBytes;
-	/**
-	 *  Return %%length%% bytes of cryptographically secure random data.
-	 *
-	 *  @example:
-	 *    randomBytes(8)
-	 *    //_result:
-	 */
-	function randomBytes(length) {
-	    return __randomBytes(length);
-	}
-	randomBytes._ = _randomBytes;
-	randomBytes.lock = function () { locked = true; };
-	randomBytes.register = function (func) {
-	    if (locked) {
-	        throw new Error("randomBytes is locked");
-	    }
-	    __randomBytes = func;
-	};
-	Object.freeze(randomBytes);
-
-	// RFC 7914 Scrypt KDF
-	// Left rotate for uint32
-	const rotl = (a, b) => (a << b) | (a >>> (32 - b));
-	// The main Scrypt loop: uses Salsa extensively.
-	// Six versions of the function were tried, this is the fastest one.
-	// prettier-ignore
-	function XorAndSalsa(prev, pi, input, ii, out, oi) {
-	    // Based on https://cr.yp.to/salsa20.html
-	    // Xor blocks
-	    let y00 = prev[pi++] ^ input[ii++], y01 = prev[pi++] ^ input[ii++];
-	    let y02 = prev[pi++] ^ input[ii++], y03 = prev[pi++] ^ input[ii++];
-	    let y04 = prev[pi++] ^ input[ii++], y05 = prev[pi++] ^ input[ii++];
-	    let y06 = prev[pi++] ^ input[ii++], y07 = prev[pi++] ^ input[ii++];
-	    let y08 = prev[pi++] ^ input[ii++], y09 = prev[pi++] ^ input[ii++];
-	    let y10 = prev[pi++] ^ input[ii++], y11 = prev[pi++] ^ input[ii++];
-	    let y12 = prev[pi++] ^ input[ii++], y13 = prev[pi++] ^ input[ii++];
-	    let y14 = prev[pi++] ^ input[ii++], y15 = prev[pi++] ^ input[ii++];
-	    // Save state to temporary variables (salsa)
-	    let x00 = y00, x01 = y01, x02 = y02, x03 = y03, x04 = y04, x05 = y05, x06 = y06, x07 = y07, x08 = y08, x09 = y09, x10 = y10, x11 = y11, x12 = y12, x13 = y13, x14 = y14, x15 = y15;
-	    // Main loop (salsa)
-	    for (let i = 0; i < 8; i += 2) {
-	        x04 ^= rotl(x00 + x12 | 0, 7);
-	        x08 ^= rotl(x04 + x00 | 0, 9);
-	        x12 ^= rotl(x08 + x04 | 0, 13);
-	        x00 ^= rotl(x12 + x08 | 0, 18);
-	        x09 ^= rotl(x05 + x01 | 0, 7);
-	        x13 ^= rotl(x09 + x05 | 0, 9);
-	        x01 ^= rotl(x13 + x09 | 0, 13);
-	        x05 ^= rotl(x01 + x13 | 0, 18);
-	        x14 ^= rotl(x10 + x06 | 0, 7);
-	        x02 ^= rotl(x14 + x10 | 0, 9);
-	        x06 ^= rotl(x02 + x14 | 0, 13);
-	        x10 ^= rotl(x06 + x02 | 0, 18);
-	        x03 ^= rotl(x15 + x11 | 0, 7);
-	        x07 ^= rotl(x03 + x15 | 0, 9);
-	        x11 ^= rotl(x07 + x03 | 0, 13);
-	        x15 ^= rotl(x11 + x07 | 0, 18);
-	        x01 ^= rotl(x00 + x03 | 0, 7);
-	        x02 ^= rotl(x01 + x00 | 0, 9);
-	        x03 ^= rotl(x02 + x01 | 0, 13);
-	        x00 ^= rotl(x03 + x02 | 0, 18);
-	        x06 ^= rotl(x05 + x04 | 0, 7);
-	        x07 ^= rotl(x06 + x05 | 0, 9);
-	        x04 ^= rotl(x07 + x06 | 0, 13);
-	        x05 ^= rotl(x04 + x07 | 0, 18);
-	        x11 ^= rotl(x10 + x09 | 0, 7);
-	        x08 ^= rotl(x11 + x10 | 0, 9);
-	        x09 ^= rotl(x08 + x11 | 0, 13);
-	        x10 ^= rotl(x09 + x08 | 0, 18);
-	        x12 ^= rotl(x15 + x14 | 0, 7);
-	        x13 ^= rotl(x12 + x15 | 0, 9);
-	        x14 ^= rotl(x13 + x12 | 0, 13);
-	        x15 ^= rotl(x14 + x13 | 0, 18);
-	    }
-	    // Write output (salsa)
-	    out[oi++] = (y00 + x00) | 0;
-	    out[oi++] = (y01 + x01) | 0;
-	    out[oi++] = (y02 + x02) | 0;
-	    out[oi++] = (y03 + x03) | 0;
-	    out[oi++] = (y04 + x04) | 0;
-	    out[oi++] = (y05 + x05) | 0;
-	    out[oi++] = (y06 + x06) | 0;
-	    out[oi++] = (y07 + x07) | 0;
-	    out[oi++] = (y08 + x08) | 0;
-	    out[oi++] = (y09 + x09) | 0;
-	    out[oi++] = (y10 + x10) | 0;
-	    out[oi++] = (y11 + x11) | 0;
-	    out[oi++] = (y12 + x12) | 0;
-	    out[oi++] = (y13 + x13) | 0;
-	    out[oi++] = (y14 + x14) | 0;
-	    out[oi++] = (y15 + x15) | 0;
-	}
-	function BlockMix(input, ii, out, oi, r) {
-	    // The block B is r 128-byte chunks (which is equivalent of 2r 64-byte chunks)
-	    let head = oi + 0;
-	    let tail = oi + 16 * r;
-	    for (let i = 0; i < 16; i++)
-	        out[tail + i] = input[ii + (2 * r - 1) * 16 + i]; // X ← B[2r−1]
-	    for (let i = 0; i < r; i++, head += 16, ii += 16) {
-	        // We write odd & even Yi at same time. Even: 0bXXXXX0 Odd:  0bXXXXX1
-	        XorAndSalsa(out, tail, input, ii, out, head); // head[i] = Salsa(blockIn[2*i] ^ tail[i-1])
-	        if (i > 0)
-	            tail += 16; // First iteration overwrites tmp value in tail
-	        XorAndSalsa(out, head, input, (ii += 16), out, tail); // tail[i] = Salsa(blockIn[2*i+1] ^ head[i])
-	    }
-	}
-	// Common prologue and epilogue for sync/async functions
-	function scryptInit(password, salt, _opts) {
-	    // Maxmem - 1GB+1KB by default
-	    const opts = checkOpts({
-	        dkLen: 32,
-	        asyncTick: 10,
-	        maxmem: 1024 ** 3 + 1024,
-	    }, _opts);
-	    const { N, r, p, dkLen, asyncTick, maxmem, onProgress } = opts;
-	    number(N);
-	    number(r);
-	    number(p);
-	    number(dkLen);
-	    number(asyncTick);
-	    number(maxmem);
-	    if (onProgress !== undefined && typeof onProgress !== 'function')
-	        throw new Error('progressCb should be function');
-	    const blockSize = 128 * r;
-	    const blockSize32 = blockSize / 4;
-	    if (N <= 1 || (N & (N - 1)) !== 0 || N >= 2 ** (blockSize / 8) || N > 2 ** 32) {
-	        // NOTE: we limit N to be less than 2**32 because of 32 bit variant of Integrify function
-	        // There is no JS engines that allows alocate more than 4GB per single Uint8Array for now, but can change in future.
-	        throw new Error('Scrypt: N must be larger than 1, a power of 2, less than 2^(128 * r / 8) and less than 2^32');
-	    }
-	    if (p < 0 || p > ((2 ** 32 - 1) * 32) / blockSize) {
-	        throw new Error('Scrypt: p must be a positive integer less than or equal to ((2^32 - 1) * 32) / (128 * r)');
-	    }
-	    if (dkLen < 0 || dkLen > (2 ** 32 - 1) * 32) {
-	        throw new Error('Scrypt: dkLen should be positive integer less than or equal to (2^32 - 1) * 32');
-	    }
-	    const memUsed = blockSize * (N + p);
-	    if (memUsed > maxmem) {
-	        throw new Error(`Scrypt: parameters too large, ${memUsed} (128 * r * (N + p)) > ${maxmem} (maxmem)`);
-	    }
-	    // [B0...Bp−1] ← PBKDF2HMAC-SHA256(Passphrase, Salt, 1, blockSize*ParallelizationFactor)
-	    // Since it has only one iteration there is no reason to use async variant
-	    const B = pbkdf2$1(sha256$1, password, salt, { c: 1, dkLen: blockSize * p });
-	    const B32 = u32(B);
-	    // Re-used between parallel iterations. Array(iterations) of B
-	    const V = u32(new Uint8Array(blockSize * N));
-	    const tmp = u32(new Uint8Array(blockSize));
-	    let blockMixCb = () => { };
-	    if (onProgress) {
-	        const totalBlockMix = 2 * N * p;
-	        // Invoke callback if progress changes from 10.01 to 10.02
-	        // Allows to draw smooth progress bar on up to 8K screen
-	        const callbackPer = Math.max(Math.floor(totalBlockMix / 10000), 1);
-	        let blockMixCnt = 0;
-	        blockMixCb = () => {
-	            blockMixCnt++;
-	            if (onProgress && (!(blockMixCnt % callbackPer) || blockMixCnt === totalBlockMix))
-	                onProgress(blockMixCnt / totalBlockMix);
-	        };
-	    }
-	    return { N, r, p, dkLen, blockSize32, V, B32, B, tmp, blockMixCb, asyncTick };
-	}
-	function scryptOutput(password, dkLen, B, V, tmp) {
-	    const res = pbkdf2$1(sha256$1, password, B, { c: 1, dkLen });
-	    B.fill(0);
-	    V.fill(0);
-	    tmp.fill(0);
-	    return res;
-	}
-	/**
-	 * Scrypt KDF from RFC 7914.
-	 * @param password - pass
-	 * @param salt - salt
-	 * @param opts - parameters
-	 * - `N` is cpu/mem work factor (power of 2 e.g. 2**18)
-	 * - `r` is block size (8 is common), fine-tunes sequential memory read size and performance
-	 * - `p` is parallelization factor (1 is common)
-	 * - `dkLen` is output key length in bytes e.g. 32.
-	 * - `asyncTick` - (default: 10) max time in ms for which async function can block execution
-	 * - `maxmem` - (default: `1024 ** 3 + 1024` aka 1GB+1KB). A limit that the app could use for scrypt
-	 * - `onProgress` - callback function that would be executed for progress report
-	 * @returns Derived key
-	 */
-	function scrypt$1(password, salt, opts) {
-	    const { N, r, p, dkLen, blockSize32, V, B32, B, tmp, blockMixCb } = scryptInit(password, salt, opts);
-	    for (let pi = 0; pi < p; pi++) {
-	        const Pi = blockSize32 * pi;
-	        for (let i = 0; i < blockSize32; i++)
-	            V[i] = B32[Pi + i]; // V[0] = B[i]
-	        for (let i = 0, pos = 0; i < N - 1; i++) {
-	            BlockMix(V, pos, V, (pos += blockSize32), r); // V[i] = BlockMix(V[i-1]);
-	            blockMixCb();
-	        }
-	        BlockMix(V, (N - 1) * blockSize32, B32, Pi, r); // Process last element
-	        blockMixCb();
-	        for (let i = 0; i < N; i++) {
-	            // First u32 of the last 64-byte block (u32 is LE)
-	            const j = B32[Pi + blockSize32 - 16] % N; // j = Integrify(X) % iterations
-	            for (let k = 0; k < blockSize32; k++)
-	                tmp[k] = B32[Pi + k] ^ V[j * blockSize32 + k]; // tmp = B ^ V[j]
-	            BlockMix(tmp, 0, B32, Pi, r); // B = BlockMix(B ^ V[j])
-	            blockMixCb();
-	        }
-	    }
-	    return scryptOutput(password, dkLen, B, V, tmp);
-	}
-	/**
-	 * Scrypt KDF from RFC 7914.
-	 */
-	async function scryptAsync(password, salt, opts) {
-	    const { N, r, p, dkLen, blockSize32, V, B32, B, tmp, blockMixCb, asyncTick } = scryptInit(password, salt, opts);
-	    for (let pi = 0; pi < p; pi++) {
-	        const Pi = blockSize32 * pi;
-	        for (let i = 0; i < blockSize32; i++)
-	            V[i] = B32[Pi + i]; // V[0] = B[i]
-	        let pos = 0;
-	        await asyncLoop(N - 1, asyncTick, () => {
-	            BlockMix(V, pos, V, (pos += blockSize32), r); // V[i] = BlockMix(V[i-1]);
-	            blockMixCb();
-	        });
-	        BlockMix(V, (N - 1) * blockSize32, B32, Pi, r); // Process last element
-	        blockMixCb();
-	        await asyncLoop(N, asyncTick, () => {
-	            // First u32 of the last 64-byte block (u32 is LE)
-	            const j = B32[Pi + blockSize32 - 16] % N; // j = Integrify(X) % iterations
-	            for (let k = 0; k < blockSize32; k++)
-	                tmp[k] = B32[Pi + k] ^ V[j * blockSize32 + k]; // tmp = B ^ V[j]
-	            BlockMix(tmp, 0, B32, Pi, r); // B = BlockMix(B ^ V[j])
-	            blockMixCb();
-	        });
-	    }
-	    return scryptOutput(password, dkLen, B, V, tmp);
-	}
-
-	let lockedSync = false, lockedAsync = false;
-	const _scryptAsync = async function (passwd, salt, N, r, p, dkLen, onProgress) {
-	    return await scryptAsync(passwd, salt, { N, r, p, dkLen, onProgress });
-	};
-	const _scryptSync = function (passwd, salt, N, r, p, dkLen) {
-	    return scrypt$1(passwd, salt, { N, r, p, dkLen });
-	};
-	let __scryptAsync = _scryptAsync;
-	let __scryptSync = _scryptSync;
-	/**
-	 *  The [[link-wiki-scrypt]] uses a memory and cpu hard method of
-	 *  derivation to increase the resource cost to brute-force a password
-	 *  for a given key.
-	 *
-	 *  This means this algorithm is intentionally slow, and can be tuned to
-	 *  become slower. As computation and memory speed improve over time,
-	 *  increasing the difficulty maintains the cost of an attacker.
-	 *
-	 *  For example, if a target time of 5 seconds is used, a legitimate user
-	 *  which knows their password requires only 5 seconds to unlock their
-	 *  account. A 6 character password has 68 billion possibilities, which
-	 *  would require an attacker to invest over 10,000 years of CPU time. This
-	 *  is of course a crude example (as password generally aren't random),
-	 *  but demonstrates to value of imposing large costs to decryption.
-	 *
-	 *  For this reason, if building a UI which involved decrypting or
-	 *  encrypting datsa using scrypt, it is recommended to use a
-	 *  [[ProgressCallback]] (as event short periods can seem lik an eternity
-	 *  if the UI freezes). Including the phrase //"decrypting"// in the UI
-	 *  can also help, assuring the user their waiting is for a good reason.
-	 *
-	 *  @_docloc: api/crypto:Passwords
-	 *
-	 *  @example:
-	 *    // The password must be converted to bytes, and it is generally
-	 *    // best practices to ensure the string has been normalized. Many
-	 *    // formats explicitly indicate the normalization form to use.
-	 *    password = "hello"
-	 *    passwordBytes = toUtf8Bytes(password, "NFKC")
-	 *
-	 *    salt = id("some-salt")
-	 *
-	 *    // Compute the scrypt
-	 *    scrypt(passwordBytes, salt, 1024, 8, 1, 16)
-	 *    //_result:
-	 */
-	async function scrypt(_passwd, _salt, N, r, p, dkLen, progress) {
-	    const passwd = getBytes(_passwd, "passwd");
-	    const salt = getBytes(_salt, "salt");
-	    return hexlify(await __scryptAsync(passwd, salt, N, r, p, dkLen, progress));
-	}
-	scrypt._ = _scryptAsync;
-	scrypt.lock = function () { lockedAsync = true; };
-	scrypt.register = function (func) {
-	    if (lockedAsync) {
-	        throw new Error("scrypt is locked");
-	    }
-	    __scryptAsync = func;
-	};
-	Object.freeze(scrypt);
-	/**
-	 *  Provides a synchronous variant of [[scrypt]].
-	 *
-	 *  This will completely lock up and freeze the UI in a browser and will
-	 *  prevent any event loop from progressing. For this reason, it is
-	 *  preferred to use the [async variant](scrypt).
-	 *
-	 *  @_docloc: api/crypto:Passwords
-	 *
-	 *  @example:
-	 *    // The password must be converted to bytes, and it is generally
-	 *    // best practices to ensure the string has been normalized. Many
-	 *    // formats explicitly indicate the normalization form to use.
-	 *    password = "hello"
-	 *    passwordBytes = toUtf8Bytes(password, "NFKC")
-	 *
-	 *    salt = id("some-salt")
-	 *
-	 *    // Compute the scrypt
-	 *    scryptSync(passwordBytes, salt, 1024, 8, 1, 16)
-	 *    //_result:
-	 */
-	function scryptSync(_passwd, _salt, N, r, p, dkLen) {
-	    const passwd = getBytes(_passwd, "passwd");
-	    const salt = getBytes(_salt, "salt");
-	    return hexlify(__scryptSync(passwd, salt, N, r, p, dkLen));
-	}
-	scryptSync._ = _scryptSync;
-	scryptSync.lock = function () { lockedSync = true; };
-	scryptSync.register = function (func) {
-	    if (lockedSync) {
-	        throw new Error("scryptSync is locked");
-	    }
-	    __scryptSync = func;
-	};
-	Object.freeze(scryptSync);
 
 	const _sha256 = function (data) {
 	    return createHash("sha256").update(data).digest();
@@ -6980,7 +6251,7 @@
 	    return {
 	        hash,
 	        hmac: (key, ...msgs) => hmac(hash, key, concatBytes$1(...msgs)),
-	        randomBytes: randomBytes$2,
+	        randomBytes,
 	    };
 	}
 	function createCurve(curveDef, defHash) {
@@ -7084,19 +6355,6 @@
 	 */
 	const ZeroHash = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
-	// NFKC (composed)             // (decomposed)
-	/**
-	 *  A constant for the ether symbol (normalized using NFKC).
-	 *
-	 *  (**i.e.** ``"\\u039e"``)
-	 */
-	/**
-	 *  A constant for the [[link-eip-191]] personal message prefix.
-	 *
-	 *  (**i.e.** ``"\\x19Ethereum Signed Message:\\n"``)
-	 */
-	const MessagePrefix = "\x19Ethereum Signed Message:\n";
-
 	// Constants
 	const BN_0$7 = BigInt(0);
 	const BN_1$2 = BigInt(1);
@@ -7104,7 +6362,7 @@
 	const BN_27$1 = BigInt(27);
 	const BN_28$1 = BigInt(28);
 	const BN_35$1 = BigInt(35);
-	const _guard$3 = {};
+	const _guard$1 = {};
 	function toUint256(value) {
 	    return zeroPadValue(toBeArray(value), 32);
 	}
@@ -7208,7 +6466,7 @@
 	     *  @private
 	     */
 	    constructor(guard, r, s, v) {
-	        assertPrivate(guard, _guard$3, "Signature");
+	        assertPrivate(guard, _guard$1, "Signature");
 	        this.#r = r;
 	        this.#s = s;
 	        this.#v = v;
@@ -7221,7 +6479,7 @@
 	     *  Returns a new identical [[Signature]].
 	     */
 	    clone() {
-	        const clone = new Signature(_guard$3, this.r, this.s, this.v);
+	        const clone = new Signature(_guard$1, this.r, this.s, this.v);
 	        if (this.networkV) {
 	            clone.#networkV = this.networkV;
 	        }
@@ -7321,7 +6579,7 @@
 	            assertArgument(check, message, "signature", sig);
 	        }
 	        if (sig == null) {
-	            return new Signature(_guard$3, ZeroHash, ZeroHash, 27);
+	            return new Signature(_guard$1, ZeroHash, ZeroHash, 27);
 	        }
 	        if (typeof (sig) === "string") {
 	            const bytes = getBytes(sig, "signature");
@@ -7330,14 +6588,14 @@
 	                const s = bytes.slice(32, 64);
 	                const v = (s[0] & 0x80) ? 28 : 27;
 	                s[0] &= 0x7f;
-	                return new Signature(_guard$3, r, hexlify(s), v);
+	                return new Signature(_guard$1, r, hexlify(s), v);
 	            }
 	            if (bytes.length === 65) {
 	                const r = hexlify(bytes.slice(0, 32));
 	                const s = bytes.slice(32, 64);
 	                assertError((s[0] & 0x80) === 0, "non-canonical s");
 	                const v = Signature.getNormalizedV(bytes[64]);
-	                return new Signature(_guard$3, r, hexlify(s), v);
+	                return new Signature(_guard$1, r, hexlify(s), v);
 	            }
 	            assertError(false, "invalid raw signature length");
 	        }
@@ -7384,7 +6642,7 @@
 	            }
 	            assertError(false, "missing v");
 	        })(sig.v, sig.yParityAndS, sig.yParity);
-	        const result = new Signature(_guard$3, r, s, v);
+	        const result = new Signature(_guard$1, r, s, v);
 	        if (networkV) {
 	            result.#networkV = networkV;
 	        }
@@ -9139,7 +8397,7 @@
 	const S1 = S0 + S_COUNT;
 	const L1 = L0 + L_COUNT;
 	const V1 = V0 + V_COUNT;
-	const T1$1 = T0 + T_COUNT;
+	const T1 = T0 + T_COUNT;
 
 	function unpack_cc(packed) {
 		return (packed >> 24) & 0xFF;
@@ -9180,7 +8438,7 @@
 	function compose_pair(a, b) {
 		if (a >= L0 && a < L1 && b >= V0 && b < V1) {
 			return S0 + (a - L0) * N_COUNT + (b - V0) * T_COUNT;
-		} else if (is_hangul(a) && b > T0 && b < T1$1 && (a - S0) % T_COUNT == 0) {
+		} else if (is_hangul(a) && b > T0 && b < T1 && (a - S0) % T_COUNT == 0) {
 			return a + (b - T0);
 		} else {
 			let recomp = RECOMP.get(a);
@@ -11007,45 +10265,6 @@
 	    }
 	}
 
-	/**
-	 *  Computes the [[link-eip-191]] personal-sign message digest to sign.
-	 *
-	 *  This prefixes the message with [[MessagePrefix]] and the decimal length
-	 *  of %%message%% and computes the [[keccak256]] digest.
-	 *
-	 *  If %%message%% is a string, it is converted to its UTF-8 bytes
-	 *  first. To compute the digest of a [[DataHexString]], it must be converted
-	 *  to [bytes](getBytes).
-	 *
-	 *  @example:
-	 *    hashMessage("Hello World")
-	 *    //_result:
-	 *
-	 *    // Hashes the SIX (6) string characters, i.e.
-	 *    // [ "0", "x", "4", "2", "4", "3" ]
-	 *    hashMessage("0x4243")
-	 *    //_result:
-	 *
-	 *    // Hashes the TWO (2) bytes [ 0x42, 0x43 ]...
-	 *    hashMessage(getBytes("0x4243"))
-	 *    //_result:
-	 *
-	 *    // ...which is equal to using data
-	 *    hashMessage(new Uint8Array([ 0x42, 0x43 ]))
-	 *    //_result:
-	 *
-	 */
-	function hashMessage(message) {
-	    if (typeof (message) === "string") {
-	        message = toUtf8Bytes(message);
-	    }
-	    return keccak256(concat([
-	        toUtf8Bytes(MessagePrefix),
-	        toUtf8Bytes(String(message.length)),
-	        message
-	    ]));
-	}
-
 	//import { TypedDataDomain, TypedDataField } from "@ethersproject/providerabstract-signer";
 	const padding = new Uint8Array(32);
 	padding.fill(0);
@@ -11885,7 +11104,7 @@
 	    return type;
 	}
 	// Make the Fragment constructors effectively private
-	const _guard$2 = {};
+	const _guard = {};
 	const internal$1 = Symbol.for("_ethers_internal");
 	const ParamTypeInternal = "_ParamTypeInternal";
 	const ErrorFragmentInternal = "_ErrorInternal";
@@ -11939,7 +11158,7 @@
 	     *  @private
 	     */
 	    constructor(guard, name, type, baseType, indexed, components, arrayLength, arrayChildren) {
-	        assertPrivate(guard, _guard$2, "ParamType");
+	        assertPrivate(guard, _guard, "ParamType");
 	        Object.defineProperty(this, internal$1, { value: ParamTypeInternal });
 	        if (components) {
 	            components = Object.freeze(components.slice());
@@ -12190,7 +11409,7 @@
 	            let arrayLength = null;
 	            while (obj.length && obj.peekType("BRACKET")) {
 	                const bracket = obj.pop(); //arrays[i];
-	                arrayChildren = new ParamType(_guard$2, "", type, baseType, null, comps, arrayLength, arrayChildren);
+	                arrayChildren = new ParamType(_guard, "", type, baseType, null, comps, arrayLength, arrayChildren);
 	                arrayLength = bracket.value;
 	                type += bracket.text;
 	                baseType = "array";
@@ -12208,7 +11427,7 @@
 	            if (obj.length) {
 	                throw new Error("leftover tokens");
 	            }
-	            return new ParamType(_guard$2, name, type, baseType, indexed, comps, arrayLength, arrayChildren);
+	            return new ParamType(_guard, name, type, baseType, indexed, comps, arrayLength, arrayChildren);
 	        }
 	        const name = obj.name;
 	        assertArgument(!name || (typeof (name) === "string" && name.match(regexId)), "invalid name", "obj.name", name);
@@ -12225,16 +11444,16 @@
 	                type: arrayMatch[1],
 	                components: obj.components
 	            });
-	            return new ParamType(_guard$2, name || "", type, "array", indexed, null, arrayLength, arrayChildren);
+	            return new ParamType(_guard, name || "", type, "array", indexed, null, arrayLength, arrayChildren);
 	        }
 	        if (type === "tuple" || type.startsWith("tuple(" /* fix: ) */) || type.startsWith("(" /* fix: ) */)) {
 	            const comps = (obj.components != null) ? obj.components.map((c) => ParamType.from(c)) : null;
-	            const tuple = new ParamType(_guard$2, name || "", type, "tuple", indexed, comps, null, null);
+	            const tuple = new ParamType(_guard, name || "", type, "tuple", indexed, comps, null, null);
 	            // @TODO: use lexer to validate and normalize type
 	            return tuple;
 	        }
 	        type = verifyBasicType(obj.type);
-	        return new ParamType(_guard$2, name || "", type, type, indexed, null, null, null);
+	        return new ParamType(_guard, name || "", type, type, indexed, null, null, null);
 	    }
 	    /**
 	     *  Returns true if %%value%% is a **ParamType**.
@@ -12259,7 +11478,7 @@
 	     *  @private
 	     */
 	    constructor(guard, type, inputs) {
-	        assertPrivate(guard, _guard$2, "Fragment");
+	        assertPrivate(guard, _guard, "Fragment");
 	        inputs = Object.freeze(inputs.slice());
 	        defineProperties(this, { type, inputs });
 	    }
@@ -12414,9 +11633,9 @@
 	            const name = consumeName("error", obj);
 	            const inputs = consumeParams(obj);
 	            consumeEoi(obj);
-	            return new ErrorFragment(_guard$2, name, inputs);
+	            return new ErrorFragment(_guard, name, inputs);
 	        }
-	        return new ErrorFragment(_guard$2, obj.name, obj.inputs ? obj.inputs.map(ParamType.from) : []);
+	        return new ErrorFragment(_guard, obj.name, obj.inputs ? obj.inputs.map(ParamType.from) : []);
 	    }
 	    /**
 	     *  Returns ``true`` and provides a type guard if %%value%% is an
@@ -12478,7 +11697,7 @@
 	     */
 	    static getTopicHash(name, params) {
 	        params = (params || []).map((p) => ParamType.from(p));
-	        const fragment = new EventFragment(_guard$2, name, params, false);
+	        const fragment = new EventFragment(_guard, name, params, false);
 	        return fragment.topicHash;
 	    }
 	    /**
@@ -12501,9 +11720,9 @@
 	            const inputs = consumeParams(obj, true);
 	            const anonymous = !!consumeKeywords(obj, setify(["anonymous"])).has("anonymous");
 	            consumeEoi(obj);
-	            return new EventFragment(_guard$2, name, inputs, anonymous);
+	            return new EventFragment(_guard, name, inputs, anonymous);
 	        }
-	        return new EventFragment(_guard$2, obj.name, obj.inputs ? obj.inputs.map((p) => ParamType.from(p, true)) : [], !!obj.anonymous);
+	        return new EventFragment(_guard, obj.name, obj.inputs ? obj.inputs.map((p) => ParamType.from(p, true)) : [], !!obj.anonymous);
 	    }
 	    /**
 	     *  Returns ``true`` and provides a type guard if %%value%% is an
@@ -12577,9 +11796,9 @@
 	            const payable = !!consumeKeywords(obj, KwVisibDeploy).has("payable");
 	            const gas = consumeGas(obj);
 	            consumeEoi(obj);
-	            return new ConstructorFragment(_guard$2, "constructor", inputs, payable, gas);
+	            return new ConstructorFragment(_guard, "constructor", inputs, payable, gas);
 	        }
-	        return new ConstructorFragment(_guard$2, "constructor", obj.inputs ? obj.inputs.map(ParamType.from) : [], !!obj.payable, (obj.gas != null) ? obj.gas : null);
+	        return new ConstructorFragment(_guard, "constructor", obj.inputs ? obj.inputs.map(ParamType.from) : [], !!obj.payable, (obj.gas != null) ? obj.gas : null);
 	    }
 	    /**
 	     *  Returns ``true`` and provides a type guard if %%value%% is a
@@ -12639,7 +11858,7 @@
 	                assertArgument(inputs.length === 0, `receive cannot have arguments`, "obj.inputs", inputs);
 	                consumeKeywords(obj, setify(["payable"]));
 	                consumeEoi(obj);
-	                return new FallbackFragment(_guard$2, [], true);
+	                return new FallbackFragment(_guard, [], true);
 	            }
 	            // fallback() [payable]
 	            // fallback(bytes) [payable] returns (bytes)
@@ -12657,15 +11876,15 @@
 	                assertArgument(outputs.length === 1 && outputs[0].type === "bytes", "invalid fallback outputs", "obj.outputs", outputs.map((i) => i.format("minimal")).join(", "));
 	            }
 	            consumeEoi(obj);
-	            return new FallbackFragment(_guard$2, inputs, mutability === "payable");
+	            return new FallbackFragment(_guard, inputs, mutability === "payable");
 	        }
 	        if (obj.type === "receive") {
-	            return new FallbackFragment(_guard$2, [], true);
+	            return new FallbackFragment(_guard, [], true);
 	        }
 	        if (obj.type === "fallback") {
 	            const inputs = [ParamType.from("bytes")];
 	            const payable = (obj.stateMutability === "payable");
-	            return new FallbackFragment(_guard$2, inputs, payable);
+	            return new FallbackFragment(_guard, inputs, payable);
 	        }
 	        assertArgument(false, "invalid fallback description", "obj", obj);
 	    }
@@ -12762,7 +11981,7 @@
 	     */
 	    static getSelector(name, params) {
 	        params = (params || []).map((p) => ParamType.from(p));
-	        const fragment = new FunctionFragment(_guard$2, name, "view", params, [], null);
+	        const fragment = new FunctionFragment(_guard, name, "view", params, [], null);
 	        return fragment.selector;
 	    }
 	    /**
@@ -12790,7 +12009,7 @@
 	            }
 	            const gas = consumeGas(obj);
 	            consumeEoi(obj);
-	            return new FunctionFragment(_guard$2, name, mutability, inputs, outputs, gas);
+	            return new FunctionFragment(_guard, name, mutability, inputs, outputs, gas);
 	        }
 	        let stateMutability = obj.stateMutability;
 	        // Use legacy Solidity ABI logic if stateMutability is missing
@@ -12811,7 +12030,7 @@
 	        }
 	        // @TODO: verifyState for stateMutability (e.g. throw if
 	        //        payable: false but stateMutability is "nonpayable")
-	        return new FunctionFragment(_guard$2, obj.name, stateMutability, obj.inputs ? obj.inputs.map(ParamType.from) : [], obj.outputs ? obj.outputs.map(ParamType.from) : [], (obj.gas != null) ? obj.gas : null);
+	        return new FunctionFragment(_guard, obj.name, stateMutability, obj.inputs ? obj.inputs.map(ParamType.from) : [], obj.outputs ? obj.outputs.map(ParamType.from) : [], (obj.gas != null) ? obj.gas : null);
 	    }
 	    /**
 	     *  Returns ``true`` and provides a type guard if %%value%% is a
@@ -12854,9 +12073,9 @@
 	            const name = consumeName("struct", obj);
 	            const inputs = consumeParams(obj);
 	            consumeEoi(obj);
-	            return new StructFragment(_guard$2, name, inputs);
+	            return new StructFragment(_guard, name, inputs);
 	        }
-	        return new StructFragment(_guard$2, obj.name, obj.inputs ? obj.inputs.map(ParamType.from) : []);
+	        return new StructFragment(_guard, obj.name, obj.inputs ? obj.inputs.map(ParamType.from) : []);
 	    }
 	    // @TODO: fix this return type
 	    /**
@@ -19793,44 +19012,6 @@
 	        return await provider.broadcastTransaction(await this.signTransaction(txObj));
 	    }
 	}
-	/**
-	 *  A **VoidSigner** is a class deisgned to allow an address to be used
-	 *  in any API which accepts a Signer, but for which there are no
-	 *  credentials available to perform any actual signing.
-	 *
-	 *  This for example allow impersonating an account for the purpose of
-	 *  static calls or estimating gas, but does not allow sending transactions.
-	 */
-	class VoidSigner extends AbstractSigner {
-	    /**
-	     *  The signer address.
-	     */
-	    address;
-	    /**
-	     *  Creates a new **VoidSigner** with %%address%% attached to
-	     *  %%provider%%.
-	     */
-	    constructor(address, provider) {
-	        super(provider);
-	        defineProperties(this, { address });
-	    }
-	    async getAddress() { return this.address; }
-	    connect(provider) {
-	        return new VoidSigner(this.address, provider);
-	    }
-	    #throwUnsupported(suffix, operation) {
-	        assert(false, `VoidSigner cannot sign ${suffix}`, "UNSUPPORTED_OPERATION", { operation });
-	    }
-	    async signTransaction(tx) {
-	        this.#throwUnsupported("transactions", "signTransaction");
-	    }
-	    async signMessage(message) {
-	        this.#throwUnsupported("messages", "signMessage");
-	    }
-	    async signTypedData(domain, types, value) {
-	        this.#throwUnsupported("typed-data", "signTypedData");
-	    }
-	}
 
 	function copy(obj) {
 	    return JSON.parse(JSON.stringify(obj));
@@ -20039,7 +19220,7 @@
 	    }
 	    throw new Error(`should not happen: ${value} (${typeof (value)})`);
 	}
-	function stall$2(duration) {
+	function stall(duration) {
 	    return new Promise((resolve) => { setTimeout(resolve, duration); });
 	}
 	function getLowerCase(value) {
@@ -20469,7 +19650,7 @@
 	                    }
 	                    console.log("JsonRpcProvider failed to detect network and cannot start up; retry in 1s (perhaps the URL is wrong or the node is not started)");
 	                    this.emit("error", makeError("failed to bootstrap network detection", "NETWORK_ERROR", { event: "initial-network-discovery", info: { error } }));
-	                    await stall$2(1000);
+	                    await stall(1000);
 	                }
 	            }
 	            // Start dispatching requests
@@ -20946,1875 +20127,6 @@
 	    const result = [];
 	    _spelunkMessage(value, result);
 	    return result;
-	}
-
-	/**
-	 *  The **BaseWallet** is a stream-lined implementation of a
-	 *  [[Signer]] that operates with a private key.
-	 *
-	 *  It is preferred to use the [[Wallet]] class, as it offers
-	 *  additional functionality and simplifies loading a variety
-	 *  of JSON formats, Mnemonic Phrases, etc.
-	 *
-	 *  This class may be of use for those attempting to implement
-	 *  a minimal Signer.
-	 */
-	class BaseWallet extends AbstractSigner {
-	    /**
-	     *  The wallet address.
-	     */
-	    address;
-	    #signingKey;
-	    /**
-	     *  Creates a new BaseWallet for %%privateKey%%, optionally
-	     *  connected to %%provider%%.
-	     *
-	     *  If %%provider%% is not specified, only offline methods can
-	     *  be used.
-	     */
-	    constructor(privateKey, provider) {
-	        super(provider);
-	        assertArgument(privateKey && typeof (privateKey.sign) === "function", "invalid private key", "privateKey", "[ REDACTED ]");
-	        this.#signingKey = privateKey;
-	        const address = computeAddress(this.signingKey.publicKey);
-	        defineProperties(this, { address });
-	    }
-	    // Store private values behind getters to reduce visibility
-	    // in console.log
-	    /**
-	     *  The [[SigningKey]] used for signing payloads.
-	     */
-	    get signingKey() { return this.#signingKey; }
-	    /**
-	     *  The private key for this wallet.
-	     */
-	    get privateKey() { return this.signingKey.privateKey; }
-	    async getAddress() { return this.address; }
-	    connect(provider) {
-	        return new BaseWallet(this.#signingKey, provider);
-	    }
-	    async signTransaction(tx) {
-	        // Replace any Addressable or ENS name with an address
-	        const { to, from } = await resolveProperties({
-	            to: (tx.to ? resolveAddress(tx.to, this.provider) : undefined),
-	            from: (tx.from ? resolveAddress(tx.from, this.provider) : undefined)
-	        });
-	        if (to != null) {
-	            tx.to = to;
-	        }
-	        if (from != null) {
-	            tx.from = from;
-	        }
-	        if (tx.from != null) {
-	            assertArgument(getAddress((tx.from)) === this.address, "transaction from address mismatch", "tx.from", tx.from);
-	            delete tx.from;
-	        }
-	        // Build the transaction
-	        const btx = Transaction.from(tx);
-	        btx.signature = this.signingKey.sign(btx.unsignedHash);
-	        return btx.serialized;
-	    }
-	    async signMessage(message) {
-	        return this.signMessageSync(message);
-	    }
-	    // @TODO: Add a secialized signTx and signTyped sync that enforces
-	    // all parameters are known?
-	    /**
-	     *  Returns the signature for %%message%% signed with this wallet.
-	     */
-	    signMessageSync(message) {
-	        return this.signingKey.sign(hashMessage(message)).serialized;
-	    }
-	    async signTypedData(domain, types, value) {
-	        // Populate any ENS names
-	        const populated = await TypedDataEncoder.resolveNames(domain, types, value, async (name) => {
-	            // @TODO: this should use resolveName; addresses don't
-	            //        need a provider
-	            assert(this.provider != null, "cannot resolve ENS names without a provider", "UNSUPPORTED_OPERATION", {
-	                operation: "resolveName",
-	                info: { name }
-	            });
-	            const address = await this.provider.resolveName(name);
-	            assert(address != null, "unconfigured ENS name", "UNCONFIGURED_NAME", {
-	                value: name
-	            });
-	            return address;
-	        });
-	        return this.signingKey.sign(TypedDataEncoder.hash(populated.domain, types, populated.value)).serialized;
-	    }
-	}
-
-	const subsChrs = " !#$%&'()*+,-./<=>?@[]^_`{|}~";
-	const Word = /^[a-z]*$/i;
-	function unfold(words, sep) {
-	    let initial = 97;
-	    return words.reduce((accum, word) => {
-	        if (word === sep) {
-	            initial++;
-	        }
-	        else if (word.match(Word)) {
-	            accum.push(String.fromCharCode(initial) + word);
-	        }
-	        else {
-	            initial = 97;
-	            accum.push(word);
-	        }
-	        return accum;
-	    }, []);
-	}
-	/**
-	 *  @_ignore
-	 */
-	function decode(data, subs) {
-	    // Replace all the substitutions with their expanded form
-	    for (let i = subsChrs.length - 1; i >= 0; i--) {
-	        data = data.split(subsChrs[i]).join(subs.substring(2 * i, 2 * i + 2));
-	    }
-	    // Get all tle clumps; each suffix, first-increment and second-increment
-	    const clumps = [];
-	    const leftover = data.replace(/(:|([0-9])|([A-Z][a-z]*))/g, (all, item, semi, word) => {
-	        if (semi) {
-	            for (let i = parseInt(semi); i >= 0; i--) {
-	                clumps.push(";");
-	            }
-	        }
-	        else {
-	            clumps.push(item.toLowerCase());
-	        }
-	        return "";
-	    });
-	    /* c8 ignore start */
-	    if (leftover) {
-	        throw new Error(`leftovers: ${JSON.stringify(leftover)}`);
-	    }
-	    /* c8 ignore stop */
-	    return unfold(unfold(clumps, ";"), ":");
-	}
-	/**
-	 *  @_ignore
-	 */
-	function decodeOwl(data) {
-	    assertArgument(data[0] === "0", "unsupported auwl data", "data", data);
-	    return decode(data.substring(1 + 2 * subsChrs.length), data.substring(1, 1 + 2 * subsChrs.length));
-	}
-
-	/**
-	 *  A Wordlist represents a collection of language-specific
-	 *  words used to encode and devoce [[link-bip-39]] encoded data
-	 *  by mapping words to 11-bit values and vice versa.
-	 */
-	class Wordlist {
-	    locale;
-	    /**
-	     *  Creates a new Wordlist instance.
-	     *
-	     *  Sub-classes MUST call this if they provide their own constructor,
-	     *  passing in the locale string of the language.
-	     *
-	     *  Generally there is no need to create instances of a Wordlist,
-	     *  since each language-specific Wordlist creates an instance and
-	     *  there is no state kept internally, so they are safe to share.
-	     */
-	    constructor(locale) {
-	        defineProperties(this, { locale });
-	    }
-	    /**
-	     *  Sub-classes may override this to provide a language-specific
-	     *  method for spliting %%phrase%% into individual words.
-	     *
-	     *  By default, %%phrase%% is split using any sequences of
-	     *  white-space as defined by regular expressions (i.e. ``/\s+/``).
-	     */
-	    split(phrase) {
-	        return phrase.toLowerCase().split(/\s+/g);
-	    }
-	    /**
-	     *  Sub-classes may override this to provider a language-specific
-	     *  method for joining %%words%% into a phrase.
-	     *
-	     *  By default, %%words%% are joined by a single space.
-	     */
-	    join(words) {
-	        return words.join(" ");
-	    }
-	}
-
-	// Use the encode-latin.js script to create the necessary
-	// data files to be consumed by this class
-	/**
-	 *  An OWL format Wordlist is an encoding method that exploits
-	 *  the general locality of alphabetically sorted words to
-	 *  achieve a simple but effective means of compression.
-	 *
-	 *  This class is generally not useful to most developers as
-	 *  it is used mainly internally to keep Wordlists for languages
-	 *  based on ASCII-7 small.
-	 *
-	 *  If necessary, there are tools within the ``generation/`` folder
-	 *  to create the necessary data.
-	 */
-	class WordlistOwl extends Wordlist {
-	    #data;
-	    #checksum;
-	    /**
-	     *  Creates a new Wordlist for %%locale%% using the OWL %%data%%
-	     *  and validated against the %%checksum%%.
-	     */
-	    constructor(locale, data, checksum) {
-	        super(locale);
-	        this.#data = data;
-	        this.#checksum = checksum;
-	        this.#words = null;
-	    }
-	    /**
-	     *  The OWL-encoded data.
-	     */
-	    get _data() { return this.#data; }
-	    /**
-	     *  Decode all the words for the wordlist.
-	     */
-	    _decodeWords() {
-	        return decodeOwl(this.#data);
-	    }
-	    #words;
-	    #loadWords() {
-	        if (this.#words == null) {
-	            const words = this._decodeWords();
-	            // Verify the computed list matches the official list
-	            const checksum = id(words.join("\n") + "\n");
-	            /* c8 ignore start */
-	            if (checksum !== this.#checksum) {
-	                throw new Error(`BIP39 Wordlist for ${this.locale} FAILED`);
-	            }
-	            /* c8 ignore stop */
-	            this.#words = words;
-	        }
-	        return this.#words;
-	    }
-	    getWord(index) {
-	        const words = this.#loadWords();
-	        assertArgument(index >= 0 && index < words.length, `invalid word index: ${index}`, "index", index);
-	        return words[index];
-	    }
-	    getWordIndex(word) {
-	        return this.#loadWords().indexOf(word);
-	    }
-	}
-
-	const words = "0erleonalorenseinceregesticitStanvetearctssi#ch2Athck&tneLl0And#Il.yLeOutO=S|S%b/ra@SurdU'0Ce[Cid|CountCu'Hie=IdOu,-Qui*Ro[TT]T%T*[Tu$0AptDD-tD*[Ju,M.UltV<)Vi)0Rob-0FairF%dRaid0A(EEntRee0Ead0MRRp%tS!_rmBumCoholErtI&LLeyLowMo,O}PhaReadySoT Ways0A>urAz(gOngOuntU'd0Aly,Ch%Ci|G G!GryIm$K!Noun)Nu$O` Sw T&naTiqueXietyY1ArtOlogyPe?P!Pro=Ril1ChCt-EaEnaGueMMedM%MyOundR<+Re,Ri=RowTTefa@Ti,Tw%k0KPe@SaultSetSi,SumeThma0H!>OmTa{T&dT.udeTra@0Ct]D.Gu,NtTh%ToTumn0Era+OcadoOid0AkeA*AyEsomeFulKw?d0Is:ByChel%C#D+GL<)Lc#y~MbooN<aNn RRelyRga(R*lSeS-SketTt!3A^AnAutyCau'ComeEfF%eG(Ha=H(dLie=LowLtN^Nef./TrayTt Twe&Y#d3Cyc!DKeNdOlogyRdR`Tt _{AdeAmeAnketA,EakE[IndOodO[omOu'UeUrUsh_rdAtDyIlMbNeNusOkO,Rd R(gRrowSsTtomUn)XY_{etA(AndA[A=EadEezeI{Id+IefIghtIngIskOccoliOk&OnzeOomO` OwnUsh2Bb!DdyD+tFf$oIldLbLkL!tNd!Nk Rd&Rg R,SS(e[SyTt Y Zz:Bba+B(B!CtusGeKe~LmM aMpNN$N)lNdyNn#NoeNvasNy#Pab!P.$Pta(RRb#RdRgoRpetRryRtSeShS(o/!Su$TT$ogT^Teg%yTt!UghtU'Ut]Ve3Il(gL yM|NsusNturyRe$Rta(_irAlkAmp]An+AosApt Ar+A'AtEapE{Ee'EfErryE,I{&IefIldIm}yOi)Oo'R#-U{!UnkUrn0G?Nnam#Rc!Tiz&TyVil_imApArifyAwAyE<ErkEv I{I|IffImbIn-IpO{OgO'O`OudOwnUbUmpU, Ut^_^A,C#utDeFfeeIlInL!@L%LumnMb(eMeMf%tM-Mm#Mp<yNc tNdu@NfirmNg*[N}@Nsid NtrolNv()OkOlPp PyR$ReRnR*@/Tt#U^UntryUp!Ur'Us(V Yo>_{Ad!AftAmA}AshAt AwlAzyEamEd.EekEwI{etImeIspIt-OpO[Ou^OwdUci$UelUi'Umb!Un^UshYY,$2BeLtu*PPbo?dRiousRr|Rta(R=Sh]/omTe3C!:DMa+MpN)Ng R(gShUght WnY3AlBa>BrisCadeCemb CideCl(eC%a>C*a'ErF&'F(eFyG*eLayLiv M<dMi'Ni$Nti,NyP?tP&dPos.P`PutyRi=ScribeS tSignSkSpair/royTailTe@VelopVi)Vo>3AgramAlAm#dAryCeE'lEtFf G.$Gn.yLemmaNn NosaurRe@RtSag*eScov Sea'ShSmi[S%d Splay/<)V tVideV%)Zzy5Ct%Cum|G~Lph(Ma(Na>NkeyN%OrSeUb!Ve_ftAg#AmaA,-AwEamE[IftIllInkIpI=OpUmY2CkMbNeR(g/T^Ty1Arf1Nam-:G G!RlyRnR`Sily/Sy1HoOlogyOnomy0GeItUca>1F%t0G1GhtTh 2BowD E@r-Eg<tEm|Eph<tEvat%I>Se0B?kBodyBra)Er+Ot]PloyPow Pty0Ab!A@DD![D%'EmyErgyF%)Ga+G(eH<)JoyLi,OughR-hRollSu*T Ti*TryVelope1Isode0U$Uip0AA'OdeOs]R%Upt0CapeSayS&)Ta>0Ern$H-s1Id&)IlOkeOl=1A@Amp!Ce[Ch<+C.eCludeCu'Ecu>Erci'Hau,Hib.I!I,ItOt-P<dPe@Pi*Pla(Po'P*[T&dTra0EEbrow:Br-CeCultyDeIntI`~L'MeMilyMousNNcyNtasyRmSh]TT$Th TigueUltV%.e3Atu*Bru?yD $EEdElMa!N)/iv$T^V W3B Ct]EldGu*LeLmLt N$NdNeNg NishReRmR,Sc$ShTT}[X_gAmeAshAtAv%EeIghtIpOatO{O%Ow UidUshY_mCusGIlLd~owOdOtR)Re,R+tRkRtu}RumRw?dSsil/ UndX_gi!AmeEqu|EshI&dIn+OgOntO,OwnOz&U.2ElNNnyRna)RyTu*:D+tInLaxy~ yMePRa+Rba+Rd&Rl-Rm|SSpTeTh U+Ze3N $NiusN*Nt!Nu(e/u*2O,0AntFtGg!Ng RaffeRlVe_dAn)A*A[IdeImp'ObeOomOryO=OwUe_tDde[LdOdO'RillaSpelSsipV nWn_bA)A(AntApeA[Av.yEatE&IdIefItOc yOupOwUnt_rdE[IdeIltIt?N3M:B.IrLfMm M, NdPpyRb%RdRshR=,TVeWkZ?d3AdAl`ArtAvyD+hogIght~oLmetLpNRo3Dd&Gh~NtPRe/%y5BbyCkeyLdLeLiday~owMeNeyOdPeRnRr%R'Sp.$/TelUrV 5BGeM<Mb!M%Nd*dNgryNtRd!RryRtSb<d3Brid:1EOn0EaEntifyLe2N%e4LLeg$L}[0A+Ita>M&'Mu}Pa@Po'Pro=Pul'0ChCludeComeC*a'DexD-a>Do%Du,ryF<tFl-tF%mHa!H .Iti$Je@JuryMa>N Noc|PutQuiryS<eSe@SideSpi*/$lTa@T e,ToVe,V.eVol=3On0L<dOla>Sue0Em1Ory:CketGu?RZz3AlousAns~yWel9BInKeUr}yY5D+I)MpNg!Ni%Nk/:Ng?oo3EnEpT^upY3CkDD}yNdNgdomSsTT^&TeTt&Wi4EeIfeO{Ow:BBelB%Dd DyKeMpNgua+PtopR+T T(UghUndryVaWWnWsu.Y Zy3Ad AfArnA=Ctu*FtGG$G&dIsu*M#NdNg`NsOp?dSs#Tt Vel3ArB tyBr?yC&'FeFtGhtKeMbM.NkOnQuid/Tt!VeZ?d5AdAnB, C$CkG-NelyNgOpTt yUdUn+VeY$5CkyGga+Mb N?N^Xury3R-s:Ch(eDG-G}tIdIlInJ%KeMm$NNa+Nda>NgoNs]Nu$P!Rb!R^Rg(R(eRketRria+SkSs/ T^T i$ThTrixTt XimumZe3AdowAnAsu*AtCh<-D$DiaLodyLtMb M%yNt]NuRcyR+R.RryShSsa+T$Thod3Dd!DnightLk~]M-NdNimumN%Nu>Rac!Rr%S ySs/akeXXedXtu*5Bi!DelDifyMM|N.%NkeyN, N`OnR$ReRn(gSqu.oTh T]T%Unta(U'VeVie5ChFf(LeLtiplySc!SeumShroomS-/Tu$3Self/ yTh:I=MePk(Rrow/yT]Tu*3ArCkEdGati=G!@I` PhewR=/TTw%kUtr$V WsXt3CeGht5B!I'M(eeOd!Rm$R`SeTab!TeTh(gTi)VelW5C!?Mb R'T:K0EyJe@Li+Scu*S =Ta(Vious0CurE<Tob 0Or1FF Fi)T&2L1Ay0DI=Ymp-0It0CeEI#L(eLy1EnEraIn]Po'T]1An+B.Ch?dD D(?yG<I|Ig($Ph<0Tr-h0H 0Tdo%T TputTside0AlEnEr0NN 0Yg&0/ 0O}:CtDd!GeIrLa)LmNdaNelN-N` P RadeR|RkRrotRtySsT^ThTi|TrolTt nU'VeYm|3A)AnutArAs<tL-<NN$tyNcilOp!Pp Rfe@Rm.Rs#T2O}OtoRa'Ys-$0AnoCn-Ctu*E)GGe#~LotNkO} Pe/olT^Zza_)A}tA,-A>AyEa'Ed+U{UgUn+2EmEtIntL?LeLi)NdNyOlPul?Rt]S.]Ssib!/TatoTt yV tyWd W _@i)Ai'Ed-tEf Epa*Es|EttyEv|I)IdeIm?yIntI%.yIs#Iva>IzeOb!mO)[Odu)Of.OgramOje@Omo>OofOp tyOsp O>@OudOvide2Bl-Dd(g~LpL'Mpk(N^PilPpyR^a'R.yRpo'R'ShTZz!3Ramid:99Al.yAntumArt E,]I{ItIzO>:Bb.Cco#CeCkD?DioIlInI'~yMpN^NdomN+PidReTeTh V&WZ%3AdyAlAs#BelBuildC$lCei=CipeC%dCyc!Du)F!@F%mFu'G]G*tGul?Je@LaxLea'LiefLyMa(Memb M(dMo=Nd NewNtOp&PairPeatPla)P%tQui*ScueSemb!Si,Sour)Sp#'SultTi*T*atTurnUn]Ve$ViewW?d2Y`m0BBb#CeChDeD+F!GhtGidNgOtPp!SkTu$V$V 5AdA,BotBu,CketM<)OfOkieOmSeTa>UghUndU>Y$5Bb DeGLeNNwayR$:DDd!D}[FeIlLadLm#L#LtLu>MeMp!NdTisfyToshiU)Usa+VeY1A!AnA*Att E}HemeHoolI&)I[%sOrp]OutRapRe&RiptRub1AAr^As#AtC#dC*tCt]Cur.yEdEkGm|Le@~M(?Ni%N'Nt&)RiesRvi)Ss]Tt!TupV&_dowAftAllowA*EdEllEriffIeldIftI}IpIv O{OeOotOpOrtOuld O=RimpRugUff!Y0Bl(gCkDeE+GhtGnL|Lk~yLv Mil?Mp!N)NgR&/ Tua>XZe1A>Et^IIllInIrtUll0AbAmEepEnd I)IdeIghtImOg<OtOwUsh0AllArtI!OkeOo`0A{AkeApIffOw0ApCc Ci$CkDaFtL?Ldi LidLut]L=Me#eNgOnRryRtUlUndUpUr)U`0A)A*Ati$AwnEakEci$EedEllEndH eI)Id IkeInIr.L.OilOns%O#OrtOtRayReadR(gY0Ua*UeezeUir*l_b!AdiumAffA+AirsAmpAndArtA>AyEakEelEmEpE*oI{IllIngO{Oma^O}OolOryO=Ra>gyReetRikeR#gRugg!Ud|UffUmb!Y!0Bje@Bm.BwayC)[ChDd&Ff G?G+,ItMm NNnyN'tP PplyP*meReRfa)R+Rpri'RroundR=ySpe@/a(1AllowAmpApArmE?EetIftImIngIt^Ord1MbolMptomRup/em:B!Ck!GIlL|LkNkPeR+tSk/eTtooXi3A^Am~NN<tNnisNtRm/Xt_nkAtEmeEnE%yE*EyIngIsOughtReeRi=RowUmbUnd 0CketDeG LtMb MeNyPRedSsueT!5A,BaccoDayDdl EGe` I!tK&MatoM%rowNeNgueNightOlO`PP-Pp!R^RnadoRtoi'SsT$Uri,W?dW WnY_{AdeAff-Ag-A(Ansf ApAshA=lAyEatEeEndI$IbeI{Igg ImIpOphyOub!U{UeUlyUmpetU,U`Y2BeIt]Mb!NaN}lRkeyRnRt!1El=EntyI)InI,O1PeP-$:5Ly5B*lla0Ab!Awa*C!Cov D DoFairFoldHappyIf%mIqueItIv 'KnownLo{TilUsu$Veil1Da>GradeHoldOnP Set1B<Ge0A+EEdEfulE![U$0Il.y:C<tCuumGueLidL!yL=NNishP%Rious/Ult3H-!L=tNd%Ntu*NueRbRifyRs]RyS'lT <3Ab!Br<tCiousCt%yDeoEw~a+Nta+Ol(Rtu$RusSaS.Su$T$Vid5C$I)IdLc<oLumeTeYa+:GeG#ItLk~LnutNtRfa*RmRri%ShSp/eT VeY3Al`Ap#ArA'lA` BDd(gEk&dIrdLcome/T_!AtEatEelEnE*IpIsp 0DeD`FeLd~NNdowNeNgNkNn Nt ReSdomSeShT}[5LfM<Nd OdOlRdRkRldRryR`_pE{E,!I,I>Ong::Rd3Ar~ow9UUngU`:3BraRo9NeO";
-	const checksum = "0x3c8acc1e7b08d8e76f9fda015ef48dc8c710a73cb7e0f77b2c18a9b5a7adde60";
-	let wordlist = null;
-	/**
-	 *  The [[link-bip39-en]] for [mnemonic phrases](link-bip-39).
-	 *
-	 *  @_docloc: api/wordlists
-	 */
-	class LangEn extends WordlistOwl {
-	    /**
-	     *  Creates a new instance of the English language Wordlist.
-	     *
-	     *  This should be unnecessary most of the time as the exported
-	     *  [[langEn]] should suffice.
-	     *
-	     *  @_ignore:
-	     */
-	    constructor() { super("en", words, checksum); }
-	    /**
-	     *  Returns a singleton instance of a ``LangEn``, creating it
-	     *  if this is the first time being called.
-	     */
-	    static wordlist() {
-	        if (wordlist == null) {
-	            wordlist = new LangEn();
-	        }
-	        return wordlist;
-	    }
-	}
-
-	// Returns a byte with the MSB bits set
-	function getUpperMask(bits) {
-	    return ((1 << bits) - 1) << (8 - bits) & 0xff;
-	}
-	// Returns a byte with the LSB bits set
-	function getLowerMask(bits) {
-	    return ((1 << bits) - 1) & 0xff;
-	}
-	function mnemonicToEntropy(mnemonic, wordlist) {
-	    assertNormalize("NFKD");
-	    if (wordlist == null) {
-	        wordlist = LangEn.wordlist();
-	    }
-	    const words = wordlist.split(mnemonic);
-	    assertArgument((words.length % 3) === 0 && words.length >= 12 && words.length <= 24, "invalid mnemonic length", "mnemonic", "[ REDACTED ]");
-	    const entropy = new Uint8Array(Math.ceil(11 * words.length / 8));
-	    let offset = 0;
-	    for (let i = 0; i < words.length; i++) {
-	        let index = wordlist.getWordIndex(words[i].normalize("NFKD"));
-	        assertArgument(index >= 0, `invalid mnemonic word at index ${i}`, "mnemonic", "[ REDACTED ]");
-	        for (let bit = 0; bit < 11; bit++) {
-	            if (index & (1 << (10 - bit))) {
-	                entropy[offset >> 3] |= (1 << (7 - (offset % 8)));
-	            }
-	            offset++;
-	        }
-	    }
-	    const entropyBits = 32 * words.length / 3;
-	    const checksumBits = words.length / 3;
-	    const checksumMask = getUpperMask(checksumBits);
-	    const checksum = getBytes(sha256(entropy.slice(0, entropyBits / 8)))[0] & checksumMask;
-	    assertArgument(checksum === (entropy[entropy.length - 1] & checksumMask), "invalid mnemonic checksum", "mnemonic", "[ REDACTED ]");
-	    return hexlify(entropy.slice(0, entropyBits / 8));
-	}
-	function entropyToMnemonic(entropy, wordlist) {
-	    assertArgument((entropy.length % 4) === 0 && entropy.length >= 16 && entropy.length <= 32, "invalid entropy size", "entropy", "[ REDACTED ]");
-	    if (wordlist == null) {
-	        wordlist = LangEn.wordlist();
-	    }
-	    const indices = [0];
-	    let remainingBits = 11;
-	    for (let i = 0; i < entropy.length; i++) {
-	        // Consume the whole byte (with still more to go)
-	        if (remainingBits > 8) {
-	            indices[indices.length - 1] <<= 8;
-	            indices[indices.length - 1] |= entropy[i];
-	            remainingBits -= 8;
-	            // This byte will complete an 11-bit index
-	        }
-	        else {
-	            indices[indices.length - 1] <<= remainingBits;
-	            indices[indices.length - 1] |= entropy[i] >> (8 - remainingBits);
-	            // Start the next word
-	            indices.push(entropy[i] & getLowerMask(8 - remainingBits));
-	            remainingBits += 3;
-	        }
-	    }
-	    // Compute the checksum bits
-	    const checksumBits = entropy.length / 4;
-	    const checksum = parseInt(sha256(entropy).substring(2, 4), 16) & getUpperMask(checksumBits);
-	    // Shift the checksum into the word indices
-	    indices[indices.length - 1] <<= checksumBits;
-	    indices[indices.length - 1] |= (checksum >> (8 - checksumBits));
-	    return wordlist.join(indices.map((index) => wordlist.getWord(index)));
-	}
-	const _guard$1 = {};
-	/**
-	 *  A **Mnemonic** wraps all properties required to compute [[link-bip-39]]
-	 *  seeds and convert between phrases and entropy.
-	 */
-	class Mnemonic {
-	    /**
-	     *  The mnemonic phrase of 12, 15, 18, 21 or 24 words.
-	     *
-	     *  Use the [[wordlist]] ``split`` method to get the individual words.
-	     */
-	    phrase;
-	    /**
-	     *  The password used for this mnemonic. If no password is used this
-	     *  is the empty string (i.e. ``""``) as per the specification.
-	     */
-	    password;
-	    /**
-	     *  The wordlist for this mnemonic.
-	     */
-	    wordlist;
-	    /**
-	     *  The underlying entropy which the mnemonic encodes.
-	     */
-	    entropy;
-	    /**
-	     *  @private
-	     */
-	    constructor(guard, entropy, phrase, password, wordlist) {
-	        if (password == null) {
-	            password = "";
-	        }
-	        if (wordlist == null) {
-	            wordlist = LangEn.wordlist();
-	        }
-	        assertPrivate(guard, _guard$1, "Mnemonic");
-	        defineProperties(this, { phrase, password, wordlist, entropy });
-	    }
-	    /**
-	     *  Returns the seed for the mnemonic.
-	     */
-	    computeSeed() {
-	        const salt = toUtf8Bytes("mnemonic" + this.password, "NFKD");
-	        return pbkdf2(toUtf8Bytes(this.phrase, "NFKD"), salt, 2048, 64, "sha512");
-	    }
-	    /**
-	     *  Creates a new Mnemonic for the %%phrase%%.
-	     *
-	     *  The default %%password%% is the empty string and the default
-	     *  wordlist is the [English wordlists](LangEn).
-	     */
-	    static fromPhrase(phrase, password, wordlist) {
-	        // Normalize the case and space; throws if invalid
-	        const entropy = mnemonicToEntropy(phrase, wordlist);
-	        phrase = entropyToMnemonic(getBytes(entropy), wordlist);
-	        return new Mnemonic(_guard$1, entropy, phrase, password, wordlist);
-	    }
-	    /**
-	     *  Create a new **Mnemonic** from the %%entropy%%.
-	     *
-	     *  The default %%password%% is the empty string and the default
-	     *  wordlist is the [English wordlists](LangEn).
-	     */
-	    static fromEntropy(_entropy, password, wordlist) {
-	        const entropy = getBytes(_entropy, "entropy");
-	        const phrase = entropyToMnemonic(entropy, wordlist);
-	        return new Mnemonic(_guard$1, hexlify(entropy), phrase, password, wordlist);
-	    }
-	    /**
-	     *  Returns the phrase for %%mnemonic%%.
-	     */
-	    static entropyToPhrase(_entropy, wordlist) {
-	        const entropy = getBytes(_entropy, "entropy");
-	        return entropyToMnemonic(entropy, wordlist);
-	    }
-	    /**
-	     *  Returns the entropy for %%phrase%%.
-	     */
-	    static phraseToEntropy(phrase, wordlist) {
-	        return mnemonicToEntropy(phrase, wordlist);
-	    }
-	    /**
-	     *  Returns true if %%phrase%% is a valid [[link-bip-39]] phrase.
-	     *
-	     *  This checks all the provided words belong to the %%wordlist%%,
-	     *  that the length is valid and the checksum is correct.
-	     */
-	    static isValidMnemonic(phrase, wordlist) {
-	        try {
-	            mnemonicToEntropy(phrase, wordlist);
-	            return true;
-	        }
-	        catch (error) { }
-	        return false;
-	    }
-	}
-
-	/*! MIT License. Copyright 2015-2022 Richard Moore <me@ricmoo.com>. See LICENSE.txt. */
-	var __classPrivateFieldGet$2 = (undefined && undefined.__classPrivateFieldGet) || function (receiver, state, kind, f) {
-	    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-	    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-	    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
-	};
-	var __classPrivateFieldSet$2 = (undefined && undefined.__classPrivateFieldSet) || function (receiver, state, value, kind, f) {
-	    if (kind === "m") throw new TypeError("Private method is not writable");
-	    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
-	    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
-	    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
-	};
-	var _AES_key, _AES_Kd, _AES_Ke;
-	// Number of rounds by keysize
-	const numberOfRounds = { 16: 10, 24: 12, 32: 14 };
-	// Round constant words
-	const rcon = [0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a, 0x2f, 0x5e, 0xbc, 0x63, 0xc6, 0x97, 0x35, 0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef, 0xc5, 0x91];
-	// S-box and Inverse S-box (S is for Substitution)
-	const S = [0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76, 0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0, 0xb7, 0xfd, 0x93, 0x26, 0x36, 0x3f, 0xf7, 0xcc, 0x34, 0xa5, 0xe5, 0xf1, 0x71, 0xd8, 0x31, 0x15, 0x04, 0xc7, 0x23, 0xc3, 0x18, 0x96, 0x05, 0x9a, 0x07, 0x12, 0x80, 0xe2, 0xeb, 0x27, 0xb2, 0x75, 0x09, 0x83, 0x2c, 0x1a, 0x1b, 0x6e, 0x5a, 0xa0, 0x52, 0x3b, 0xd6, 0xb3, 0x29, 0xe3, 0x2f, 0x84, 0x53, 0xd1, 0x00, 0xed, 0x20, 0xfc, 0xb1, 0x5b, 0x6a, 0xcb, 0xbe, 0x39, 0x4a, 0x4c, 0x58, 0xcf, 0xd0, 0xef, 0xaa, 0xfb, 0x43, 0x4d, 0x33, 0x85, 0x45, 0xf9, 0x02, 0x7f, 0x50, 0x3c, 0x9f, 0xa8, 0x51, 0xa3, 0x40, 0x8f, 0x92, 0x9d, 0x38, 0xf5, 0xbc, 0xb6, 0xda, 0x21, 0x10, 0xff, 0xf3, 0xd2, 0xcd, 0x0c, 0x13, 0xec, 0x5f, 0x97, 0x44, 0x17, 0xc4, 0xa7, 0x7e, 0x3d, 0x64, 0x5d, 0x19, 0x73, 0x60, 0x81, 0x4f, 0xdc, 0x22, 0x2a, 0x90, 0x88, 0x46, 0xee, 0xb8, 0x14, 0xde, 0x5e, 0x0b, 0xdb, 0xe0, 0x32, 0x3a, 0x0a, 0x49, 0x06, 0x24, 0x5c, 0xc2, 0xd3, 0xac, 0x62, 0x91, 0x95, 0xe4, 0x79, 0xe7, 0xc8, 0x37, 0x6d, 0x8d, 0xd5, 0x4e, 0xa9, 0x6c, 0x56, 0xf4, 0xea, 0x65, 0x7a, 0xae, 0x08, 0xba, 0x78, 0x25, 0x2e, 0x1c, 0xa6, 0xb4, 0xc6, 0xe8, 0xdd, 0x74, 0x1f, 0x4b, 0xbd, 0x8b, 0x8a, 0x70, 0x3e, 0xb5, 0x66, 0x48, 0x03, 0xf6, 0x0e, 0x61, 0x35, 0x57, 0xb9, 0x86, 0xc1, 0x1d, 0x9e, 0xe1, 0xf8, 0x98, 0x11, 0x69, 0xd9, 0x8e, 0x94, 0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf, 0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16];
-	const Si = [0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38, 0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb, 0x7c, 0xe3, 0x39, 0x82, 0x9b, 0x2f, 0xff, 0x87, 0x34, 0x8e, 0x43, 0x44, 0xc4, 0xde, 0xe9, 0xcb, 0x54, 0x7b, 0x94, 0x32, 0xa6, 0xc2, 0x23, 0x3d, 0xee, 0x4c, 0x95, 0x0b, 0x42, 0xfa, 0xc3, 0x4e, 0x08, 0x2e, 0xa1, 0x66, 0x28, 0xd9, 0x24, 0xb2, 0x76, 0x5b, 0xa2, 0x49, 0x6d, 0x8b, 0xd1, 0x25, 0x72, 0xf8, 0xf6, 0x64, 0x86, 0x68, 0x98, 0x16, 0xd4, 0xa4, 0x5c, 0xcc, 0x5d, 0x65, 0xb6, 0x92, 0x6c, 0x70, 0x48, 0x50, 0xfd, 0xed, 0xb9, 0xda, 0x5e, 0x15, 0x46, 0x57, 0xa7, 0x8d, 0x9d, 0x84, 0x90, 0xd8, 0xab, 0x00, 0x8c, 0xbc, 0xd3, 0x0a, 0xf7, 0xe4, 0x58, 0x05, 0xb8, 0xb3, 0x45, 0x06, 0xd0, 0x2c, 0x1e, 0x8f, 0xca, 0x3f, 0x0f, 0x02, 0xc1, 0xaf, 0xbd, 0x03, 0x01, 0x13, 0x8a, 0x6b, 0x3a, 0x91, 0x11, 0x41, 0x4f, 0x67, 0xdc, 0xea, 0x97, 0xf2, 0xcf, 0xce, 0xf0, 0xb4, 0xe6, 0x73, 0x96, 0xac, 0x74, 0x22, 0xe7, 0xad, 0x35, 0x85, 0xe2, 0xf9, 0x37, 0xe8, 0x1c, 0x75, 0xdf, 0x6e, 0x47, 0xf1, 0x1a, 0x71, 0x1d, 0x29, 0xc5, 0x89, 0x6f, 0xb7, 0x62, 0x0e, 0xaa, 0x18, 0xbe, 0x1b, 0xfc, 0x56, 0x3e, 0x4b, 0xc6, 0xd2, 0x79, 0x20, 0x9a, 0xdb, 0xc0, 0xfe, 0x78, 0xcd, 0x5a, 0xf4, 0x1f, 0xdd, 0xa8, 0x33, 0x88, 0x07, 0xc7, 0x31, 0xb1, 0x12, 0x10, 0x59, 0x27, 0x80, 0xec, 0x5f, 0x60, 0x51, 0x7f, 0xa9, 0x19, 0xb5, 0x4a, 0x0d, 0x2d, 0xe5, 0x7a, 0x9f, 0x93, 0xc9, 0x9c, 0xef, 0xa0, 0xe0, 0x3b, 0x4d, 0xae, 0x2a, 0xf5, 0xb0, 0xc8, 0xeb, 0xbb, 0x3c, 0x83, 0x53, 0x99, 0x61, 0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d];
-	// Transformations for encryption
-	const T1 = [0xc66363a5, 0xf87c7c84, 0xee777799, 0xf67b7b8d, 0xfff2f20d, 0xd66b6bbd, 0xde6f6fb1, 0x91c5c554, 0x60303050, 0x02010103, 0xce6767a9, 0x562b2b7d, 0xe7fefe19, 0xb5d7d762, 0x4dababe6, 0xec76769a, 0x8fcaca45, 0x1f82829d, 0x89c9c940, 0xfa7d7d87, 0xeffafa15, 0xb25959eb, 0x8e4747c9, 0xfbf0f00b, 0x41adadec, 0xb3d4d467, 0x5fa2a2fd, 0x45afafea, 0x239c9cbf, 0x53a4a4f7, 0xe4727296, 0x9bc0c05b, 0x75b7b7c2, 0xe1fdfd1c, 0x3d9393ae, 0x4c26266a, 0x6c36365a, 0x7e3f3f41, 0xf5f7f702, 0x83cccc4f, 0x6834345c, 0x51a5a5f4, 0xd1e5e534, 0xf9f1f108, 0xe2717193, 0xabd8d873, 0x62313153, 0x2a15153f, 0x0804040c, 0x95c7c752, 0x46232365, 0x9dc3c35e, 0x30181828, 0x379696a1, 0x0a05050f, 0x2f9a9ab5, 0x0e070709, 0x24121236, 0x1b80809b, 0xdfe2e23d, 0xcdebeb26, 0x4e272769, 0x7fb2b2cd, 0xea75759f, 0x1209091b, 0x1d83839e, 0x582c2c74, 0x341a1a2e, 0x361b1b2d, 0xdc6e6eb2, 0xb45a5aee, 0x5ba0a0fb, 0xa45252f6, 0x763b3b4d, 0xb7d6d661, 0x7db3b3ce, 0x5229297b, 0xdde3e33e, 0x5e2f2f71, 0x13848497, 0xa65353f5, 0xb9d1d168, 0x00000000, 0xc1eded2c, 0x40202060, 0xe3fcfc1f, 0x79b1b1c8, 0xb65b5bed, 0xd46a6abe, 0x8dcbcb46, 0x67bebed9, 0x7239394b, 0x944a4ade, 0x984c4cd4, 0xb05858e8, 0x85cfcf4a, 0xbbd0d06b, 0xc5efef2a, 0x4faaaae5, 0xedfbfb16, 0x864343c5, 0x9a4d4dd7, 0x66333355, 0x11858594, 0x8a4545cf, 0xe9f9f910, 0x04020206, 0xfe7f7f81, 0xa05050f0, 0x783c3c44, 0x259f9fba, 0x4ba8a8e3, 0xa25151f3, 0x5da3a3fe, 0x804040c0, 0x058f8f8a, 0x3f9292ad, 0x219d9dbc, 0x70383848, 0xf1f5f504, 0x63bcbcdf, 0x77b6b6c1, 0xafdada75, 0x42212163, 0x20101030, 0xe5ffff1a, 0xfdf3f30e, 0xbfd2d26d, 0x81cdcd4c, 0x180c0c14, 0x26131335, 0xc3ecec2f, 0xbe5f5fe1, 0x359797a2, 0x884444cc, 0x2e171739, 0x93c4c457, 0x55a7a7f2, 0xfc7e7e82, 0x7a3d3d47, 0xc86464ac, 0xba5d5de7, 0x3219192b, 0xe6737395, 0xc06060a0, 0x19818198, 0x9e4f4fd1, 0xa3dcdc7f, 0x44222266, 0x542a2a7e, 0x3b9090ab, 0x0b888883, 0x8c4646ca, 0xc7eeee29, 0x6bb8b8d3, 0x2814143c, 0xa7dede79, 0xbc5e5ee2, 0x160b0b1d, 0xaddbdb76, 0xdbe0e03b, 0x64323256, 0x743a3a4e, 0x140a0a1e, 0x924949db, 0x0c06060a, 0x4824246c, 0xb85c5ce4, 0x9fc2c25d, 0xbdd3d36e, 0x43acacef, 0xc46262a6, 0x399191a8, 0x319595a4, 0xd3e4e437, 0xf279798b, 0xd5e7e732, 0x8bc8c843, 0x6e373759, 0xda6d6db7, 0x018d8d8c, 0xb1d5d564, 0x9c4e4ed2, 0x49a9a9e0, 0xd86c6cb4, 0xac5656fa, 0xf3f4f407, 0xcfeaea25, 0xca6565af, 0xf47a7a8e, 0x47aeaee9, 0x10080818, 0x6fbabad5, 0xf0787888, 0x4a25256f, 0x5c2e2e72, 0x381c1c24, 0x57a6a6f1, 0x73b4b4c7, 0x97c6c651, 0xcbe8e823, 0xa1dddd7c, 0xe874749c, 0x3e1f1f21, 0x964b4bdd, 0x61bdbddc, 0x0d8b8b86, 0x0f8a8a85, 0xe0707090, 0x7c3e3e42, 0x71b5b5c4, 0xcc6666aa, 0x904848d8, 0x06030305, 0xf7f6f601, 0x1c0e0e12, 0xc26161a3, 0x6a35355f, 0xae5757f9, 0x69b9b9d0, 0x17868691, 0x99c1c158, 0x3a1d1d27, 0x279e9eb9, 0xd9e1e138, 0xebf8f813, 0x2b9898b3, 0x22111133, 0xd26969bb, 0xa9d9d970, 0x078e8e89, 0x339494a7, 0x2d9b9bb6, 0x3c1e1e22, 0x15878792, 0xc9e9e920, 0x87cece49, 0xaa5555ff, 0x50282878, 0xa5dfdf7a, 0x038c8c8f, 0x59a1a1f8, 0x09898980, 0x1a0d0d17, 0x65bfbfda, 0xd7e6e631, 0x844242c6, 0xd06868b8, 0x824141c3, 0x299999b0, 0x5a2d2d77, 0x1e0f0f11, 0x7bb0b0cb, 0xa85454fc, 0x6dbbbbd6, 0x2c16163a];
-	const T2 = [0xa5c66363, 0x84f87c7c, 0x99ee7777, 0x8df67b7b, 0x0dfff2f2, 0xbdd66b6b, 0xb1de6f6f, 0x5491c5c5, 0x50603030, 0x03020101, 0xa9ce6767, 0x7d562b2b, 0x19e7fefe, 0x62b5d7d7, 0xe64dabab, 0x9aec7676, 0x458fcaca, 0x9d1f8282, 0x4089c9c9, 0x87fa7d7d, 0x15effafa, 0xebb25959, 0xc98e4747, 0x0bfbf0f0, 0xec41adad, 0x67b3d4d4, 0xfd5fa2a2, 0xea45afaf, 0xbf239c9c, 0xf753a4a4, 0x96e47272, 0x5b9bc0c0, 0xc275b7b7, 0x1ce1fdfd, 0xae3d9393, 0x6a4c2626, 0x5a6c3636, 0x417e3f3f, 0x02f5f7f7, 0x4f83cccc, 0x5c683434, 0xf451a5a5, 0x34d1e5e5, 0x08f9f1f1, 0x93e27171, 0x73abd8d8, 0x53623131, 0x3f2a1515, 0x0c080404, 0x5295c7c7, 0x65462323, 0x5e9dc3c3, 0x28301818, 0xa1379696, 0x0f0a0505, 0xb52f9a9a, 0x090e0707, 0x36241212, 0x9b1b8080, 0x3ddfe2e2, 0x26cdebeb, 0x694e2727, 0xcd7fb2b2, 0x9fea7575, 0x1b120909, 0x9e1d8383, 0x74582c2c, 0x2e341a1a, 0x2d361b1b, 0xb2dc6e6e, 0xeeb45a5a, 0xfb5ba0a0, 0xf6a45252, 0x4d763b3b, 0x61b7d6d6, 0xce7db3b3, 0x7b522929, 0x3edde3e3, 0x715e2f2f, 0x97138484, 0xf5a65353, 0x68b9d1d1, 0x00000000, 0x2cc1eded, 0x60402020, 0x1fe3fcfc, 0xc879b1b1, 0xedb65b5b, 0xbed46a6a, 0x468dcbcb, 0xd967bebe, 0x4b723939, 0xde944a4a, 0xd4984c4c, 0xe8b05858, 0x4a85cfcf, 0x6bbbd0d0, 0x2ac5efef, 0xe54faaaa, 0x16edfbfb, 0xc5864343, 0xd79a4d4d, 0x55663333, 0x94118585, 0xcf8a4545, 0x10e9f9f9, 0x06040202, 0x81fe7f7f, 0xf0a05050, 0x44783c3c, 0xba259f9f, 0xe34ba8a8, 0xf3a25151, 0xfe5da3a3, 0xc0804040, 0x8a058f8f, 0xad3f9292, 0xbc219d9d, 0x48703838, 0x04f1f5f5, 0xdf63bcbc, 0xc177b6b6, 0x75afdada, 0x63422121, 0x30201010, 0x1ae5ffff, 0x0efdf3f3, 0x6dbfd2d2, 0x4c81cdcd, 0x14180c0c, 0x35261313, 0x2fc3ecec, 0xe1be5f5f, 0xa2359797, 0xcc884444, 0x392e1717, 0x5793c4c4, 0xf255a7a7, 0x82fc7e7e, 0x477a3d3d, 0xacc86464, 0xe7ba5d5d, 0x2b321919, 0x95e67373, 0xa0c06060, 0x98198181, 0xd19e4f4f, 0x7fa3dcdc, 0x66442222, 0x7e542a2a, 0xab3b9090, 0x830b8888, 0xca8c4646, 0x29c7eeee, 0xd36bb8b8, 0x3c281414, 0x79a7dede, 0xe2bc5e5e, 0x1d160b0b, 0x76addbdb, 0x3bdbe0e0, 0x56643232, 0x4e743a3a, 0x1e140a0a, 0xdb924949, 0x0a0c0606, 0x6c482424, 0xe4b85c5c, 0x5d9fc2c2, 0x6ebdd3d3, 0xef43acac, 0xa6c46262, 0xa8399191, 0xa4319595, 0x37d3e4e4, 0x8bf27979, 0x32d5e7e7, 0x438bc8c8, 0x596e3737, 0xb7da6d6d, 0x8c018d8d, 0x64b1d5d5, 0xd29c4e4e, 0xe049a9a9, 0xb4d86c6c, 0xfaac5656, 0x07f3f4f4, 0x25cfeaea, 0xafca6565, 0x8ef47a7a, 0xe947aeae, 0x18100808, 0xd56fbaba, 0x88f07878, 0x6f4a2525, 0x725c2e2e, 0x24381c1c, 0xf157a6a6, 0xc773b4b4, 0x5197c6c6, 0x23cbe8e8, 0x7ca1dddd, 0x9ce87474, 0x213e1f1f, 0xdd964b4b, 0xdc61bdbd, 0x860d8b8b, 0x850f8a8a, 0x90e07070, 0x427c3e3e, 0xc471b5b5, 0xaacc6666, 0xd8904848, 0x05060303, 0x01f7f6f6, 0x121c0e0e, 0xa3c26161, 0x5f6a3535, 0xf9ae5757, 0xd069b9b9, 0x91178686, 0x5899c1c1, 0x273a1d1d, 0xb9279e9e, 0x38d9e1e1, 0x13ebf8f8, 0xb32b9898, 0x33221111, 0xbbd26969, 0x70a9d9d9, 0x89078e8e, 0xa7339494, 0xb62d9b9b, 0x223c1e1e, 0x92158787, 0x20c9e9e9, 0x4987cece, 0xffaa5555, 0x78502828, 0x7aa5dfdf, 0x8f038c8c, 0xf859a1a1, 0x80098989, 0x171a0d0d, 0xda65bfbf, 0x31d7e6e6, 0xc6844242, 0xb8d06868, 0xc3824141, 0xb0299999, 0x775a2d2d, 0x111e0f0f, 0xcb7bb0b0, 0xfca85454, 0xd66dbbbb, 0x3a2c1616];
-	const T3 = [0x63a5c663, 0x7c84f87c, 0x7799ee77, 0x7b8df67b, 0xf20dfff2, 0x6bbdd66b, 0x6fb1de6f, 0xc55491c5, 0x30506030, 0x01030201, 0x67a9ce67, 0x2b7d562b, 0xfe19e7fe, 0xd762b5d7, 0xabe64dab, 0x769aec76, 0xca458fca, 0x829d1f82, 0xc94089c9, 0x7d87fa7d, 0xfa15effa, 0x59ebb259, 0x47c98e47, 0xf00bfbf0, 0xadec41ad, 0xd467b3d4, 0xa2fd5fa2, 0xafea45af, 0x9cbf239c, 0xa4f753a4, 0x7296e472, 0xc05b9bc0, 0xb7c275b7, 0xfd1ce1fd, 0x93ae3d93, 0x266a4c26, 0x365a6c36, 0x3f417e3f, 0xf702f5f7, 0xcc4f83cc, 0x345c6834, 0xa5f451a5, 0xe534d1e5, 0xf108f9f1, 0x7193e271, 0xd873abd8, 0x31536231, 0x153f2a15, 0x040c0804, 0xc75295c7, 0x23654623, 0xc35e9dc3, 0x18283018, 0x96a13796, 0x050f0a05, 0x9ab52f9a, 0x07090e07, 0x12362412, 0x809b1b80, 0xe23ddfe2, 0xeb26cdeb, 0x27694e27, 0xb2cd7fb2, 0x759fea75, 0x091b1209, 0x839e1d83, 0x2c74582c, 0x1a2e341a, 0x1b2d361b, 0x6eb2dc6e, 0x5aeeb45a, 0xa0fb5ba0, 0x52f6a452, 0x3b4d763b, 0xd661b7d6, 0xb3ce7db3, 0x297b5229, 0xe33edde3, 0x2f715e2f, 0x84971384, 0x53f5a653, 0xd168b9d1, 0x00000000, 0xed2cc1ed, 0x20604020, 0xfc1fe3fc, 0xb1c879b1, 0x5bedb65b, 0x6abed46a, 0xcb468dcb, 0xbed967be, 0x394b7239, 0x4ade944a, 0x4cd4984c, 0x58e8b058, 0xcf4a85cf, 0xd06bbbd0, 0xef2ac5ef, 0xaae54faa, 0xfb16edfb, 0x43c58643, 0x4dd79a4d, 0x33556633, 0x85941185, 0x45cf8a45, 0xf910e9f9, 0x02060402, 0x7f81fe7f, 0x50f0a050, 0x3c44783c, 0x9fba259f, 0xa8e34ba8, 0x51f3a251, 0xa3fe5da3, 0x40c08040, 0x8f8a058f, 0x92ad3f92, 0x9dbc219d, 0x38487038, 0xf504f1f5, 0xbcdf63bc, 0xb6c177b6, 0xda75afda, 0x21634221, 0x10302010, 0xff1ae5ff, 0xf30efdf3, 0xd26dbfd2, 0xcd4c81cd, 0x0c14180c, 0x13352613, 0xec2fc3ec, 0x5fe1be5f, 0x97a23597, 0x44cc8844, 0x17392e17, 0xc45793c4, 0xa7f255a7, 0x7e82fc7e, 0x3d477a3d, 0x64acc864, 0x5de7ba5d, 0x192b3219, 0x7395e673, 0x60a0c060, 0x81981981, 0x4fd19e4f, 0xdc7fa3dc, 0x22664422, 0x2a7e542a, 0x90ab3b90, 0x88830b88, 0x46ca8c46, 0xee29c7ee, 0xb8d36bb8, 0x143c2814, 0xde79a7de, 0x5ee2bc5e, 0x0b1d160b, 0xdb76addb, 0xe03bdbe0, 0x32566432, 0x3a4e743a, 0x0a1e140a, 0x49db9249, 0x060a0c06, 0x246c4824, 0x5ce4b85c, 0xc25d9fc2, 0xd36ebdd3, 0xacef43ac, 0x62a6c462, 0x91a83991, 0x95a43195, 0xe437d3e4, 0x798bf279, 0xe732d5e7, 0xc8438bc8, 0x37596e37, 0x6db7da6d, 0x8d8c018d, 0xd564b1d5, 0x4ed29c4e, 0xa9e049a9, 0x6cb4d86c, 0x56faac56, 0xf407f3f4, 0xea25cfea, 0x65afca65, 0x7a8ef47a, 0xaee947ae, 0x08181008, 0xbad56fba, 0x7888f078, 0x256f4a25, 0x2e725c2e, 0x1c24381c, 0xa6f157a6, 0xb4c773b4, 0xc65197c6, 0xe823cbe8, 0xdd7ca1dd, 0x749ce874, 0x1f213e1f, 0x4bdd964b, 0xbddc61bd, 0x8b860d8b, 0x8a850f8a, 0x7090e070, 0x3e427c3e, 0xb5c471b5, 0x66aacc66, 0x48d89048, 0x03050603, 0xf601f7f6, 0x0e121c0e, 0x61a3c261, 0x355f6a35, 0x57f9ae57, 0xb9d069b9, 0x86911786, 0xc15899c1, 0x1d273a1d, 0x9eb9279e, 0xe138d9e1, 0xf813ebf8, 0x98b32b98, 0x11332211, 0x69bbd269, 0xd970a9d9, 0x8e89078e, 0x94a73394, 0x9bb62d9b, 0x1e223c1e, 0x87921587, 0xe920c9e9, 0xce4987ce, 0x55ffaa55, 0x28785028, 0xdf7aa5df, 0x8c8f038c, 0xa1f859a1, 0x89800989, 0x0d171a0d, 0xbfda65bf, 0xe631d7e6, 0x42c68442, 0x68b8d068, 0x41c38241, 0x99b02999, 0x2d775a2d, 0x0f111e0f, 0xb0cb7bb0, 0x54fca854, 0xbbd66dbb, 0x163a2c16];
-	const T4 = [0x6363a5c6, 0x7c7c84f8, 0x777799ee, 0x7b7b8df6, 0xf2f20dff, 0x6b6bbdd6, 0x6f6fb1de, 0xc5c55491, 0x30305060, 0x01010302, 0x6767a9ce, 0x2b2b7d56, 0xfefe19e7, 0xd7d762b5, 0xababe64d, 0x76769aec, 0xcaca458f, 0x82829d1f, 0xc9c94089, 0x7d7d87fa, 0xfafa15ef, 0x5959ebb2, 0x4747c98e, 0xf0f00bfb, 0xadadec41, 0xd4d467b3, 0xa2a2fd5f, 0xafafea45, 0x9c9cbf23, 0xa4a4f753, 0x727296e4, 0xc0c05b9b, 0xb7b7c275, 0xfdfd1ce1, 0x9393ae3d, 0x26266a4c, 0x36365a6c, 0x3f3f417e, 0xf7f702f5, 0xcccc4f83, 0x34345c68, 0xa5a5f451, 0xe5e534d1, 0xf1f108f9, 0x717193e2, 0xd8d873ab, 0x31315362, 0x15153f2a, 0x04040c08, 0xc7c75295, 0x23236546, 0xc3c35e9d, 0x18182830, 0x9696a137, 0x05050f0a, 0x9a9ab52f, 0x0707090e, 0x12123624, 0x80809b1b, 0xe2e23ddf, 0xebeb26cd, 0x2727694e, 0xb2b2cd7f, 0x75759fea, 0x09091b12, 0x83839e1d, 0x2c2c7458, 0x1a1a2e34, 0x1b1b2d36, 0x6e6eb2dc, 0x5a5aeeb4, 0xa0a0fb5b, 0x5252f6a4, 0x3b3b4d76, 0xd6d661b7, 0xb3b3ce7d, 0x29297b52, 0xe3e33edd, 0x2f2f715e, 0x84849713, 0x5353f5a6, 0xd1d168b9, 0x00000000, 0xeded2cc1, 0x20206040, 0xfcfc1fe3, 0xb1b1c879, 0x5b5bedb6, 0x6a6abed4, 0xcbcb468d, 0xbebed967, 0x39394b72, 0x4a4ade94, 0x4c4cd498, 0x5858e8b0, 0xcfcf4a85, 0xd0d06bbb, 0xefef2ac5, 0xaaaae54f, 0xfbfb16ed, 0x4343c586, 0x4d4dd79a, 0x33335566, 0x85859411, 0x4545cf8a, 0xf9f910e9, 0x02020604, 0x7f7f81fe, 0x5050f0a0, 0x3c3c4478, 0x9f9fba25, 0xa8a8e34b, 0x5151f3a2, 0xa3a3fe5d, 0x4040c080, 0x8f8f8a05, 0x9292ad3f, 0x9d9dbc21, 0x38384870, 0xf5f504f1, 0xbcbcdf63, 0xb6b6c177, 0xdada75af, 0x21216342, 0x10103020, 0xffff1ae5, 0xf3f30efd, 0xd2d26dbf, 0xcdcd4c81, 0x0c0c1418, 0x13133526, 0xecec2fc3, 0x5f5fe1be, 0x9797a235, 0x4444cc88, 0x1717392e, 0xc4c45793, 0xa7a7f255, 0x7e7e82fc, 0x3d3d477a, 0x6464acc8, 0x5d5de7ba, 0x19192b32, 0x737395e6, 0x6060a0c0, 0x81819819, 0x4f4fd19e, 0xdcdc7fa3, 0x22226644, 0x2a2a7e54, 0x9090ab3b, 0x8888830b, 0x4646ca8c, 0xeeee29c7, 0xb8b8d36b, 0x14143c28, 0xdede79a7, 0x5e5ee2bc, 0x0b0b1d16, 0xdbdb76ad, 0xe0e03bdb, 0x32325664, 0x3a3a4e74, 0x0a0a1e14, 0x4949db92, 0x06060a0c, 0x24246c48, 0x5c5ce4b8, 0xc2c25d9f, 0xd3d36ebd, 0xacacef43, 0x6262a6c4, 0x9191a839, 0x9595a431, 0xe4e437d3, 0x79798bf2, 0xe7e732d5, 0xc8c8438b, 0x3737596e, 0x6d6db7da, 0x8d8d8c01, 0xd5d564b1, 0x4e4ed29c, 0xa9a9e049, 0x6c6cb4d8, 0x5656faac, 0xf4f407f3, 0xeaea25cf, 0x6565afca, 0x7a7a8ef4, 0xaeaee947, 0x08081810, 0xbabad56f, 0x787888f0, 0x25256f4a, 0x2e2e725c, 0x1c1c2438, 0xa6a6f157, 0xb4b4c773, 0xc6c65197, 0xe8e823cb, 0xdddd7ca1, 0x74749ce8, 0x1f1f213e, 0x4b4bdd96, 0xbdbddc61, 0x8b8b860d, 0x8a8a850f, 0x707090e0, 0x3e3e427c, 0xb5b5c471, 0x6666aacc, 0x4848d890, 0x03030506, 0xf6f601f7, 0x0e0e121c, 0x6161a3c2, 0x35355f6a, 0x5757f9ae, 0xb9b9d069, 0x86869117, 0xc1c15899, 0x1d1d273a, 0x9e9eb927, 0xe1e138d9, 0xf8f813eb, 0x9898b32b, 0x11113322, 0x6969bbd2, 0xd9d970a9, 0x8e8e8907, 0x9494a733, 0x9b9bb62d, 0x1e1e223c, 0x87879215, 0xe9e920c9, 0xcece4987, 0x5555ffaa, 0x28287850, 0xdfdf7aa5, 0x8c8c8f03, 0xa1a1f859, 0x89898009, 0x0d0d171a, 0xbfbfda65, 0xe6e631d7, 0x4242c684, 0x6868b8d0, 0x4141c382, 0x9999b029, 0x2d2d775a, 0x0f0f111e, 0xb0b0cb7b, 0x5454fca8, 0xbbbbd66d, 0x16163a2c];
-	// Transformations for decryption
-	const T5 = [0x51f4a750, 0x7e416553, 0x1a17a4c3, 0x3a275e96, 0x3bab6bcb, 0x1f9d45f1, 0xacfa58ab, 0x4be30393, 0x2030fa55, 0xad766df6, 0x88cc7691, 0xf5024c25, 0x4fe5d7fc, 0xc52acbd7, 0x26354480, 0xb562a38f, 0xdeb15a49, 0x25ba1b67, 0x45ea0e98, 0x5dfec0e1, 0xc32f7502, 0x814cf012, 0x8d4697a3, 0x6bd3f9c6, 0x038f5fe7, 0x15929c95, 0xbf6d7aeb, 0x955259da, 0xd4be832d, 0x587421d3, 0x49e06929, 0x8ec9c844, 0x75c2896a, 0xf48e7978, 0x99583e6b, 0x27b971dd, 0xbee14fb6, 0xf088ad17, 0xc920ac66, 0x7dce3ab4, 0x63df4a18, 0xe51a3182, 0x97513360, 0x62537f45, 0xb16477e0, 0xbb6bae84, 0xfe81a01c, 0xf9082b94, 0x70486858, 0x8f45fd19, 0x94de6c87, 0x527bf8b7, 0xab73d323, 0x724b02e2, 0xe31f8f57, 0x6655ab2a, 0xb2eb2807, 0x2fb5c203, 0x86c57b9a, 0xd33708a5, 0x302887f2, 0x23bfa5b2, 0x02036aba, 0xed16825c, 0x8acf1c2b, 0xa779b492, 0xf307f2f0, 0x4e69e2a1, 0x65daf4cd, 0x0605bed5, 0xd134621f, 0xc4a6fe8a, 0x342e539d, 0xa2f355a0, 0x058ae132, 0xa4f6eb75, 0x0b83ec39, 0x4060efaa, 0x5e719f06, 0xbd6e1051, 0x3e218af9, 0x96dd063d, 0xdd3e05ae, 0x4de6bd46, 0x91548db5, 0x71c45d05, 0x0406d46f, 0x605015ff, 0x1998fb24, 0xd6bde997, 0x894043cc, 0x67d99e77, 0xb0e842bd, 0x07898b88, 0xe7195b38, 0x79c8eedb, 0xa17c0a47, 0x7c420fe9, 0xf8841ec9, 0x00000000, 0x09808683, 0x322bed48, 0x1e1170ac, 0x6c5a724e, 0xfd0efffb, 0x0f853856, 0x3daed51e, 0x362d3927, 0x0a0fd964, 0x685ca621, 0x9b5b54d1, 0x24362e3a, 0x0c0a67b1, 0x9357e70f, 0xb4ee96d2, 0x1b9b919e, 0x80c0c54f, 0x61dc20a2, 0x5a774b69, 0x1c121a16, 0xe293ba0a, 0xc0a02ae5, 0x3c22e043, 0x121b171d, 0x0e090d0b, 0xf28bc7ad, 0x2db6a8b9, 0x141ea9c8, 0x57f11985, 0xaf75074c, 0xee99ddbb, 0xa37f60fd, 0xf701269f, 0x5c72f5bc, 0x44663bc5, 0x5bfb7e34, 0x8b432976, 0xcb23c6dc, 0xb6edfc68, 0xb8e4f163, 0xd731dcca, 0x42638510, 0x13972240, 0x84c61120, 0x854a247d, 0xd2bb3df8, 0xaef93211, 0xc729a16d, 0x1d9e2f4b, 0xdcb230f3, 0x0d8652ec, 0x77c1e3d0, 0x2bb3166c, 0xa970b999, 0x119448fa, 0x47e96422, 0xa8fc8cc4, 0xa0f03f1a, 0x567d2cd8, 0x223390ef, 0x87494ec7, 0xd938d1c1, 0x8ccaa2fe, 0x98d40b36, 0xa6f581cf, 0xa57ade28, 0xdab78e26, 0x3fadbfa4, 0x2c3a9de4, 0x5078920d, 0x6a5fcc9b, 0x547e4662, 0xf68d13c2, 0x90d8b8e8, 0x2e39f75e, 0x82c3aff5, 0x9f5d80be, 0x69d0937c, 0x6fd52da9, 0xcf2512b3, 0xc8ac993b, 0x10187da7, 0xe89c636e, 0xdb3bbb7b, 0xcd267809, 0x6e5918f4, 0xec9ab701, 0x834f9aa8, 0xe6956e65, 0xaaffe67e, 0x21bccf08, 0xef15e8e6, 0xbae79bd9, 0x4a6f36ce, 0xea9f09d4, 0x29b07cd6, 0x31a4b2af, 0x2a3f2331, 0xc6a59430, 0x35a266c0, 0x744ebc37, 0xfc82caa6, 0xe090d0b0, 0x33a7d815, 0xf104984a, 0x41ecdaf7, 0x7fcd500e, 0x1791f62f, 0x764dd68d, 0x43efb04d, 0xccaa4d54, 0xe49604df, 0x9ed1b5e3, 0x4c6a881b, 0xc12c1fb8, 0x4665517f, 0x9d5eea04, 0x018c355d, 0xfa877473, 0xfb0b412e, 0xb3671d5a, 0x92dbd252, 0xe9105633, 0x6dd64713, 0x9ad7618c, 0x37a10c7a, 0x59f8148e, 0xeb133c89, 0xcea927ee, 0xb761c935, 0xe11ce5ed, 0x7a47b13c, 0x9cd2df59, 0x55f2733f, 0x1814ce79, 0x73c737bf, 0x53f7cdea, 0x5ffdaa5b, 0xdf3d6f14, 0x7844db86, 0xcaaff381, 0xb968c43e, 0x3824342c, 0xc2a3405f, 0x161dc372, 0xbce2250c, 0x283c498b, 0xff0d9541, 0x39a80171, 0x080cb3de, 0xd8b4e49c, 0x6456c190, 0x7bcb8461, 0xd532b670, 0x486c5c74, 0xd0b85742];
-	const T6 = [0x5051f4a7, 0x537e4165, 0xc31a17a4, 0x963a275e, 0xcb3bab6b, 0xf11f9d45, 0xabacfa58, 0x934be303, 0x552030fa, 0xf6ad766d, 0x9188cc76, 0x25f5024c, 0xfc4fe5d7, 0xd7c52acb, 0x80263544, 0x8fb562a3, 0x49deb15a, 0x6725ba1b, 0x9845ea0e, 0xe15dfec0, 0x02c32f75, 0x12814cf0, 0xa38d4697, 0xc66bd3f9, 0xe7038f5f, 0x9515929c, 0xebbf6d7a, 0xda955259, 0x2dd4be83, 0xd3587421, 0x2949e069, 0x448ec9c8, 0x6a75c289, 0x78f48e79, 0x6b99583e, 0xdd27b971, 0xb6bee14f, 0x17f088ad, 0x66c920ac, 0xb47dce3a, 0x1863df4a, 0x82e51a31, 0x60975133, 0x4562537f, 0xe0b16477, 0x84bb6bae, 0x1cfe81a0, 0x94f9082b, 0x58704868, 0x198f45fd, 0x8794de6c, 0xb7527bf8, 0x23ab73d3, 0xe2724b02, 0x57e31f8f, 0x2a6655ab, 0x07b2eb28, 0x032fb5c2, 0x9a86c57b, 0xa5d33708, 0xf2302887, 0xb223bfa5, 0xba02036a, 0x5ced1682, 0x2b8acf1c, 0x92a779b4, 0xf0f307f2, 0xa14e69e2, 0xcd65daf4, 0xd50605be, 0x1fd13462, 0x8ac4a6fe, 0x9d342e53, 0xa0a2f355, 0x32058ae1, 0x75a4f6eb, 0x390b83ec, 0xaa4060ef, 0x065e719f, 0x51bd6e10, 0xf93e218a, 0x3d96dd06, 0xaedd3e05, 0x464de6bd, 0xb591548d, 0x0571c45d, 0x6f0406d4, 0xff605015, 0x241998fb, 0x97d6bde9, 0xcc894043, 0x7767d99e, 0xbdb0e842, 0x8807898b, 0x38e7195b, 0xdb79c8ee, 0x47a17c0a, 0xe97c420f, 0xc9f8841e, 0x00000000, 0x83098086, 0x48322bed, 0xac1e1170, 0x4e6c5a72, 0xfbfd0eff, 0x560f8538, 0x1e3daed5, 0x27362d39, 0x640a0fd9, 0x21685ca6, 0xd19b5b54, 0x3a24362e, 0xb10c0a67, 0x0f9357e7, 0xd2b4ee96, 0x9e1b9b91, 0x4f80c0c5, 0xa261dc20, 0x695a774b, 0x161c121a, 0x0ae293ba, 0xe5c0a02a, 0x433c22e0, 0x1d121b17, 0x0b0e090d, 0xadf28bc7, 0xb92db6a8, 0xc8141ea9, 0x8557f119, 0x4caf7507, 0xbbee99dd, 0xfda37f60, 0x9ff70126, 0xbc5c72f5, 0xc544663b, 0x345bfb7e, 0x768b4329, 0xdccb23c6, 0x68b6edfc, 0x63b8e4f1, 0xcad731dc, 0x10426385, 0x40139722, 0x2084c611, 0x7d854a24, 0xf8d2bb3d, 0x11aef932, 0x6dc729a1, 0x4b1d9e2f, 0xf3dcb230, 0xec0d8652, 0xd077c1e3, 0x6c2bb316, 0x99a970b9, 0xfa119448, 0x2247e964, 0xc4a8fc8c, 0x1aa0f03f, 0xd8567d2c, 0xef223390, 0xc787494e, 0xc1d938d1, 0xfe8ccaa2, 0x3698d40b, 0xcfa6f581, 0x28a57ade, 0x26dab78e, 0xa43fadbf, 0xe42c3a9d, 0x0d507892, 0x9b6a5fcc, 0x62547e46, 0xc2f68d13, 0xe890d8b8, 0x5e2e39f7, 0xf582c3af, 0xbe9f5d80, 0x7c69d093, 0xa96fd52d, 0xb3cf2512, 0x3bc8ac99, 0xa710187d, 0x6ee89c63, 0x7bdb3bbb, 0x09cd2678, 0xf46e5918, 0x01ec9ab7, 0xa8834f9a, 0x65e6956e, 0x7eaaffe6, 0x0821bccf, 0xe6ef15e8, 0xd9bae79b, 0xce4a6f36, 0xd4ea9f09, 0xd629b07c, 0xaf31a4b2, 0x312a3f23, 0x30c6a594, 0xc035a266, 0x37744ebc, 0xa6fc82ca, 0xb0e090d0, 0x1533a7d8, 0x4af10498, 0xf741ecda, 0x0e7fcd50, 0x2f1791f6, 0x8d764dd6, 0x4d43efb0, 0x54ccaa4d, 0xdfe49604, 0xe39ed1b5, 0x1b4c6a88, 0xb8c12c1f, 0x7f466551, 0x049d5eea, 0x5d018c35, 0x73fa8774, 0x2efb0b41, 0x5ab3671d, 0x5292dbd2, 0x33e91056, 0x136dd647, 0x8c9ad761, 0x7a37a10c, 0x8e59f814, 0x89eb133c, 0xeecea927, 0x35b761c9, 0xede11ce5, 0x3c7a47b1, 0x599cd2df, 0x3f55f273, 0x791814ce, 0xbf73c737, 0xea53f7cd, 0x5b5ffdaa, 0x14df3d6f, 0x867844db, 0x81caaff3, 0x3eb968c4, 0x2c382434, 0x5fc2a340, 0x72161dc3, 0x0cbce225, 0x8b283c49, 0x41ff0d95, 0x7139a801, 0xde080cb3, 0x9cd8b4e4, 0x906456c1, 0x617bcb84, 0x70d532b6, 0x74486c5c, 0x42d0b857];
-	const T7 = [0xa75051f4, 0x65537e41, 0xa4c31a17, 0x5e963a27, 0x6bcb3bab, 0x45f11f9d, 0x58abacfa, 0x03934be3, 0xfa552030, 0x6df6ad76, 0x769188cc, 0x4c25f502, 0xd7fc4fe5, 0xcbd7c52a, 0x44802635, 0xa38fb562, 0x5a49deb1, 0x1b6725ba, 0x0e9845ea, 0xc0e15dfe, 0x7502c32f, 0xf012814c, 0x97a38d46, 0xf9c66bd3, 0x5fe7038f, 0x9c951592, 0x7aebbf6d, 0x59da9552, 0x832dd4be, 0x21d35874, 0x692949e0, 0xc8448ec9, 0x896a75c2, 0x7978f48e, 0x3e6b9958, 0x71dd27b9, 0x4fb6bee1, 0xad17f088, 0xac66c920, 0x3ab47dce, 0x4a1863df, 0x3182e51a, 0x33609751, 0x7f456253, 0x77e0b164, 0xae84bb6b, 0xa01cfe81, 0x2b94f908, 0x68587048, 0xfd198f45, 0x6c8794de, 0xf8b7527b, 0xd323ab73, 0x02e2724b, 0x8f57e31f, 0xab2a6655, 0x2807b2eb, 0xc2032fb5, 0x7b9a86c5, 0x08a5d337, 0x87f23028, 0xa5b223bf, 0x6aba0203, 0x825ced16, 0x1c2b8acf, 0xb492a779, 0xf2f0f307, 0xe2a14e69, 0xf4cd65da, 0xbed50605, 0x621fd134, 0xfe8ac4a6, 0x539d342e, 0x55a0a2f3, 0xe132058a, 0xeb75a4f6, 0xec390b83, 0xefaa4060, 0x9f065e71, 0x1051bd6e, 0x8af93e21, 0x063d96dd, 0x05aedd3e, 0xbd464de6, 0x8db59154, 0x5d0571c4, 0xd46f0406, 0x15ff6050, 0xfb241998, 0xe997d6bd, 0x43cc8940, 0x9e7767d9, 0x42bdb0e8, 0x8b880789, 0x5b38e719, 0xeedb79c8, 0x0a47a17c, 0x0fe97c42, 0x1ec9f884, 0x00000000, 0x86830980, 0xed48322b, 0x70ac1e11, 0x724e6c5a, 0xfffbfd0e, 0x38560f85, 0xd51e3dae, 0x3927362d, 0xd9640a0f, 0xa621685c, 0x54d19b5b, 0x2e3a2436, 0x67b10c0a, 0xe70f9357, 0x96d2b4ee, 0x919e1b9b, 0xc54f80c0, 0x20a261dc, 0x4b695a77, 0x1a161c12, 0xba0ae293, 0x2ae5c0a0, 0xe0433c22, 0x171d121b, 0x0d0b0e09, 0xc7adf28b, 0xa8b92db6, 0xa9c8141e, 0x198557f1, 0x074caf75, 0xddbbee99, 0x60fda37f, 0x269ff701, 0xf5bc5c72, 0x3bc54466, 0x7e345bfb, 0x29768b43, 0xc6dccb23, 0xfc68b6ed, 0xf163b8e4, 0xdccad731, 0x85104263, 0x22401397, 0x112084c6, 0x247d854a, 0x3df8d2bb, 0x3211aef9, 0xa16dc729, 0x2f4b1d9e, 0x30f3dcb2, 0x52ec0d86, 0xe3d077c1, 0x166c2bb3, 0xb999a970, 0x48fa1194, 0x642247e9, 0x8cc4a8fc, 0x3f1aa0f0, 0x2cd8567d, 0x90ef2233, 0x4ec78749, 0xd1c1d938, 0xa2fe8cca, 0x0b3698d4, 0x81cfa6f5, 0xde28a57a, 0x8e26dab7, 0xbfa43fad, 0x9de42c3a, 0x920d5078, 0xcc9b6a5f, 0x4662547e, 0x13c2f68d, 0xb8e890d8, 0xf75e2e39, 0xaff582c3, 0x80be9f5d, 0x937c69d0, 0x2da96fd5, 0x12b3cf25, 0x993bc8ac, 0x7da71018, 0x636ee89c, 0xbb7bdb3b, 0x7809cd26, 0x18f46e59, 0xb701ec9a, 0x9aa8834f, 0x6e65e695, 0xe67eaaff, 0xcf0821bc, 0xe8e6ef15, 0x9bd9bae7, 0x36ce4a6f, 0x09d4ea9f, 0x7cd629b0, 0xb2af31a4, 0x23312a3f, 0x9430c6a5, 0x66c035a2, 0xbc37744e, 0xcaa6fc82, 0xd0b0e090, 0xd81533a7, 0x984af104, 0xdaf741ec, 0x500e7fcd, 0xf62f1791, 0xd68d764d, 0xb04d43ef, 0x4d54ccaa, 0x04dfe496, 0xb5e39ed1, 0x881b4c6a, 0x1fb8c12c, 0x517f4665, 0xea049d5e, 0x355d018c, 0x7473fa87, 0x412efb0b, 0x1d5ab367, 0xd25292db, 0x5633e910, 0x47136dd6, 0x618c9ad7, 0x0c7a37a1, 0x148e59f8, 0x3c89eb13, 0x27eecea9, 0xc935b761, 0xe5ede11c, 0xb13c7a47, 0xdf599cd2, 0x733f55f2, 0xce791814, 0x37bf73c7, 0xcdea53f7, 0xaa5b5ffd, 0x6f14df3d, 0xdb867844, 0xf381caaf, 0xc43eb968, 0x342c3824, 0x405fc2a3, 0xc372161d, 0x250cbce2, 0x498b283c, 0x9541ff0d, 0x017139a8, 0xb3de080c, 0xe49cd8b4, 0xc1906456, 0x84617bcb, 0xb670d532, 0x5c74486c, 0x5742d0b8];
-	const T8 = [0xf4a75051, 0x4165537e, 0x17a4c31a, 0x275e963a, 0xab6bcb3b, 0x9d45f11f, 0xfa58abac, 0xe303934b, 0x30fa5520, 0x766df6ad, 0xcc769188, 0x024c25f5, 0xe5d7fc4f, 0x2acbd7c5, 0x35448026, 0x62a38fb5, 0xb15a49de, 0xba1b6725, 0xea0e9845, 0xfec0e15d, 0x2f7502c3, 0x4cf01281, 0x4697a38d, 0xd3f9c66b, 0x8f5fe703, 0x929c9515, 0x6d7aebbf, 0x5259da95, 0xbe832dd4, 0x7421d358, 0xe0692949, 0xc9c8448e, 0xc2896a75, 0x8e7978f4, 0x583e6b99, 0xb971dd27, 0xe14fb6be, 0x88ad17f0, 0x20ac66c9, 0xce3ab47d, 0xdf4a1863, 0x1a3182e5, 0x51336097, 0x537f4562, 0x6477e0b1, 0x6bae84bb, 0x81a01cfe, 0x082b94f9, 0x48685870, 0x45fd198f, 0xde6c8794, 0x7bf8b752, 0x73d323ab, 0x4b02e272, 0x1f8f57e3, 0x55ab2a66, 0xeb2807b2, 0xb5c2032f, 0xc57b9a86, 0x3708a5d3, 0x2887f230, 0xbfa5b223, 0x036aba02, 0x16825ced, 0xcf1c2b8a, 0x79b492a7, 0x07f2f0f3, 0x69e2a14e, 0xdaf4cd65, 0x05bed506, 0x34621fd1, 0xa6fe8ac4, 0x2e539d34, 0xf355a0a2, 0x8ae13205, 0xf6eb75a4, 0x83ec390b, 0x60efaa40, 0x719f065e, 0x6e1051bd, 0x218af93e, 0xdd063d96, 0x3e05aedd, 0xe6bd464d, 0x548db591, 0xc45d0571, 0x06d46f04, 0x5015ff60, 0x98fb2419, 0xbde997d6, 0x4043cc89, 0xd99e7767, 0xe842bdb0, 0x898b8807, 0x195b38e7, 0xc8eedb79, 0x7c0a47a1, 0x420fe97c, 0x841ec9f8, 0x00000000, 0x80868309, 0x2bed4832, 0x1170ac1e, 0x5a724e6c, 0x0efffbfd, 0x8538560f, 0xaed51e3d, 0x2d392736, 0x0fd9640a, 0x5ca62168, 0x5b54d19b, 0x362e3a24, 0x0a67b10c, 0x57e70f93, 0xee96d2b4, 0x9b919e1b, 0xc0c54f80, 0xdc20a261, 0x774b695a, 0x121a161c, 0x93ba0ae2, 0xa02ae5c0, 0x22e0433c, 0x1b171d12, 0x090d0b0e, 0x8bc7adf2, 0xb6a8b92d, 0x1ea9c814, 0xf1198557, 0x75074caf, 0x99ddbbee, 0x7f60fda3, 0x01269ff7, 0x72f5bc5c, 0x663bc544, 0xfb7e345b, 0x4329768b, 0x23c6dccb, 0xedfc68b6, 0xe4f163b8, 0x31dccad7, 0x63851042, 0x97224013, 0xc6112084, 0x4a247d85, 0xbb3df8d2, 0xf93211ae, 0x29a16dc7, 0x9e2f4b1d, 0xb230f3dc, 0x8652ec0d, 0xc1e3d077, 0xb3166c2b, 0x70b999a9, 0x9448fa11, 0xe9642247, 0xfc8cc4a8, 0xf03f1aa0, 0x7d2cd856, 0x3390ef22, 0x494ec787, 0x38d1c1d9, 0xcaa2fe8c, 0xd40b3698, 0xf581cfa6, 0x7ade28a5, 0xb78e26da, 0xadbfa43f, 0x3a9de42c, 0x78920d50, 0x5fcc9b6a, 0x7e466254, 0x8d13c2f6, 0xd8b8e890, 0x39f75e2e, 0xc3aff582, 0x5d80be9f, 0xd0937c69, 0xd52da96f, 0x2512b3cf, 0xac993bc8, 0x187da710, 0x9c636ee8, 0x3bbb7bdb, 0x267809cd, 0x5918f46e, 0x9ab701ec, 0x4f9aa883, 0x956e65e6, 0xffe67eaa, 0xbccf0821, 0x15e8e6ef, 0xe79bd9ba, 0x6f36ce4a, 0x9f09d4ea, 0xb07cd629, 0xa4b2af31, 0x3f23312a, 0xa59430c6, 0xa266c035, 0x4ebc3774, 0x82caa6fc, 0x90d0b0e0, 0xa7d81533, 0x04984af1, 0xecdaf741, 0xcd500e7f, 0x91f62f17, 0x4dd68d76, 0xefb04d43, 0xaa4d54cc, 0x9604dfe4, 0xd1b5e39e, 0x6a881b4c, 0x2c1fb8c1, 0x65517f46, 0x5eea049d, 0x8c355d01, 0x877473fa, 0x0b412efb, 0x671d5ab3, 0xdbd25292, 0x105633e9, 0xd647136d, 0xd7618c9a, 0xa10c7a37, 0xf8148e59, 0x133c89eb, 0xa927eece, 0x61c935b7, 0x1ce5ede1, 0x47b13c7a, 0xd2df599c, 0xf2733f55, 0x14ce7918, 0xc737bf73, 0xf7cdea53, 0xfdaa5b5f, 0x3d6f14df, 0x44db8678, 0xaff381ca, 0x68c43eb9, 0x24342c38, 0xa3405fc2, 0x1dc37216, 0xe2250cbc, 0x3c498b28, 0x0d9541ff, 0xa8017139, 0x0cb3de08, 0xb4e49cd8, 0x56c19064, 0xcb84617b, 0x32b670d5, 0x6c5c7448, 0xb85742d0];
-	// Transformations for decryption key expansion
-	const U1 = [0x00000000, 0x0e090d0b, 0x1c121a16, 0x121b171d, 0x3824342c, 0x362d3927, 0x24362e3a, 0x2a3f2331, 0x70486858, 0x7e416553, 0x6c5a724e, 0x62537f45, 0x486c5c74, 0x4665517f, 0x547e4662, 0x5a774b69, 0xe090d0b0, 0xee99ddbb, 0xfc82caa6, 0xf28bc7ad, 0xd8b4e49c, 0xd6bde997, 0xc4a6fe8a, 0xcaaff381, 0x90d8b8e8, 0x9ed1b5e3, 0x8ccaa2fe, 0x82c3aff5, 0xa8fc8cc4, 0xa6f581cf, 0xb4ee96d2, 0xbae79bd9, 0xdb3bbb7b, 0xd532b670, 0xc729a16d, 0xc920ac66, 0xe31f8f57, 0xed16825c, 0xff0d9541, 0xf104984a, 0xab73d323, 0xa57ade28, 0xb761c935, 0xb968c43e, 0x9357e70f, 0x9d5eea04, 0x8f45fd19, 0x814cf012, 0x3bab6bcb, 0x35a266c0, 0x27b971dd, 0x29b07cd6, 0x038f5fe7, 0x0d8652ec, 0x1f9d45f1, 0x119448fa, 0x4be30393, 0x45ea0e98, 0x57f11985, 0x59f8148e, 0x73c737bf, 0x7dce3ab4, 0x6fd52da9, 0x61dc20a2, 0xad766df6, 0xa37f60fd, 0xb16477e0, 0xbf6d7aeb, 0x955259da, 0x9b5b54d1, 0x894043cc, 0x87494ec7, 0xdd3e05ae, 0xd33708a5, 0xc12c1fb8, 0xcf2512b3, 0xe51a3182, 0xeb133c89, 0xf9082b94, 0xf701269f, 0x4de6bd46, 0x43efb04d, 0x51f4a750, 0x5ffdaa5b, 0x75c2896a, 0x7bcb8461, 0x69d0937c, 0x67d99e77, 0x3daed51e, 0x33a7d815, 0x21bccf08, 0x2fb5c203, 0x058ae132, 0x0b83ec39, 0x1998fb24, 0x1791f62f, 0x764dd68d, 0x7844db86, 0x6a5fcc9b, 0x6456c190, 0x4e69e2a1, 0x4060efaa, 0x527bf8b7, 0x5c72f5bc, 0x0605bed5, 0x080cb3de, 0x1a17a4c3, 0x141ea9c8, 0x3e218af9, 0x302887f2, 0x223390ef, 0x2c3a9de4, 0x96dd063d, 0x98d40b36, 0x8acf1c2b, 0x84c61120, 0xaef93211, 0xa0f03f1a, 0xb2eb2807, 0xbce2250c, 0xe6956e65, 0xe89c636e, 0xfa877473, 0xf48e7978, 0xdeb15a49, 0xd0b85742, 0xc2a3405f, 0xccaa4d54, 0x41ecdaf7, 0x4fe5d7fc, 0x5dfec0e1, 0x53f7cdea, 0x79c8eedb, 0x77c1e3d0, 0x65daf4cd, 0x6bd3f9c6, 0x31a4b2af, 0x3fadbfa4, 0x2db6a8b9, 0x23bfa5b2, 0x09808683, 0x07898b88, 0x15929c95, 0x1b9b919e, 0xa17c0a47, 0xaf75074c, 0xbd6e1051, 0xb3671d5a, 0x99583e6b, 0x97513360, 0x854a247d, 0x8b432976, 0xd134621f, 0xdf3d6f14, 0xcd267809, 0xc32f7502, 0xe9105633, 0xe7195b38, 0xf5024c25, 0xfb0b412e, 0x9ad7618c, 0x94de6c87, 0x86c57b9a, 0x88cc7691, 0xa2f355a0, 0xacfa58ab, 0xbee14fb6, 0xb0e842bd, 0xea9f09d4, 0xe49604df, 0xf68d13c2, 0xf8841ec9, 0xd2bb3df8, 0xdcb230f3, 0xcea927ee, 0xc0a02ae5, 0x7a47b13c, 0x744ebc37, 0x6655ab2a, 0x685ca621, 0x42638510, 0x4c6a881b, 0x5e719f06, 0x5078920d, 0x0a0fd964, 0x0406d46f, 0x161dc372, 0x1814ce79, 0x322bed48, 0x3c22e043, 0x2e39f75e, 0x2030fa55, 0xec9ab701, 0xe293ba0a, 0xf088ad17, 0xfe81a01c, 0xd4be832d, 0xdab78e26, 0xc8ac993b, 0xc6a59430, 0x9cd2df59, 0x92dbd252, 0x80c0c54f, 0x8ec9c844, 0xa4f6eb75, 0xaaffe67e, 0xb8e4f163, 0xb6edfc68, 0x0c0a67b1, 0x02036aba, 0x10187da7, 0x1e1170ac, 0x342e539d, 0x3a275e96, 0x283c498b, 0x26354480, 0x7c420fe9, 0x724b02e2, 0x605015ff, 0x6e5918f4, 0x44663bc5, 0x4a6f36ce, 0x587421d3, 0x567d2cd8, 0x37a10c7a, 0x39a80171, 0x2bb3166c, 0x25ba1b67, 0x0f853856, 0x018c355d, 0x13972240, 0x1d9e2f4b, 0x47e96422, 0x49e06929, 0x5bfb7e34, 0x55f2733f, 0x7fcd500e, 0x71c45d05, 0x63df4a18, 0x6dd64713, 0xd731dcca, 0xd938d1c1, 0xcb23c6dc, 0xc52acbd7, 0xef15e8e6, 0xe11ce5ed, 0xf307f2f0, 0xfd0efffb, 0xa779b492, 0xa970b999, 0xbb6bae84, 0xb562a38f, 0x9f5d80be, 0x91548db5, 0x834f9aa8, 0x8d4697a3];
-	const U2 = [0x00000000, 0x0b0e090d, 0x161c121a, 0x1d121b17, 0x2c382434, 0x27362d39, 0x3a24362e, 0x312a3f23, 0x58704868, 0x537e4165, 0x4e6c5a72, 0x4562537f, 0x74486c5c, 0x7f466551, 0x62547e46, 0x695a774b, 0xb0e090d0, 0xbbee99dd, 0xa6fc82ca, 0xadf28bc7, 0x9cd8b4e4, 0x97d6bde9, 0x8ac4a6fe, 0x81caaff3, 0xe890d8b8, 0xe39ed1b5, 0xfe8ccaa2, 0xf582c3af, 0xc4a8fc8c, 0xcfa6f581, 0xd2b4ee96, 0xd9bae79b, 0x7bdb3bbb, 0x70d532b6, 0x6dc729a1, 0x66c920ac, 0x57e31f8f, 0x5ced1682, 0x41ff0d95, 0x4af10498, 0x23ab73d3, 0x28a57ade, 0x35b761c9, 0x3eb968c4, 0x0f9357e7, 0x049d5eea, 0x198f45fd, 0x12814cf0, 0xcb3bab6b, 0xc035a266, 0xdd27b971, 0xd629b07c, 0xe7038f5f, 0xec0d8652, 0xf11f9d45, 0xfa119448, 0x934be303, 0x9845ea0e, 0x8557f119, 0x8e59f814, 0xbf73c737, 0xb47dce3a, 0xa96fd52d, 0xa261dc20, 0xf6ad766d, 0xfda37f60, 0xe0b16477, 0xebbf6d7a, 0xda955259, 0xd19b5b54, 0xcc894043, 0xc787494e, 0xaedd3e05, 0xa5d33708, 0xb8c12c1f, 0xb3cf2512, 0x82e51a31, 0x89eb133c, 0x94f9082b, 0x9ff70126, 0x464de6bd, 0x4d43efb0, 0x5051f4a7, 0x5b5ffdaa, 0x6a75c289, 0x617bcb84, 0x7c69d093, 0x7767d99e, 0x1e3daed5, 0x1533a7d8, 0x0821bccf, 0x032fb5c2, 0x32058ae1, 0x390b83ec, 0x241998fb, 0x2f1791f6, 0x8d764dd6, 0x867844db, 0x9b6a5fcc, 0x906456c1, 0xa14e69e2, 0xaa4060ef, 0xb7527bf8, 0xbc5c72f5, 0xd50605be, 0xde080cb3, 0xc31a17a4, 0xc8141ea9, 0xf93e218a, 0xf2302887, 0xef223390, 0xe42c3a9d, 0x3d96dd06, 0x3698d40b, 0x2b8acf1c, 0x2084c611, 0x11aef932, 0x1aa0f03f, 0x07b2eb28, 0x0cbce225, 0x65e6956e, 0x6ee89c63, 0x73fa8774, 0x78f48e79, 0x49deb15a, 0x42d0b857, 0x5fc2a340, 0x54ccaa4d, 0xf741ecda, 0xfc4fe5d7, 0xe15dfec0, 0xea53f7cd, 0xdb79c8ee, 0xd077c1e3, 0xcd65daf4, 0xc66bd3f9, 0xaf31a4b2, 0xa43fadbf, 0xb92db6a8, 0xb223bfa5, 0x83098086, 0x8807898b, 0x9515929c, 0x9e1b9b91, 0x47a17c0a, 0x4caf7507, 0x51bd6e10, 0x5ab3671d, 0x6b99583e, 0x60975133, 0x7d854a24, 0x768b4329, 0x1fd13462, 0x14df3d6f, 0x09cd2678, 0x02c32f75, 0x33e91056, 0x38e7195b, 0x25f5024c, 0x2efb0b41, 0x8c9ad761, 0x8794de6c, 0x9a86c57b, 0x9188cc76, 0xa0a2f355, 0xabacfa58, 0xb6bee14f, 0xbdb0e842, 0xd4ea9f09, 0xdfe49604, 0xc2f68d13, 0xc9f8841e, 0xf8d2bb3d, 0xf3dcb230, 0xeecea927, 0xe5c0a02a, 0x3c7a47b1, 0x37744ebc, 0x2a6655ab, 0x21685ca6, 0x10426385, 0x1b4c6a88, 0x065e719f, 0x0d507892, 0x640a0fd9, 0x6f0406d4, 0x72161dc3, 0x791814ce, 0x48322bed, 0x433c22e0, 0x5e2e39f7, 0x552030fa, 0x01ec9ab7, 0x0ae293ba, 0x17f088ad, 0x1cfe81a0, 0x2dd4be83, 0x26dab78e, 0x3bc8ac99, 0x30c6a594, 0x599cd2df, 0x5292dbd2, 0x4f80c0c5, 0x448ec9c8, 0x75a4f6eb, 0x7eaaffe6, 0x63b8e4f1, 0x68b6edfc, 0xb10c0a67, 0xba02036a, 0xa710187d, 0xac1e1170, 0x9d342e53, 0x963a275e, 0x8b283c49, 0x80263544, 0xe97c420f, 0xe2724b02, 0xff605015, 0xf46e5918, 0xc544663b, 0xce4a6f36, 0xd3587421, 0xd8567d2c, 0x7a37a10c, 0x7139a801, 0x6c2bb316, 0x6725ba1b, 0x560f8538, 0x5d018c35, 0x40139722, 0x4b1d9e2f, 0x2247e964, 0x2949e069, 0x345bfb7e, 0x3f55f273, 0x0e7fcd50, 0x0571c45d, 0x1863df4a, 0x136dd647, 0xcad731dc, 0xc1d938d1, 0xdccb23c6, 0xd7c52acb, 0xe6ef15e8, 0xede11ce5, 0xf0f307f2, 0xfbfd0eff, 0x92a779b4, 0x99a970b9, 0x84bb6bae, 0x8fb562a3, 0xbe9f5d80, 0xb591548d, 0xa8834f9a, 0xa38d4697];
-	const U3 = [0x00000000, 0x0d0b0e09, 0x1a161c12, 0x171d121b, 0x342c3824, 0x3927362d, 0x2e3a2436, 0x23312a3f, 0x68587048, 0x65537e41, 0x724e6c5a, 0x7f456253, 0x5c74486c, 0x517f4665, 0x4662547e, 0x4b695a77, 0xd0b0e090, 0xddbbee99, 0xcaa6fc82, 0xc7adf28b, 0xe49cd8b4, 0xe997d6bd, 0xfe8ac4a6, 0xf381caaf, 0xb8e890d8, 0xb5e39ed1, 0xa2fe8cca, 0xaff582c3, 0x8cc4a8fc, 0x81cfa6f5, 0x96d2b4ee, 0x9bd9bae7, 0xbb7bdb3b, 0xb670d532, 0xa16dc729, 0xac66c920, 0x8f57e31f, 0x825ced16, 0x9541ff0d, 0x984af104, 0xd323ab73, 0xde28a57a, 0xc935b761, 0xc43eb968, 0xe70f9357, 0xea049d5e, 0xfd198f45, 0xf012814c, 0x6bcb3bab, 0x66c035a2, 0x71dd27b9, 0x7cd629b0, 0x5fe7038f, 0x52ec0d86, 0x45f11f9d, 0x48fa1194, 0x03934be3, 0x0e9845ea, 0x198557f1, 0x148e59f8, 0x37bf73c7, 0x3ab47dce, 0x2da96fd5, 0x20a261dc, 0x6df6ad76, 0x60fda37f, 0x77e0b164, 0x7aebbf6d, 0x59da9552, 0x54d19b5b, 0x43cc8940, 0x4ec78749, 0x05aedd3e, 0x08a5d337, 0x1fb8c12c, 0x12b3cf25, 0x3182e51a, 0x3c89eb13, 0x2b94f908, 0x269ff701, 0xbd464de6, 0xb04d43ef, 0xa75051f4, 0xaa5b5ffd, 0x896a75c2, 0x84617bcb, 0x937c69d0, 0x9e7767d9, 0xd51e3dae, 0xd81533a7, 0xcf0821bc, 0xc2032fb5, 0xe132058a, 0xec390b83, 0xfb241998, 0xf62f1791, 0xd68d764d, 0xdb867844, 0xcc9b6a5f, 0xc1906456, 0xe2a14e69, 0xefaa4060, 0xf8b7527b, 0xf5bc5c72, 0xbed50605, 0xb3de080c, 0xa4c31a17, 0xa9c8141e, 0x8af93e21, 0x87f23028, 0x90ef2233, 0x9de42c3a, 0x063d96dd, 0x0b3698d4, 0x1c2b8acf, 0x112084c6, 0x3211aef9, 0x3f1aa0f0, 0x2807b2eb, 0x250cbce2, 0x6e65e695, 0x636ee89c, 0x7473fa87, 0x7978f48e, 0x5a49deb1, 0x5742d0b8, 0x405fc2a3, 0x4d54ccaa, 0xdaf741ec, 0xd7fc4fe5, 0xc0e15dfe, 0xcdea53f7, 0xeedb79c8, 0xe3d077c1, 0xf4cd65da, 0xf9c66bd3, 0xb2af31a4, 0xbfa43fad, 0xa8b92db6, 0xa5b223bf, 0x86830980, 0x8b880789, 0x9c951592, 0x919e1b9b, 0x0a47a17c, 0x074caf75, 0x1051bd6e, 0x1d5ab367, 0x3e6b9958, 0x33609751, 0x247d854a, 0x29768b43, 0x621fd134, 0x6f14df3d, 0x7809cd26, 0x7502c32f, 0x5633e910, 0x5b38e719, 0x4c25f502, 0x412efb0b, 0x618c9ad7, 0x6c8794de, 0x7b9a86c5, 0x769188cc, 0x55a0a2f3, 0x58abacfa, 0x4fb6bee1, 0x42bdb0e8, 0x09d4ea9f, 0x04dfe496, 0x13c2f68d, 0x1ec9f884, 0x3df8d2bb, 0x30f3dcb2, 0x27eecea9, 0x2ae5c0a0, 0xb13c7a47, 0xbc37744e, 0xab2a6655, 0xa621685c, 0x85104263, 0x881b4c6a, 0x9f065e71, 0x920d5078, 0xd9640a0f, 0xd46f0406, 0xc372161d, 0xce791814, 0xed48322b, 0xe0433c22, 0xf75e2e39, 0xfa552030, 0xb701ec9a, 0xba0ae293, 0xad17f088, 0xa01cfe81, 0x832dd4be, 0x8e26dab7, 0x993bc8ac, 0x9430c6a5, 0xdf599cd2, 0xd25292db, 0xc54f80c0, 0xc8448ec9, 0xeb75a4f6, 0xe67eaaff, 0xf163b8e4, 0xfc68b6ed, 0x67b10c0a, 0x6aba0203, 0x7da71018, 0x70ac1e11, 0x539d342e, 0x5e963a27, 0x498b283c, 0x44802635, 0x0fe97c42, 0x02e2724b, 0x15ff6050, 0x18f46e59, 0x3bc54466, 0x36ce4a6f, 0x21d35874, 0x2cd8567d, 0x0c7a37a1, 0x017139a8, 0x166c2bb3, 0x1b6725ba, 0x38560f85, 0x355d018c, 0x22401397, 0x2f4b1d9e, 0x642247e9, 0x692949e0, 0x7e345bfb, 0x733f55f2, 0x500e7fcd, 0x5d0571c4, 0x4a1863df, 0x47136dd6, 0xdccad731, 0xd1c1d938, 0xc6dccb23, 0xcbd7c52a, 0xe8e6ef15, 0xe5ede11c, 0xf2f0f307, 0xfffbfd0e, 0xb492a779, 0xb999a970, 0xae84bb6b, 0xa38fb562, 0x80be9f5d, 0x8db59154, 0x9aa8834f, 0x97a38d46];
-	const U4 = [0x00000000, 0x090d0b0e, 0x121a161c, 0x1b171d12, 0x24342c38, 0x2d392736, 0x362e3a24, 0x3f23312a, 0x48685870, 0x4165537e, 0x5a724e6c, 0x537f4562, 0x6c5c7448, 0x65517f46, 0x7e466254, 0x774b695a, 0x90d0b0e0, 0x99ddbbee, 0x82caa6fc, 0x8bc7adf2, 0xb4e49cd8, 0xbde997d6, 0xa6fe8ac4, 0xaff381ca, 0xd8b8e890, 0xd1b5e39e, 0xcaa2fe8c, 0xc3aff582, 0xfc8cc4a8, 0xf581cfa6, 0xee96d2b4, 0xe79bd9ba, 0x3bbb7bdb, 0x32b670d5, 0x29a16dc7, 0x20ac66c9, 0x1f8f57e3, 0x16825ced, 0x0d9541ff, 0x04984af1, 0x73d323ab, 0x7ade28a5, 0x61c935b7, 0x68c43eb9, 0x57e70f93, 0x5eea049d, 0x45fd198f, 0x4cf01281, 0xab6bcb3b, 0xa266c035, 0xb971dd27, 0xb07cd629, 0x8f5fe703, 0x8652ec0d, 0x9d45f11f, 0x9448fa11, 0xe303934b, 0xea0e9845, 0xf1198557, 0xf8148e59, 0xc737bf73, 0xce3ab47d, 0xd52da96f, 0xdc20a261, 0x766df6ad, 0x7f60fda3, 0x6477e0b1, 0x6d7aebbf, 0x5259da95, 0x5b54d19b, 0x4043cc89, 0x494ec787, 0x3e05aedd, 0x3708a5d3, 0x2c1fb8c1, 0x2512b3cf, 0x1a3182e5, 0x133c89eb, 0x082b94f9, 0x01269ff7, 0xe6bd464d, 0xefb04d43, 0xf4a75051, 0xfdaa5b5f, 0xc2896a75, 0xcb84617b, 0xd0937c69, 0xd99e7767, 0xaed51e3d, 0xa7d81533, 0xbccf0821, 0xb5c2032f, 0x8ae13205, 0x83ec390b, 0x98fb2419, 0x91f62f17, 0x4dd68d76, 0x44db8678, 0x5fcc9b6a, 0x56c19064, 0x69e2a14e, 0x60efaa40, 0x7bf8b752, 0x72f5bc5c, 0x05bed506, 0x0cb3de08, 0x17a4c31a, 0x1ea9c814, 0x218af93e, 0x2887f230, 0x3390ef22, 0x3a9de42c, 0xdd063d96, 0xd40b3698, 0xcf1c2b8a, 0xc6112084, 0xf93211ae, 0xf03f1aa0, 0xeb2807b2, 0xe2250cbc, 0x956e65e6, 0x9c636ee8, 0x877473fa, 0x8e7978f4, 0xb15a49de, 0xb85742d0, 0xa3405fc2, 0xaa4d54cc, 0xecdaf741, 0xe5d7fc4f, 0xfec0e15d, 0xf7cdea53, 0xc8eedb79, 0xc1e3d077, 0xdaf4cd65, 0xd3f9c66b, 0xa4b2af31, 0xadbfa43f, 0xb6a8b92d, 0xbfa5b223, 0x80868309, 0x898b8807, 0x929c9515, 0x9b919e1b, 0x7c0a47a1, 0x75074caf, 0x6e1051bd, 0x671d5ab3, 0x583e6b99, 0x51336097, 0x4a247d85, 0x4329768b, 0x34621fd1, 0x3d6f14df, 0x267809cd, 0x2f7502c3, 0x105633e9, 0x195b38e7, 0x024c25f5, 0x0b412efb, 0xd7618c9a, 0xde6c8794, 0xc57b9a86, 0xcc769188, 0xf355a0a2, 0xfa58abac, 0xe14fb6be, 0xe842bdb0, 0x9f09d4ea, 0x9604dfe4, 0x8d13c2f6, 0x841ec9f8, 0xbb3df8d2, 0xb230f3dc, 0xa927eece, 0xa02ae5c0, 0x47b13c7a, 0x4ebc3774, 0x55ab2a66, 0x5ca62168, 0x63851042, 0x6a881b4c, 0x719f065e, 0x78920d50, 0x0fd9640a, 0x06d46f04, 0x1dc37216, 0x14ce7918, 0x2bed4832, 0x22e0433c, 0x39f75e2e, 0x30fa5520, 0x9ab701ec, 0x93ba0ae2, 0x88ad17f0, 0x81a01cfe, 0xbe832dd4, 0xb78e26da, 0xac993bc8, 0xa59430c6, 0xd2df599c, 0xdbd25292, 0xc0c54f80, 0xc9c8448e, 0xf6eb75a4, 0xffe67eaa, 0xe4f163b8, 0xedfc68b6, 0x0a67b10c, 0x036aba02, 0x187da710, 0x1170ac1e, 0x2e539d34, 0x275e963a, 0x3c498b28, 0x35448026, 0x420fe97c, 0x4b02e272, 0x5015ff60, 0x5918f46e, 0x663bc544, 0x6f36ce4a, 0x7421d358, 0x7d2cd856, 0xa10c7a37, 0xa8017139, 0xb3166c2b, 0xba1b6725, 0x8538560f, 0x8c355d01, 0x97224013, 0x9e2f4b1d, 0xe9642247, 0xe0692949, 0xfb7e345b, 0xf2733f55, 0xcd500e7f, 0xc45d0571, 0xdf4a1863, 0xd647136d, 0x31dccad7, 0x38d1c1d9, 0x23c6dccb, 0x2acbd7c5, 0x15e8e6ef, 0x1ce5ede1, 0x07f2f0f3, 0x0efffbfd, 0x79b492a7, 0x70b999a9, 0x6bae84bb, 0x62a38fb5, 0x5d80be9f, 0x548db591, 0x4f9aa883, 0x4697a38d];
-	function convertToInt32(bytes) {
-	    const result = [];
-	    for (let i = 0; i < bytes.length; i += 4) {
-	        result.push((bytes[i] << 24) | (bytes[i + 1] << 16) | (bytes[i + 2] << 8) | bytes[i + 3]);
-	    }
-	    return result;
-	}
-	class AES {
-	    get key() { return __classPrivateFieldGet$2(this, _AES_key, "f").slice(); }
-	    constructor(key) {
-	        _AES_key.set(this, void 0);
-	        _AES_Kd.set(this, void 0);
-	        _AES_Ke.set(this, void 0);
-	        if (!(this instanceof AES)) {
-	            throw Error('AES must be instanitated with `new`');
-	        }
-	        __classPrivateFieldSet$2(this, _AES_key, new Uint8Array(key), "f");
-	        const rounds = numberOfRounds[this.key.length];
-	        if (rounds == null) {
-	            throw new TypeError('invalid key size (must be 16, 24 or 32 bytes)');
-	        }
-	        // encryption round keys
-	        __classPrivateFieldSet$2(this, _AES_Ke, [], "f");
-	        // decryption round keys
-	        __classPrivateFieldSet$2(this, _AES_Kd, [], "f");
-	        for (let i = 0; i <= rounds; i++) {
-	            __classPrivateFieldGet$2(this, _AES_Ke, "f").push([0, 0, 0, 0]);
-	            __classPrivateFieldGet$2(this, _AES_Kd, "f").push([0, 0, 0, 0]);
-	        }
-	        const roundKeyCount = (rounds + 1) * 4;
-	        const KC = this.key.length / 4;
-	        // convert the key into ints
-	        const tk = convertToInt32(this.key);
-	        // copy values into round key arrays
-	        let index;
-	        for (let i = 0; i < KC; i++) {
-	            index = i >> 2;
-	            __classPrivateFieldGet$2(this, _AES_Ke, "f")[index][i % 4] = tk[i];
-	            __classPrivateFieldGet$2(this, _AES_Kd, "f")[rounds - index][i % 4] = tk[i];
-	        }
-	        // key expansion (fips-197 section 5.2)
-	        let rconpointer = 0;
-	        let t = KC, tt;
-	        while (t < roundKeyCount) {
-	            tt = tk[KC - 1];
-	            tk[0] ^= ((S[(tt >> 16) & 0xFF] << 24) ^
-	                (S[(tt >> 8) & 0xFF] << 16) ^
-	                (S[tt & 0xFF] << 8) ^
-	                S[(tt >> 24) & 0xFF] ^
-	                (rcon[rconpointer] << 24));
-	            rconpointer += 1;
-	            // key expansion (for non-256 bit)
-	            if (KC != 8) {
-	                for (let i = 1; i < KC; i++) {
-	                    tk[i] ^= tk[i - 1];
-	                }
-	                // key expansion for 256-bit keys is "slightly different" (fips-197)
-	            }
-	            else {
-	                for (let i = 1; i < (KC / 2); i++) {
-	                    tk[i] ^= tk[i - 1];
-	                }
-	                tt = tk[(KC / 2) - 1];
-	                tk[KC / 2] ^= (S[tt & 0xFF] ^
-	                    (S[(tt >> 8) & 0xFF] << 8) ^
-	                    (S[(tt >> 16) & 0xFF] << 16) ^
-	                    (S[(tt >> 24) & 0xFF] << 24));
-	                for (let i = (KC / 2) + 1; i < KC; i++) {
-	                    tk[i] ^= tk[i - 1];
-	                }
-	            }
-	            // copy values into round key arrays
-	            let i = 0, r, c;
-	            while (i < KC && t < roundKeyCount) {
-	                r = t >> 2;
-	                c = t % 4;
-	                __classPrivateFieldGet$2(this, _AES_Ke, "f")[r][c] = tk[i];
-	                __classPrivateFieldGet$2(this, _AES_Kd, "f")[rounds - r][c] = tk[i++];
-	                t++;
-	            }
-	        }
-	        // inverse-cipher-ify the decryption round key (fips-197 section 5.3)
-	        for (let r = 1; r < rounds; r++) {
-	            for (let c = 0; c < 4; c++) {
-	                tt = __classPrivateFieldGet$2(this, _AES_Kd, "f")[r][c];
-	                __classPrivateFieldGet$2(this, _AES_Kd, "f")[r][c] = (U1[(tt >> 24) & 0xFF] ^
-	                    U2[(tt >> 16) & 0xFF] ^
-	                    U3[(tt >> 8) & 0xFF] ^
-	                    U4[tt & 0xFF]);
-	            }
-	        }
-	    }
-	    encrypt(plaintext) {
-	        if (plaintext.length != 16) {
-	            throw new TypeError('invalid plaintext size (must be 16 bytes)');
-	        }
-	        const rounds = __classPrivateFieldGet$2(this, _AES_Ke, "f").length - 1;
-	        const a = [0, 0, 0, 0];
-	        // convert plaintext to (ints ^ key)
-	        let t = convertToInt32(plaintext);
-	        for (let i = 0; i < 4; i++) {
-	            t[i] ^= __classPrivateFieldGet$2(this, _AES_Ke, "f")[0][i];
-	        }
-	        // apply round transforms
-	        for (let r = 1; r < rounds; r++) {
-	            for (let i = 0; i < 4; i++) {
-	                a[i] = (T1[(t[i] >> 24) & 0xff] ^
-	                    T2[(t[(i + 1) % 4] >> 16) & 0xff] ^
-	                    T3[(t[(i + 2) % 4] >> 8) & 0xff] ^
-	                    T4[t[(i + 3) % 4] & 0xff] ^
-	                    __classPrivateFieldGet$2(this, _AES_Ke, "f")[r][i]);
-	            }
-	            t = a.slice();
-	        }
-	        // the last round is special
-	        const result = new Uint8Array(16);
-	        let tt = 0;
-	        for (let i = 0; i < 4; i++) {
-	            tt = __classPrivateFieldGet$2(this, _AES_Ke, "f")[rounds][i];
-	            result[4 * i] = (S[(t[i] >> 24) & 0xff] ^ (tt >> 24)) & 0xff;
-	            result[4 * i + 1] = (S[(t[(i + 1) % 4] >> 16) & 0xff] ^ (tt >> 16)) & 0xff;
-	            result[4 * i + 2] = (S[(t[(i + 2) % 4] >> 8) & 0xff] ^ (tt >> 8)) & 0xff;
-	            result[4 * i + 3] = (S[t[(i + 3) % 4] & 0xff] ^ tt) & 0xff;
-	        }
-	        return result;
-	    }
-	    decrypt(ciphertext) {
-	        if (ciphertext.length != 16) {
-	            throw new TypeError('invalid ciphertext size (must be 16 bytes)');
-	        }
-	        const rounds = __classPrivateFieldGet$2(this, _AES_Kd, "f").length - 1;
-	        const a = [0, 0, 0, 0];
-	        // convert plaintext to (ints ^ key)
-	        let t = convertToInt32(ciphertext);
-	        for (let i = 0; i < 4; i++) {
-	            t[i] ^= __classPrivateFieldGet$2(this, _AES_Kd, "f")[0][i];
-	        }
-	        // apply round transforms
-	        for (let r = 1; r < rounds; r++) {
-	            for (let i = 0; i < 4; i++) {
-	                a[i] = (T5[(t[i] >> 24) & 0xff] ^
-	                    T6[(t[(i + 3) % 4] >> 16) & 0xff] ^
-	                    T7[(t[(i + 2) % 4] >> 8) & 0xff] ^
-	                    T8[t[(i + 1) % 4] & 0xff] ^
-	                    __classPrivateFieldGet$2(this, _AES_Kd, "f")[r][i]);
-	            }
-	            t = a.slice();
-	        }
-	        // the last round is special
-	        const result = new Uint8Array(16);
-	        let tt = 0;
-	        for (let i = 0; i < 4; i++) {
-	            tt = __classPrivateFieldGet$2(this, _AES_Kd, "f")[rounds][i];
-	            result[4 * i] = (Si[(t[i] >> 24) & 0xff] ^ (tt >> 24)) & 0xff;
-	            result[4 * i + 1] = (Si[(t[(i + 3) % 4] >> 16) & 0xff] ^ (tt >> 16)) & 0xff;
-	            result[4 * i + 2] = (Si[(t[(i + 2) % 4] >> 8) & 0xff] ^ (tt >> 8)) & 0xff;
-	            result[4 * i + 3] = (Si[t[(i + 1) % 4] & 0xff] ^ tt) & 0xff;
-	        }
-	        return result;
-	    }
-	}
-	_AES_key = new WeakMap(), _AES_Kd = new WeakMap(), _AES_Ke = new WeakMap();
-
-	class ModeOfOperation {
-	    constructor(name, key, cls) {
-	        if (cls && !(this instanceof cls)) {
-	            throw new Error(`${name} must be instantiated with "new"`);
-	        }
-	        Object.defineProperties(this, {
-	            aes: { enumerable: true, value: new AES(key) },
-	            name: { enumerable: true, value: name }
-	        });
-	    }
-	}
-
-	// Cipher Block Chaining
-	var __classPrivateFieldSet$1 = (undefined && undefined.__classPrivateFieldSet) || function (receiver, state, value, kind, f) {
-	    if (kind === "m") throw new TypeError("Private method is not writable");
-	    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
-	    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
-	    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
-	};
-	var __classPrivateFieldGet$1 = (undefined && undefined.__classPrivateFieldGet) || function (receiver, state, kind, f) {
-	    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-	    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-	    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
-	};
-	var _CBC_iv, _CBC_lastBlock;
-	class CBC extends ModeOfOperation {
-	    constructor(key, iv) {
-	        super("ECC", key, CBC);
-	        _CBC_iv.set(this, void 0);
-	        _CBC_lastBlock.set(this, void 0);
-	        if (iv) {
-	            if (iv.length % 16) {
-	                throw new TypeError("invalid iv size (must be 16 bytes)");
-	            }
-	            __classPrivateFieldSet$1(this, _CBC_iv, new Uint8Array(iv), "f");
-	        }
-	        else {
-	            __classPrivateFieldSet$1(this, _CBC_iv, new Uint8Array(16), "f");
-	        }
-	        __classPrivateFieldSet$1(this, _CBC_lastBlock, this.iv, "f");
-	    }
-	    get iv() { return new Uint8Array(__classPrivateFieldGet$1(this, _CBC_iv, "f")); }
-	    encrypt(plaintext) {
-	        if (plaintext.length % 16) {
-	            throw new TypeError("invalid plaintext size (must be multiple of 16 bytes)");
-	        }
-	        const ciphertext = new Uint8Array(plaintext.length);
-	        for (let i = 0; i < plaintext.length; i += 16) {
-	            for (let j = 0; j < 16; j++) {
-	                __classPrivateFieldGet$1(this, _CBC_lastBlock, "f")[j] ^= plaintext[i + j];
-	            }
-	            __classPrivateFieldSet$1(this, _CBC_lastBlock, this.aes.encrypt(__classPrivateFieldGet$1(this, _CBC_lastBlock, "f")), "f");
-	            ciphertext.set(__classPrivateFieldGet$1(this, _CBC_lastBlock, "f"), i);
-	        }
-	        return ciphertext;
-	    }
-	    decrypt(ciphertext) {
-	        if (ciphertext.length % 16) {
-	            throw new TypeError("invalid ciphertext size (must be multiple of 16 bytes)");
-	        }
-	        const plaintext = new Uint8Array(ciphertext.length);
-	        for (let i = 0; i < ciphertext.length; i += 16) {
-	            const block = this.aes.decrypt(ciphertext.subarray(i, i + 16));
-	            for (let j = 0; j < 16; j++) {
-	                plaintext[i + j] = block[j] ^ __classPrivateFieldGet$1(this, _CBC_lastBlock, "f")[j];
-	                __classPrivateFieldGet$1(this, _CBC_lastBlock, "f")[j] = ciphertext[i + j];
-	            }
-	        }
-	        return plaintext;
-	    }
-	}
-	_CBC_iv = new WeakMap(), _CBC_lastBlock = new WeakMap();
-
-	// Counter Mode
-	var __classPrivateFieldSet = (undefined && undefined.__classPrivateFieldSet) || function (receiver, state, value, kind, f) {
-	    if (kind === "m") throw new TypeError("Private method is not writable");
-	    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
-	    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
-	    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
-	};
-	var __classPrivateFieldGet = (undefined && undefined.__classPrivateFieldGet) || function (receiver, state, kind, f) {
-	    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-	    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-	    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
-	};
-	var _CTR_remaining, _CTR_remainingIndex, _CTR_counter;
-	class CTR extends ModeOfOperation {
-	    constructor(key, initialValue) {
-	        super("CTR", key, CTR);
-	        // Remaining bytes for the one-time pad
-	        _CTR_remaining.set(this, void 0);
-	        _CTR_remainingIndex.set(this, void 0);
-	        // The current counter
-	        _CTR_counter.set(this, void 0);
-	        __classPrivateFieldSet(this, _CTR_counter, new Uint8Array(16), "f");
-	        __classPrivateFieldGet(this, _CTR_counter, "f").fill(0);
-	        __classPrivateFieldSet(this, _CTR_remaining, __classPrivateFieldGet(this, _CTR_counter, "f"), "f"); // This will be discarded immediately
-	        __classPrivateFieldSet(this, _CTR_remainingIndex, 16, "f");
-	        if (initialValue == null) {
-	            initialValue = 1;
-	        }
-	        if (typeof (initialValue) === "number") {
-	            this.setCounterValue(initialValue);
-	        }
-	        else {
-	            this.setCounterBytes(initialValue);
-	        }
-	    }
-	    get counter() { return new Uint8Array(__classPrivateFieldGet(this, _CTR_counter, "f")); }
-	    setCounterValue(value) {
-	        if (!Number.isInteger(value) || value < 0 || value > Number.MAX_SAFE_INTEGER) {
-	            throw new TypeError("invalid counter initial integer value");
-	        }
-	        for (let index = 15; index >= 0; --index) {
-	            __classPrivateFieldGet(this, _CTR_counter, "f")[index] = value % 256;
-	            value = Math.floor(value / 256);
-	        }
-	    }
-	    setCounterBytes(value) {
-	        if (value.length !== 16) {
-	            throw new TypeError("invalid counter initial Uint8Array value length");
-	        }
-	        __classPrivateFieldGet(this, _CTR_counter, "f").set(value);
-	    }
-	    increment() {
-	        for (let i = 15; i >= 0; i--) {
-	            if (__classPrivateFieldGet(this, _CTR_counter, "f")[i] === 255) {
-	                __classPrivateFieldGet(this, _CTR_counter, "f")[i] = 0;
-	            }
-	            else {
-	                __classPrivateFieldGet(this, _CTR_counter, "f")[i]++;
-	                break;
-	            }
-	        }
-	    }
-	    encrypt(plaintext) {
-	        var _a, _b;
-	        const crypttext = new Uint8Array(plaintext);
-	        for (let i = 0; i < crypttext.length; i++) {
-	            if (__classPrivateFieldGet(this, _CTR_remainingIndex, "f") === 16) {
-	                __classPrivateFieldSet(this, _CTR_remaining, this.aes.encrypt(__classPrivateFieldGet(this, _CTR_counter, "f")), "f");
-	                __classPrivateFieldSet(this, _CTR_remainingIndex, 0, "f");
-	                this.increment();
-	            }
-	            crypttext[i] ^= __classPrivateFieldGet(this, _CTR_remaining, "f")[__classPrivateFieldSet(this, _CTR_remainingIndex, (_b = __classPrivateFieldGet(this, _CTR_remainingIndex, "f"), _a = _b++, _b), "f"), _a];
-	        }
-	        return crypttext;
-	    }
-	    decrypt(ciphertext) {
-	        return this.encrypt(ciphertext);
-	    }
-	}
-	_CTR_remaining = new WeakMap(), _CTR_remainingIndex = new WeakMap(), _CTR_counter = new WeakMap();
-
-	function pkcs7Strip(data) {
-	    if (data.length < 16) {
-	        throw new TypeError('PKCS#7 invalid length');
-	    }
-	    const padder = data[data.length - 1];
-	    if (padder > 16) {
-	        throw new TypeError('PKCS#7 padding byte out of range');
-	    }
-	    const length = data.length - padder;
-	    for (let i = 0; i < padder; i++) {
-	        if (data[length + i] !== padder) {
-	            throw new TypeError('PKCS#7 invalid padding byte');
-	        }
-	    }
-	    return new Uint8Array(data.subarray(0, length));
-	}
-
-	/**
-	 *  @_ignore
-	 */
-	function looseArrayify(hexString) {
-	    if (typeof (hexString) === "string" && !hexString.startsWith("0x")) {
-	        hexString = "0x" + hexString;
-	    }
-	    return getBytesCopy(hexString);
-	}
-	function zpad$1(value, length) {
-	    value = String(value);
-	    while (value.length < length) {
-	        value = '0' + value;
-	    }
-	    return value;
-	}
-	function getPassword(password) {
-	    if (typeof (password) === 'string') {
-	        return toUtf8Bytes(password, "NFKC");
-	    }
-	    return getBytesCopy(password);
-	}
-	function spelunk(object, _path) {
-	    const match = _path.match(/^([a-z0-9$_.-]*)(:([a-z]+))?(!)?$/i);
-	    assertArgument(match != null, "invalid path", "path", _path);
-	    const path = match[1];
-	    const type = match[3];
-	    const reqd = (match[4] === "!");
-	    let cur = object;
-	    for (const comp of path.toLowerCase().split('.')) {
-	        // Search for a child object with a case-insensitive matching key
-	        if (Array.isArray(cur)) {
-	            if (!comp.match(/^[0-9]+$/)) {
-	                break;
-	            }
-	            cur = cur[parseInt(comp)];
-	        }
-	        else if (typeof (cur) === "object") {
-	            let found = null;
-	            for (const key in cur) {
-	                if (key.toLowerCase() === comp) {
-	                    found = cur[key];
-	                    break;
-	                }
-	            }
-	            cur = found;
-	        }
-	        else {
-	            cur = null;
-	        }
-	        if (cur == null) {
-	            break;
-	        }
-	    }
-	    assertArgument(!reqd || cur != null, "missing required value", "path", path);
-	    if (type && cur != null) {
-	        if (type === "int") {
-	            if (typeof (cur) === "string" && cur.match(/^-?[0-9]+$/)) {
-	                return parseInt(cur);
-	            }
-	            else if (Number.isSafeInteger(cur)) {
-	                return cur;
-	            }
-	        }
-	        if (type === "number") {
-	            if (typeof (cur) === "string" && cur.match(/^-?[0-9.]*$/)) {
-	                return parseFloat(cur);
-	            }
-	        }
-	        if (type === "data") {
-	            if (typeof (cur) === "string") {
-	                return looseArrayify(cur);
-	            }
-	        }
-	        if (type === "array" && Array.isArray(cur)) {
-	            return cur;
-	        }
-	        if (type === typeof (cur)) {
-	            return cur;
-	        }
-	        assertArgument(false, `wrong type found for ${type} `, "path", path);
-	    }
-	    return cur;
-	}
-	/*
-	export function follow(object: any, path: string): null | string {
-	    let currentChild = object;
-
-	    for (const comp of path.toLowerCase().split('/')) {
-
-	        // Search for a child object with a case-insensitive matching key
-	        let matchingChild = null;
-	        for (const key in currentChild) {
-	             if (key.toLowerCase() === comp) {
-	                 matchingChild = currentChild[key];
-	                 break;
-	             }
-	        }
-
-	        if (matchingChild === null) { return null; }
-
-	        currentChild = matchingChild;
-	    }
-
-	    return currentChild;
-	}
-
-	// "path/to/something:type!"
-	export function followRequired(data: any, path: string): string {
-	    const value = follow(data, path);
-	    if (value != null) { return value; }
-	    return logger.throwArgumentError("invalid value", `data:${ path }`,
-	    JSON.stringify(data));
-	}
-	*/
-	// See: https://www.ietf.org/rfc/rfc4122.txt (Section 4.4)
-	/*
-	export function uuidV4(randomBytes: BytesLike): string {
-	    const bytes = getBytes(randomBytes, "randomBytes");
-
-	    // Section: 4.1.3:
-	    // - time_hi_and_version[12:16] = 0b0100
-	    bytes[6] = (bytes[6] & 0x0f) | 0x40;
-
-	    // Section 4.4
-	    // - clock_seq_hi_and_reserved[6] = 0b0
-	    // - clock_seq_hi_and_reserved[7] = 0b1
-	    bytes[8] = (bytes[8] & 0x3f) | 0x80;
-
-	    const value = hexlify(bytes);
-
-	    return [
-	       value.substring(2, 10),
-	       value.substring(10, 14),
-	       value.substring(14, 18),
-	       value.substring(18, 22),
-	       value.substring(22, 34),
-	    ].join("-");
-	}
-	*/
-
-	/**
-	 *  The JSON Wallet formats allow a simple way to store the private
-	 *  keys needed in Ethereum along with related information and allows
-	 *  for extensible forms of encryption.
-	 *
-	 *  These utilities facilitate decrypting and encrypting the most common
-	 *  JSON Wallet formats.
-	 *
-	 *  @_subsection: api/wallet:JSON Wallets  [json-wallets]
-	 */
-	const defaultPath$1 = "m/44'/60'/0'/0/0";
-	/**
-	 *  Returns true if %%json%% is a valid JSON Keystore Wallet.
-	 */
-	function isKeystoreJson(json) {
-	    try {
-	        const data = JSON.parse(json);
-	        const version = ((data.version != null) ? parseInt(data.version) : 0);
-	        if (version === 3) {
-	            return true;
-	        }
-	    }
-	    catch (error) { }
-	    return false;
-	}
-	function decrypt(data, key, ciphertext) {
-	    const cipher = spelunk(data, "crypto.cipher:string");
-	    if (cipher === "aes-128-ctr") {
-	        const iv = spelunk(data, "crypto.cipherparams.iv:data!");
-	        const aesCtr = new CTR(key, iv);
-	        return hexlify(aesCtr.decrypt(ciphertext));
-	    }
-	    assert(false, "unsupported cipher", "UNSUPPORTED_OPERATION", {
-	        operation: "decrypt"
-	    });
-	}
-	function getAccount(data, _key) {
-	    const key = getBytes(_key);
-	    const ciphertext = spelunk(data, "crypto.ciphertext:data!");
-	    const computedMAC = hexlify(keccak256(concat([key.slice(16, 32), ciphertext]))).substring(2);
-	    assertArgument(computedMAC === spelunk(data, "crypto.mac:string!").toLowerCase(), "incorrect password", "password", "[ REDACTED ]");
-	    const privateKey = decrypt(data, key.slice(0, 16), ciphertext);
-	    const address = computeAddress(privateKey);
-	    if (data.address) {
-	        let check = data.address.toLowerCase();
-	        if (!check.startsWith("0x")) {
-	            check = "0x" + check;
-	        }
-	        assertArgument(getAddress(check) === address, "keystore address/privateKey mismatch", "address", data.address);
-	    }
-	    const account = { address, privateKey };
-	    // Version 0.1 x-ethers metadata must contain an encrypted mnemonic phrase
-	    const version = spelunk(data, "x-ethers.version:string");
-	    if (version === "0.1") {
-	        const mnemonicKey = key.slice(32, 64);
-	        const mnemonicCiphertext = spelunk(data, "x-ethers.mnemonicCiphertext:data!");
-	        const mnemonicIv = spelunk(data, "x-ethers.mnemonicCounter:data!");
-	        const mnemonicAesCtr = new CTR(mnemonicKey, mnemonicIv);
-	        account.mnemonic = {
-	            path: (spelunk(data, "x-ethers.path:string") || defaultPath$1),
-	            locale: (spelunk(data, "x-ethers.locale:string") || "en"),
-	            entropy: hexlify(getBytes(mnemonicAesCtr.decrypt(mnemonicCiphertext)))
-	        };
-	    }
-	    return account;
-	}
-	function getDecryptKdfParams(data) {
-	    const kdf = spelunk(data, "crypto.kdf:string");
-	    if (kdf && typeof (kdf) === "string") {
-	        if (kdf.toLowerCase() === "scrypt") {
-	            const salt = spelunk(data, "crypto.kdfparams.salt:data!");
-	            const N = spelunk(data, "crypto.kdfparams.n:int!");
-	            const r = spelunk(data, "crypto.kdfparams.r:int!");
-	            const p = spelunk(data, "crypto.kdfparams.p:int!");
-	            // Make sure N is a power of 2
-	            assertArgument(N > 0 && (N & (N - 1)) === 0, "invalid kdf.N", "kdf.N", N);
-	            assertArgument(r > 0 && p > 0, "invalid kdf", "kdf", kdf);
-	            const dkLen = spelunk(data, "crypto.kdfparams.dklen:int!");
-	            assertArgument(dkLen === 32, "invalid kdf.dklen", "kdf.dflen", dkLen);
-	            return { name: "scrypt", salt, N, r, p, dkLen: 64 };
-	        }
-	        else if (kdf.toLowerCase() === "pbkdf2") {
-	            const salt = spelunk(data, "crypto.kdfparams.salt:data!");
-	            const prf = spelunk(data, "crypto.kdfparams.prf:string!");
-	            const algorithm = prf.split("-").pop();
-	            assertArgument(algorithm === "sha256" || algorithm === "sha512", "invalid kdf.pdf", "kdf.pdf", prf);
-	            const count = spelunk(data, "crypto.kdfparams.c:int!");
-	            const dkLen = spelunk(data, "crypto.kdfparams.dklen:int!");
-	            assertArgument(dkLen === 32, "invalid kdf.dklen", "kdf.dklen", dkLen);
-	            return { name: "pbkdf2", salt, count, dkLen, algorithm };
-	        }
-	    }
-	    assertArgument(false, "unsupported key-derivation function", "kdf", kdf);
-	}
-	/**
-	 *  Returns the account details for the JSON Keystore Wallet %%json%%
-	 *  using %%password%%.
-	 *
-	 *  It is preferred to use the [async version](decryptKeystoreJson)
-	 *  instead, which allows a [[ProgressCallback]] to keep the user informed
-	 *  as to the decryption status.
-	 *
-	 *  This method will block the event loop (freezing all UI) until decryption
-	 *  is complete, which can take quite some time, depending on the wallet
-	 *  paramters and platform.
-	 */
-	function decryptKeystoreJsonSync(json, _password) {
-	    const data = JSON.parse(json);
-	    const password = getPassword(_password);
-	    const params = getDecryptKdfParams(data);
-	    if (params.name === "pbkdf2") {
-	        const { salt, count, dkLen, algorithm } = params;
-	        const key = pbkdf2(password, salt, count, dkLen, algorithm);
-	        return getAccount(data, key);
-	    }
-	    assert(params.name === "scrypt", "cannot be reached", "UNKNOWN_ERROR", { params });
-	    const { salt, N, r, p, dkLen } = params;
-	    const key = scryptSync(password, salt, N, r, p, dkLen);
-	    return getAccount(data, key);
-	}
-	function stall$1(duration) {
-	    return new Promise((resolve) => { setTimeout(() => { resolve(); }, duration); });
-	}
-	/**
-	 *  Resolves to the decrypted JSON Keystore Wallet %%json%% using the
-	 *  %%password%%.
-	 *
-	 *  If provided, %%progress%% will be called periodically during the
-	 *  decrpytion to provide feedback, and if the function returns
-	 *  ``false`` will halt decryption.
-	 *
-	 *  The %%progressCallback%% will **always** receive ``0`` before
-	 *  decryption begins and ``1`` when complete.
-	 */
-	async function decryptKeystoreJson(json, _password, progress) {
-	    const data = JSON.parse(json);
-	    const password = getPassword(_password);
-	    const params = getDecryptKdfParams(data);
-	    if (params.name === "pbkdf2") {
-	        if (progress) {
-	            progress(0);
-	            await stall$1(0);
-	        }
-	        const { salt, count, dkLen, algorithm } = params;
-	        const key = pbkdf2(password, salt, count, dkLen, algorithm);
-	        if (progress) {
-	            progress(1);
-	            await stall$1(0);
-	        }
-	        return getAccount(data, key);
-	    }
-	    assert(params.name === "scrypt", "cannot be reached", "UNKNOWN_ERROR", { params });
-	    const { salt, N, r, p, dkLen } = params;
-	    const key = await scrypt(password, salt, N, r, p, dkLen, progress);
-	    return getAccount(data, key);
-	}
-	function getEncryptKdfParams(options) {
-	    // Check/generate the salt
-	    const salt = (options.salt != null) ? getBytes(options.salt, "options.salt") : randomBytes(32);
-	    // Override the scrypt password-based key derivation function parameters
-	    let N = (1 << 17), r = 8, p = 1;
-	    if (options.scrypt) {
-	        if (options.scrypt.N) {
-	            N = options.scrypt.N;
-	        }
-	        if (options.scrypt.r) {
-	            r = options.scrypt.r;
-	        }
-	        if (options.scrypt.p) {
-	            p = options.scrypt.p;
-	        }
-	    }
-	    assertArgument(typeof (N) === "number" && N > 0 && Number.isSafeInteger(N) && (BigInt(N) & BigInt(N - 1)) === BigInt(0), "invalid scrypt N parameter", "options.N", N);
-	    assertArgument(typeof (r) === "number" && r > 0 && Number.isSafeInteger(r), "invalid scrypt r parameter", "options.r", r);
-	    assertArgument(typeof (p) === "number" && p > 0 && Number.isSafeInteger(p), "invalid scrypt p parameter", "options.p", p);
-	    return { name: "scrypt", dkLen: 32, salt, N, r, p };
-	}
-	function _encryptKeystore(key, kdf, account, options) {
-	    const privateKey = getBytes(account.privateKey, "privateKey");
-	    // Override initialization vector
-	    const iv = (options.iv != null) ? getBytes(options.iv, "options.iv") : randomBytes(16);
-	    assertArgument(iv.length === 16, "invalid options.iv length", "options.iv", options.iv);
-	    // Override the uuid
-	    const uuidRandom = (options.uuid != null) ? getBytes(options.uuid, "options.uuid") : randomBytes(16);
-	    assertArgument(uuidRandom.length === 16, "invalid options.uuid length", "options.uuid", options.iv);
-	    // This will be used to encrypt the wallet (as per Web3 secret storage)
-	    // - 32 bytes   As normal for the Web3 secret storage (derivedKey, macPrefix)
-	    // - 32 bytes   AES key to encrypt mnemonic with (required here to be Ethers Wallet)
-	    const derivedKey = key.slice(0, 16);
-	    const macPrefix = key.slice(16, 32);
-	    // Encrypt the private key
-	    const aesCtr = new CTR(derivedKey, iv);
-	    const ciphertext = getBytes(aesCtr.encrypt(privateKey));
-	    // Compute the message authentication code, used to check the password
-	    const mac = keccak256(concat([macPrefix, ciphertext]));
-	    // See: https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition
-	    const data = {
-	        address: account.address.substring(2).toLowerCase(),
-	        id: uuidV4(uuidRandom),
-	        version: 3,
-	        Crypto: {
-	            cipher: "aes-128-ctr",
-	            cipherparams: {
-	                iv: hexlify(iv).substring(2),
-	            },
-	            ciphertext: hexlify(ciphertext).substring(2),
-	            kdf: "scrypt",
-	            kdfparams: {
-	                salt: hexlify(kdf.salt).substring(2),
-	                n: kdf.N,
-	                dklen: 32,
-	                p: kdf.p,
-	                r: kdf.r
-	            },
-	            mac: mac.substring(2)
-	        }
-	    };
-	    // If we have a mnemonic, encrypt it into the JSON wallet
-	    if (account.mnemonic) {
-	        const client = (options.client != null) ? options.client : `ethers/${version}`;
-	        const path = account.mnemonic.path || defaultPath$1;
-	        const locale = account.mnemonic.locale || "en";
-	        const mnemonicKey = key.slice(32, 64);
-	        const entropy = getBytes(account.mnemonic.entropy, "account.mnemonic.entropy");
-	        const mnemonicIv = randomBytes(16);
-	        const mnemonicAesCtr = new CTR(mnemonicKey, mnemonicIv);
-	        const mnemonicCiphertext = getBytes(mnemonicAesCtr.encrypt(entropy));
-	        const now = new Date();
-	        const timestamp = (now.getUTCFullYear() + "-" +
-	            zpad$1(now.getUTCMonth() + 1, 2) + "-" +
-	            zpad$1(now.getUTCDate(), 2) + "T" +
-	            zpad$1(now.getUTCHours(), 2) + "-" +
-	            zpad$1(now.getUTCMinutes(), 2) + "-" +
-	            zpad$1(now.getUTCSeconds(), 2) + ".0Z");
-	        const gethFilename = ("UTC--" + timestamp + "--" + data.address);
-	        data["x-ethers"] = {
-	            client, gethFilename, path, locale,
-	            mnemonicCounter: hexlify(mnemonicIv).substring(2),
-	            mnemonicCiphertext: hexlify(mnemonicCiphertext).substring(2),
-	            version: "0.1"
-	        };
-	    }
-	    return JSON.stringify(data);
-	}
-	/**
-	 *  Return the JSON Keystore Wallet for %%account%% encrypted with
-	 *  %%password%%.
-	 *
-	 *  The %%options%% can be used to tune the password-based key
-	 *  derivation function parameters, explicitly set the random values
-	 *  used. Any provided [[ProgressCallback]] is ignord.
-	 */
-	function encryptKeystoreJsonSync(account, password, options) {
-	    if (options == null) {
-	        options = {};
-	    }
-	    const passwordBytes = getPassword(password);
-	    const kdf = getEncryptKdfParams(options);
-	    const key = scryptSync(passwordBytes, kdf.salt, kdf.N, kdf.r, kdf.p, 64);
-	    return _encryptKeystore(getBytes(key), kdf, account, options);
-	}
-	/**
-	 *  Resolved to the JSON Keystore Wallet for %%account%% encrypted
-	 *  with %%password%%.
-	 *
-	 *  The %%options%% can be used to tune the password-based key
-	 *  derivation function parameters, explicitly set the random values
-	 *  used and provide a [[ProgressCallback]] to receive periodic updates
-	 *  on the completion status..
-	 */
-	async function encryptKeystoreJson(account, password, options) {
-	    if (options == null) {
-	        options = {};
-	    }
-	    const passwordBytes = getPassword(password);
-	    const kdf = getEncryptKdfParams(options);
-	    const key = await scrypt(passwordBytes, kdf.salt, kdf.N, kdf.r, kdf.p, 64, options.progressCallback);
-	    return _encryptKeystore(getBytes(key), kdf, account, options);
-	}
-
-	/**
-	 *  Explain HD Wallets..
-	 *
-	 *  @_subsection: api/wallet:HD Wallets  [hd-wallets]
-	 */
-	/**
-	 *  The default derivation path for Ethereum HD Nodes. (i.e. ``"m/44'/60'/0'/0/0"``)
-	 */
-	const defaultPath = "m/44'/60'/0'/0/0";
-	// "Bitcoin seed"
-	const MasterSecret = new Uint8Array([66, 105, 116, 99, 111, 105, 110, 32, 115, 101, 101, 100]);
-	const HardenedBit = 0x80000000;
-	const N = BigInt("0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141");
-	const Nibbles = "0123456789abcdef";
-	function zpad(value, length) {
-	    let result = "";
-	    while (value) {
-	        result = Nibbles[value % 16] + result;
-	        value = Math.trunc(value / 16);
-	    }
-	    while (result.length < length * 2) {
-	        result = "0" + result;
-	    }
-	    return "0x" + result;
-	}
-	function encodeBase58Check(_value) {
-	    const value = getBytes(_value);
-	    const check = dataSlice(sha256(sha256(value)), 0, 4);
-	    const bytes = concat([value, check]);
-	    return encodeBase58(bytes);
-	}
-	const _guard = {};
-	function ser_I(index, chainCode, publicKey, privateKey) {
-	    const data = new Uint8Array(37);
-	    if (index & HardenedBit) {
-	        assert(privateKey != null, "cannot derive child of neutered node", "UNSUPPORTED_OPERATION", {
-	            operation: "deriveChild"
-	        });
-	        // Data = 0x00 || ser_256(k_par)
-	        data.set(getBytes(privateKey), 1);
-	    }
-	    else {
-	        // Data = ser_p(point(k_par))
-	        data.set(getBytes(publicKey));
-	    }
-	    // Data += ser_32(i)
-	    for (let i = 24; i >= 0; i -= 8) {
-	        data[33 + (i >> 3)] = ((index >> (24 - i)) & 0xff);
-	    }
-	    const I = getBytes(computeHmac("sha512", chainCode, data));
-	    return { IL: I.slice(0, 32), IR: I.slice(32) };
-	}
-	function derivePath(node, path) {
-	    const components = path.split("/");
-	    assertArgument(components.length > 0, "invalid path", "path", path);
-	    if (components[0] === "m") {
-	        assertArgument(node.depth === 0, `cannot derive root path (i.e. path starting with "m/") for a node at non-zero depth ${node.depth}`, "path", path);
-	        components.shift();
-	    }
-	    let result = node;
-	    for (let i = 0; i < components.length; i++) {
-	        const component = components[i];
-	        if (component.match(/^[0-9]+'$/)) {
-	            const index = parseInt(component.substring(0, component.length - 1));
-	            assertArgument(index < HardenedBit, "invalid path index", `path[${i}]`, component);
-	            result = result.deriveChild(HardenedBit + index);
-	        }
-	        else if (component.match(/^[0-9]+$/)) {
-	            const index = parseInt(component);
-	            assertArgument(index < HardenedBit, "invalid path index", `path[${i}]`, component);
-	            result = result.deriveChild(index);
-	        }
-	        else {
-	            assertArgument(false, "invalid path component", `path[${i}]`, component);
-	        }
-	    }
-	    return result;
-	}
-	/**
-	 *  An **HDNodeWallet** is a [[Signer]] backed by the private key derived
-	 *  from an HD Node using the [[link-bip-32]] stantard.
-	 *
-	 *  An HD Node forms a hierarchal structure with each HD Node having a
-	 *  private key and the ability to derive child HD Nodes, defined by
-	 *  a path indicating the index of each child.
-	 */
-	class HDNodeWallet extends BaseWallet {
-	    /**
-	     *  The compressed public key.
-	     */
-	    publicKey;
-	    /**
-	     *  The fingerprint.
-	     *
-	     *  A fingerprint allows quick qay to detect parent and child nodes,
-	     *  but developers should be prepared to deal with collisions as it
-	     *  is only 4 bytes.
-	     */
-	    fingerprint;
-	    /**
-	     *  The parent fingerprint.
-	     */
-	    parentFingerprint;
-	    /**
-	     *  The mnemonic used to create this HD Node, if available.
-	     *
-	     *  Sources such as extended keys do not encode the mnemonic, in
-	     *  which case this will be ``null``.
-	     */
-	    mnemonic;
-	    /**
-	     *  The chaincode, which is effectively a public key used
-	     *  to derive children.
-	     */
-	    chainCode;
-	    /**
-	     *  The derivation path of this wallet.
-	     *
-	     *  Since extended keys do not provide full path details, this
-	     *  may be ``null``, if instantiated from a source that does not
-	     *  encode it.
-	     */
-	    path;
-	    /**
-	     *  The child index of this wallet. Values over ``2 *\* 31`` indicate
-	     *  the node is hardened.
-	     */
-	    index;
-	    /**
-	     *  The depth of this wallet, which is the number of components
-	     *  in its path.
-	     */
-	    depth;
-	    /**
-	     *  @private
-	     */
-	    constructor(guard, signingKey, parentFingerprint, chainCode, path, index, depth, mnemonic, provider) {
-	        super(signingKey, provider);
-	        assertPrivate(guard, _guard, "HDNodeWallet");
-	        defineProperties(this, { publicKey: signingKey.compressedPublicKey });
-	        const fingerprint = dataSlice(ripemd160(sha256(this.publicKey)), 0, 4);
-	        defineProperties(this, {
-	            parentFingerprint, fingerprint,
-	            chainCode, path, index, depth
-	        });
-	        defineProperties(this, { mnemonic });
-	    }
-	    connect(provider) {
-	        return new HDNodeWallet(_guard, this.signingKey, this.parentFingerprint, this.chainCode, this.path, this.index, this.depth, this.mnemonic, provider);
-	    }
-	    #account() {
-	        const account = { address: this.address, privateKey: this.privateKey };
-	        const m = this.mnemonic;
-	        if (this.path && m && m.wordlist.locale === "en" && m.password === "") {
-	            account.mnemonic = {
-	                path: this.path,
-	                locale: "en",
-	                entropy: m.entropy
-	            };
-	        }
-	        return account;
-	    }
-	    /**
-	     *  Resolves to a [JSON Keystore Wallet](json-wallets) encrypted with
-	     *  %%password%%.
-	     *
-	     *  If %%progressCallback%% is specified, it will receive periodic
-	     *  updates as the encryption process progreses.
-	     */
-	    async encrypt(password, progressCallback) {
-	        return await encryptKeystoreJson(this.#account(), password, { progressCallback });
-	    }
-	    /**
-	     *  Returns a [JSON Keystore Wallet](json-wallets) encryped with
-	     *  %%password%%.
-	     *
-	     *  It is preferred to use the [async version](encrypt) instead,
-	     *  which allows a [[ProgressCallback]] to keep the user informed.
-	     *
-	     *  This method will block the event loop (freezing all UI) until
-	     *  it is complete, which may be a non-trivial duration.
-	     */
-	    encryptSync(password) {
-	        return encryptKeystoreJsonSync(this.#account(), password);
-	    }
-	    /**
-	     *  The extended key.
-	     *
-	     *  This key will begin with the prefix ``xpriv`` and can be used to
-	     *  reconstruct this HD Node to derive its children.
-	     */
-	    get extendedKey() {
-	        // We only support the mainnet values for now, but if anyone needs
-	        // testnet values, let me know. I believe current sentiment is that
-	        // we should always use mainnet, and use BIP-44 to derive the network
-	        //   - Mainnet: public=0x0488B21E, private=0x0488ADE4
-	        //   - Testnet: public=0x043587CF, private=0x04358394
-	        assert(this.depth < 256, "Depth too deep", "UNSUPPORTED_OPERATION", { operation: "extendedKey" });
-	        return encodeBase58Check(concat([
-	            "0x0488ADE4", zpad(this.depth, 1), this.parentFingerprint,
-	            zpad(this.index, 4), this.chainCode,
-	            concat(["0x00", this.privateKey])
-	        ]));
-	    }
-	    /**
-	     *  Returns true if this wallet has a path, providing a Type Guard
-	     *  that the path is non-null.
-	     */
-	    hasPath() { return (this.path != null); }
-	    /**
-	     *  Returns a neutered HD Node, which removes the private details
-	     *  of an HD Node.
-	     *
-	     *  A neutered node has no private key, but can be used to derive
-	     *  child addresses and other public data about the HD Node.
-	     */
-	    neuter() {
-	        return new HDNodeVoidWallet(_guard, this.address, this.publicKey, this.parentFingerprint, this.chainCode, this.path, this.index, this.depth, this.provider);
-	    }
-	    /**
-	     *  Return the child for %%index%%.
-	     */
-	    deriveChild(_index) {
-	        const index = getNumber(_index, "index");
-	        assertArgument(index <= 0xffffffff, "invalid index", "index", index);
-	        // Base path
-	        let path = this.path;
-	        if (path) {
-	            path += "/" + (index & ~HardenedBit);
-	            if (index & HardenedBit) {
-	                path += "'";
-	            }
-	        }
-	        const { IR, IL } = ser_I(index, this.chainCode, this.publicKey, this.privateKey);
-	        const ki = new SigningKey(toBeHex((toBigInt(IL) + BigInt(this.privateKey)) % N, 32));
-	        return new HDNodeWallet(_guard, ki, this.fingerprint, hexlify(IR), path, index, this.depth + 1, this.mnemonic, this.provider);
-	    }
-	    /**
-	     *  Return the HDNode for %%path%% from this node.
-	     */
-	    derivePath(path) {
-	        return derivePath(this, path);
-	    }
-	    static #fromSeed(_seed, mnemonic) {
-	        assertArgument(isBytesLike(_seed), "invalid seed", "seed", "[REDACTED]");
-	        const seed = getBytes(_seed, "seed");
-	        assertArgument(seed.length >= 16 && seed.length <= 64, "invalid seed", "seed", "[REDACTED]");
-	        const I = getBytes(computeHmac("sha512", MasterSecret, seed));
-	        const signingKey = new SigningKey(hexlify(I.slice(0, 32)));
-	        return new HDNodeWallet(_guard, signingKey, "0x00000000", hexlify(I.slice(32)), "m", 0, 0, mnemonic, null);
-	    }
-	    /**
-	     *  Creates a new HD Node from %%extendedKey%%.
-	     *
-	     *  If the %%extendedKey%% will either have a prefix or ``xpub`` or
-	     *  ``xpriv``, returning a neutered HD Node ([[HDNodeVoidWallet]])
-	     *  or full HD Node ([[HDNodeWallet) respectively.
-	     */
-	    static fromExtendedKey(extendedKey) {
-	        const bytes = toBeArray(decodeBase58(extendedKey)); // @TODO: redact
-	        assertArgument(bytes.length === 82 || encodeBase58Check(bytes.slice(0, 78)) === extendedKey, "invalid extended key", "extendedKey", "[ REDACTED ]");
-	        const depth = bytes[4];
-	        const parentFingerprint = hexlify(bytes.slice(5, 9));
-	        const index = parseInt(hexlify(bytes.slice(9, 13)).substring(2), 16);
-	        const chainCode = hexlify(bytes.slice(13, 45));
-	        const key = bytes.slice(45, 78);
-	        switch (hexlify(bytes.slice(0, 4))) {
-	            // Public Key
-	            case "0x0488b21e":
-	            case "0x043587cf": {
-	                const publicKey = hexlify(key);
-	                return new HDNodeVoidWallet(_guard, computeAddress(publicKey), publicKey, parentFingerprint, chainCode, null, index, depth, null);
-	            }
-	            // Private Key
-	            case "0x0488ade4":
-	            case "0x04358394 ":
-	                if (key[0] !== 0) {
-	                    break;
-	                }
-	                return new HDNodeWallet(_guard, new SigningKey(key.slice(1)), parentFingerprint, chainCode, null, index, depth, null, null);
-	        }
-	        assertArgument(false, "invalid extended key prefix", "extendedKey", "[ REDACTED ]");
-	    }
-	    /**
-	     *  Creates a new random HDNode.
-	     */
-	    static createRandom(password, path, wordlist) {
-	        if (password == null) {
-	            password = "";
-	        }
-	        if (path == null) {
-	            path = defaultPath;
-	        }
-	        if (wordlist == null) {
-	            wordlist = LangEn.wordlist();
-	        }
-	        const mnemonic = Mnemonic.fromEntropy(randomBytes(16), password, wordlist);
-	        return HDNodeWallet.#fromSeed(mnemonic.computeSeed(), mnemonic).derivePath(path);
-	    }
-	    /**
-	     *  Create an HD Node from %%mnemonic%%.
-	     */
-	    static fromMnemonic(mnemonic, path) {
-	        if (!path) {
-	            path = defaultPath;
-	        }
-	        return HDNodeWallet.#fromSeed(mnemonic.computeSeed(), mnemonic).derivePath(path);
-	    }
-	    /**
-	     *  Creates an HD Node from a mnemonic %%phrase%%.
-	     */
-	    static fromPhrase(phrase, password, path, wordlist) {
-	        if (password == null) {
-	            password = "";
-	        }
-	        if (path == null) {
-	            path = defaultPath;
-	        }
-	        if (wordlist == null) {
-	            wordlist = LangEn.wordlist();
-	        }
-	        const mnemonic = Mnemonic.fromPhrase(phrase, password, wordlist);
-	        return HDNodeWallet.#fromSeed(mnemonic.computeSeed(), mnemonic).derivePath(path);
-	    }
-	    /**
-	     *  Creates an HD Node from a %%seed%%.
-	     */
-	    static fromSeed(seed) {
-	        return HDNodeWallet.#fromSeed(seed, null);
-	    }
-	}
-	/**
-	 *  A **HDNodeVoidWallet** cannot sign, but provides access to
-	 *  the children nodes of a [[link-bip-32]] HD wallet addresses.
-	 *
-	 *  The can be created by using an extended ``xpub`` key to
-	 *  [[HDNodeWallet_fromExtendedKey]] or by
-	 *  [nuetering](HDNodeWallet-neuter) a [[HDNodeWallet]].
-	 */
-	class HDNodeVoidWallet extends VoidSigner {
-	    /**
-	     *  The compressed public key.
-	     */
-	    publicKey;
-	    /**
-	     *  The fingerprint.
-	     *
-	     *  A fingerprint allows quick qay to detect parent and child nodes,
-	     *  but developers should be prepared to deal with collisions as it
-	     *  is only 4 bytes.
-	     */
-	    fingerprint;
-	    /**
-	     *  The parent node fingerprint.
-	     */
-	    parentFingerprint;
-	    /**
-	     *  The chaincode, which is effectively a public key used
-	     *  to derive children.
-	     */
-	    chainCode;
-	    /**
-	     *  The derivation path of this wallet.
-	     *
-	     *  Since extended keys do not provider full path details, this
-	     *  may be ``null``, if instantiated from a source that does not
-	     *  enocde it.
-	     */
-	    path;
-	    /**
-	     *  The child index of this wallet. Values over ``2 *\* 31`` indicate
-	     *  the node is hardened.
-	     */
-	    index;
-	    /**
-	     *  The depth of this wallet, which is the number of components
-	     *  in its path.
-	     */
-	    depth;
-	    /**
-	     *  @private
-	     */
-	    constructor(guard, address, publicKey, parentFingerprint, chainCode, path, index, depth, provider) {
-	        super(address, provider);
-	        assertPrivate(guard, _guard, "HDNodeVoidWallet");
-	        defineProperties(this, { publicKey });
-	        const fingerprint = dataSlice(ripemd160(sha256(publicKey)), 0, 4);
-	        defineProperties(this, {
-	            publicKey, fingerprint, parentFingerprint, chainCode, path, index, depth
-	        });
-	    }
-	    connect(provider) {
-	        return new HDNodeVoidWallet(_guard, this.address, this.publicKey, this.parentFingerprint, this.chainCode, this.path, this.index, this.depth, provider);
-	    }
-	    /**
-	     *  The extended key.
-	     *
-	     *  This key will begin with the prefix ``xpub`` and can be used to
-	     *  reconstruct this neutered key to derive its children addresses.
-	     */
-	    get extendedKey() {
-	        // We only support the mainnet values for now, but if anyone needs
-	        // testnet values, let me know. I believe current sentiment is that
-	        // we should always use mainnet, and use BIP-44 to derive the network
-	        //   - Mainnet: public=0x0488B21E, private=0x0488ADE4
-	        //   - Testnet: public=0x043587CF, private=0x04358394
-	        assert(this.depth < 256, "Depth too deep", "UNSUPPORTED_OPERATION", { operation: "extendedKey" });
-	        return encodeBase58Check(concat([
-	            "0x0488B21E",
-	            zpad(this.depth, 1),
-	            this.parentFingerprint,
-	            zpad(this.index, 4),
-	            this.chainCode,
-	            this.publicKey,
-	        ]));
-	    }
-	    /**
-	     *  Returns true if this wallet has a path, providing a Type Guard
-	     *  that the path is non-null.
-	     */
-	    hasPath() { return (this.path != null); }
-	    /**
-	     *  Return the child for %%index%%.
-	     */
-	    deriveChild(_index) {
-	        const index = getNumber(_index, "index");
-	        assertArgument(index <= 0xffffffff, "invalid index", "index", index);
-	        // Base path
-	        let path = this.path;
-	        if (path) {
-	            path += "/" + (index & ~HardenedBit);
-	            if (index & HardenedBit) {
-	                path += "'";
-	            }
-	        }
-	        const { IR, IL } = ser_I(index, this.chainCode, this.publicKey, null);
-	        const Ki = SigningKey.addPoints(IL, this.publicKey, true);
-	        const address = computeAddress(Ki);
-	        return new HDNodeVoidWallet(_guard, address, Ki, this.fingerprint, hexlify(IR), path, index, this.depth + 1, this.provider);
-	    }
-	    /**
-	     *  Return the signer for %%path%% from this node.
-	     */
-	    derivePath(path) {
-	        return derivePath(this, path);
-	    }
-	}
-
-	/**
-	 *  @_subsection: api/wallet:JSON Wallets  [json-wallets]
-	 */
-	/**
-	 *  Returns true if %%json%% is a valid JSON Crowdsale wallet.
-	 */
-	function isCrowdsaleJson(json) {
-	    try {
-	        const data = JSON.parse(json);
-	        if (data.encseed) {
-	            return true;
-	        }
-	    }
-	    catch (error) { }
-	    return false;
-	}
-	// See: https://github.com/ethereum/pyethsaletool
-	/**
-	 *  Before Ethereum launched, it was necessary to create a wallet
-	 *  format for backers to use, which would be used to receive ether
-	 *  as a reward for contributing to the project.
-	 *
-	 *  The [[link-crowdsale]] format is now obsolete, but it is still
-	 *  useful to support and the additional code is fairly trivial as
-	 *  all the primitives required are used through core portions of
-	 *  the library.
-	 */
-	function decryptCrowdsaleJson(json, _password) {
-	    const data = JSON.parse(json);
-	    const password = getPassword(_password);
-	    // Ethereum Address
-	    const address = getAddress(spelunk(data, "ethaddr:string!"));
-	    // Encrypted Seed
-	    const encseed = looseArrayify(spelunk(data, "encseed:string!"));
-	    assertArgument(encseed && (encseed.length % 16) === 0, "invalid encseed", "json", json);
-	    const key = getBytes(pbkdf2(password, password, 2000, 32, "sha256")).slice(0, 16);
-	    const iv = encseed.slice(0, 16);
-	    const encryptedSeed = encseed.slice(16);
-	    // Decrypt the seed
-	    const aesCbc = new CBC(key, iv);
-	    const seed = pkcs7Strip(getBytes(aesCbc.decrypt(encryptedSeed)));
-	    // This wallet format is weird... Convert the binary encoded hex to a string.
-	    let seedHex = "";
-	    for (let i = 0; i < seed.length; i++) {
-	        seedHex += String.fromCharCode(seed[i]);
-	    }
-	    return { address, privateKey: id(seedHex) };
-	}
-
-	function stall(duration) {
-	    return new Promise((resolve) => { setTimeout(() => { resolve(); }, duration); });
-	}
-	/**
-	 *  A **Wallet** manages a single private key which is used to sign
-	 *  transactions, messages and other common payloads.
-	 *
-	 *  This class is generally the main entry point for developers
-	 *  that wish to use a private key directly, as it can create
-	 *  instances from a large variety of common sources, including
-	 *  raw private key, [[link-bip-39]] mnemonics and encrypte JSON
-	 *  wallets.
-	 */
-	class Wallet extends BaseWallet {
-	    /**
-	     *  Create a new wallet for the private %%key%%, optionally connected
-	     *  to %%provider%%.
-	     */
-	    constructor(key, provider) {
-	        if (typeof (key) === "string" && !key.startsWith("0x")) {
-	            key = "0x" + key;
-	        }
-	        let signingKey = (typeof (key) === "string") ? new SigningKey(key) : key;
-	        super(signingKey, provider);
-	    }
-	    connect(provider) {
-	        return new Wallet(this.signingKey, provider);
-	    }
-	    /**
-	     *  Resolves to a [JSON Keystore Wallet](json-wallets) encrypted with
-	     *  %%password%%.
-	     *
-	     *  If %%progressCallback%% is specified, it will receive periodic
-	     *  updates as the encryption process progreses.
-	     */
-	    async encrypt(password, progressCallback) {
-	        const account = { address: this.address, privateKey: this.privateKey };
-	        return await encryptKeystoreJson(account, password, { progressCallback });
-	    }
-	    /**
-	     *  Returns a [JSON Keystore Wallet](json-wallets) encryped with
-	     *  %%password%%.
-	     *
-	     *  It is preferred to use the [async version](encrypt) instead,
-	     *  which allows a [[ProgressCallback]] to keep the user informed.
-	     *
-	     *  This method will block the event loop (freezing all UI) until
-	     *  it is complete, which may be a non-trivial duration.
-	     */
-	    encryptSync(password) {
-	        const account = { address: this.address, privateKey: this.privateKey };
-	        return encryptKeystoreJsonSync(account, password);
-	    }
-	    static #fromAccount(account) {
-	        assertArgument(account, "invalid JSON wallet", "json", "[ REDACTED ]");
-	        if ("mnemonic" in account && account.mnemonic && account.mnemonic.locale === "en") {
-	            const mnemonic = Mnemonic.fromEntropy(account.mnemonic.entropy);
-	            const wallet = HDNodeWallet.fromMnemonic(mnemonic, account.mnemonic.path);
-	            if (wallet.address === account.address && wallet.privateKey === account.privateKey) {
-	                return wallet;
-	            }
-	            console.log("WARNING: JSON mismatch address/privateKey != mnemonic; fallback onto private key");
-	        }
-	        const wallet = new Wallet(account.privateKey);
-	        assertArgument(wallet.address === account.address, "address/privateKey mismatch", "json", "[ REDACTED ]");
-	        return wallet;
-	    }
-	    /**
-	     *  Creates (asynchronously) a **Wallet** by decrypting the %%json%%
-	     *  with %%password%%.
-	     *
-	     *  If %%progress%% is provided, it is called periodically during
-	     *  decryption so that any UI can be updated.
-	     */
-	    static async fromEncryptedJson(json, password, progress) {
-	        let account = null;
-	        if (isKeystoreJson(json)) {
-	            account = await decryptKeystoreJson(json, password, progress);
-	        }
-	        else if (isCrowdsaleJson(json)) {
-	            if (progress) {
-	                progress(0);
-	                await stall(0);
-	            }
-	            account = decryptCrowdsaleJson(json, password);
-	            if (progress) {
-	                progress(1);
-	                await stall(0);
-	            }
-	        }
-	        return Wallet.#fromAccount(account);
-	    }
-	    /**
-	     *  Creates a **Wallet** by decrypting the %%json%% with %%password%%.
-	     *
-	     *  The [[fromEncryptedJson]] method is preferred, as this method
-	     *  will lock up and freeze the UI during decryption, which may take
-	     *  some time.
-	     */
-	    static fromEncryptedJsonSync(json, password) {
-	        let account = null;
-	        if (isKeystoreJson(json)) {
-	            account = decryptKeystoreJsonSync(json, password);
-	        }
-	        else if (isCrowdsaleJson(json)) {
-	            account = decryptCrowdsaleJson(json, password);
-	        }
-	        else {
-	            assertArgument(false, "invalid JSON wallet", "json", "[ REDACTED ]");
-	        }
-	        return Wallet.#fromAccount(account);
-	    }
-	    /**
-	     *  Creates a new random [[HDNodeWallet]] using the available
-	     *  [cryptographic random source](randomBytes).
-	     *
-	     *  If there is no crytographic random source, this will throw.
-	     */
-	    static createRandom(provider) {
-	        const wallet = HDNodeWallet.createRandom();
-	        if (provider) {
-	            return wallet.connect(provider);
-	        }
-	        return wallet;
-	    }
-	    /**
-	     *  Creates a [[HDNodeWallet]] for %%phrase%%.
-	     */
-	    static fromPhrase(phrase, provider) {
-	        const wallet = HDNodeWallet.fromPhrase(phrase);
-	        if (provider) {
-	            return wallet.connect(provider);
-	        }
-	        return wallet;
-	    }
 	}
 
 	/* Autogenerated file. Do not edit manually. */
@@ -27045,6 +24357,7 @@
 	    }
 	    async downloadFile(root, filePath, proof) {
 	        var [info, err] = await this.queryFile(root);
+	        console.log(info);
 	        if (err != null || info === null) {
 	            return new Error(err?.message);
 	        }
@@ -27084,10 +24397,10 @@
 	    signer;
 	    gasPrice;
 	    gasLimit;
-	    constructor(nodes, providerRpc, privateKey, flowContract, gasPrice = BigInt('0'), gasLimit = BigInt('0')) {
+	    constructor(nodes, providerRpc, signer, flowContract, gasPrice = BigInt('0'), gasLimit = BigInt('0')) {
 	        this.nodes = nodes;
 	        this.provider = new JsonRpcProvider(providerRpc);
-	        this.signer = new Wallet(privateKey, this.provider);
+	        this.signer = signer;
 	        this.flow = getFlowContract(flowContract, this.signer);
 	        this.gasPrice = gasPrice;
 	        this.gasLimit = gasLimit;
@@ -27351,14 +24664,8 @@
 	}
 
 	class Indexer extends HttpProvider {
-	    blockchain_rpc;
-	    private_key;
-	    flow_contract;
-	    constructor(url, blockchain_rpc, private_key, flow_contract) {
+	    constructor(url) {
 	        super({ url });
-	        this.blockchain_rpc = blockchain_rpc;
-	        this.private_key = private_key;
-	        this.flow_contract = flow_contract;
 	    }
 	    async getShardedNodes() {
 	        const res = await super.request({
@@ -27379,12 +24686,12 @@
 	        });
 	        return res;
 	    }
-	    async newUploaderFromIndexerNodes(expectedReplica) {
+	    async newUploaderFromIndexerNodes(blockchain_rpc, signer, flow_contract, expectedReplica) {
 	        let [clients, err] = await this.selectNodes(expectedReplica);
 	        if (err != null) {
 	            return [null, err];
 	        }
-	        let uploader = new Uploader(clients, this.blockchain_rpc, this.private_key, this.flow_contract);
+	        let uploader = new Uploader(clients, blockchain_rpc, signer, flow_contract);
 	        return [uploader, null];
 	    }
 	    async selectNodes(expectedReplica) {
@@ -27403,15 +24710,12 @@
 	        });
 	        return [clients, null];
 	    }
-	    async upload(file, segIndex = 0, opts, retryOpts) {
-	        if (this.blockchain_rpc === undefined || this.private_key === undefined || this.flow_contract === undefined) {
-	            return ['', new Error('missing rpc, private key or flow contract')];
-	        }
+	    async upload(file, segIndex = 0, blockchain_rpc, signer, flow_contract, opts, retryOpts) {
 	        var expectedReplica = 1;
 	        if (opts != undefined && opts.expectedReplica != null) {
 	            expectedReplica = Math.max(1, opts.expectedReplica);
 	        }
-	        let [uploader, err] = await this.newUploaderFromIndexerNodes(expectedReplica);
+	        let [uploader, err] = await this.newUploaderFromIndexerNodes(blockchain_rpc, signer, flow_contract, expectedReplica);
 	        if (err != null || uploader == null) {
 	            return ['', new Error('failed to create uploader')];
 	        }

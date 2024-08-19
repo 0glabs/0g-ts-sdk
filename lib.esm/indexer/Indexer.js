@@ -3,14 +3,8 @@ import { selectNodes } from '../common/index.js';
 import { Uploader, Downloader } from '../transfer/index.js';
 import { StorageNode } from '../node/index.js';
 export class Indexer extends HttpProvider {
-    blockchain_rpc;
-    private_key;
-    flow_contract;
-    constructor(url, blockchain_rpc, private_key, flow_contract) {
+    constructor(url) {
         super({ url });
-        this.blockchain_rpc = blockchain_rpc;
-        this.private_key = private_key;
-        this.flow_contract = flow_contract;
     }
     async getShardedNodes() {
         const res = await super.request({
@@ -31,12 +25,12 @@ export class Indexer extends HttpProvider {
         });
         return res;
     }
-    async newUploaderFromIndexerNodes(expectedReplica) {
+    async newUploaderFromIndexerNodes(blockchain_rpc, signer, flow_contract, expectedReplica) {
         let [clients, err] = await this.selectNodes(expectedReplica);
         if (err != null) {
             return [null, err];
         }
-        let uploader = new Uploader(clients, this.blockchain_rpc, this.private_key, this.flow_contract);
+        let uploader = new Uploader(clients, blockchain_rpc, signer, flow_contract);
         return [uploader, null];
     }
     async selectNodes(expectedReplica) {
@@ -55,15 +49,12 @@ export class Indexer extends HttpProvider {
         });
         return [clients, null];
     }
-    async upload(file, segIndex = 0, opts, retryOpts) {
-        if (this.blockchain_rpc === undefined || this.private_key === undefined || this.flow_contract === undefined) {
-            return ['', new Error('missing rpc, private key or flow contract')];
-        }
+    async upload(file, segIndex = 0, blockchain_rpc, signer, flow_contract, opts, retryOpts) {
         var expectedReplica = 1;
         if (opts != undefined && opts.expectedReplica != null) {
             expectedReplica = Math.max(1, opts.expectedReplica);
         }
-        let [uploader, err] = await this.newUploaderFromIndexerNodes(expectedReplica);
+        let [uploader, err] = await this.newUploaderFromIndexerNodes(blockchain_rpc, signer, flow_contract, expectedReplica);
         if (err != null || uploader == null) {
             return ['', new Error('failed to create uploader')];
         }

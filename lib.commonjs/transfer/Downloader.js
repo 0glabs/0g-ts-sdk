@@ -69,6 +69,7 @@ class Downloader {
     }
     async downloadFile(root, filePath, proof) {
         var [info, err] = await this.queryFile(root);
+        console.log(info);
         if (err != null || info === null) {
             return new Error(err?.message);
         }

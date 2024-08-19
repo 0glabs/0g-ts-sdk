@@ -116,6 +116,7 @@ export class Downloader {
         proof: boolean
     ): Promise<Error | null> {
         var [info, err] = await this.queryFile(root)
+        console.log(info)
         if (err != null || info === null) {
             return new Error(err?.message)
         }

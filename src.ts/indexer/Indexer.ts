@@ -5,22 +5,14 @@ import { UploadOption, Uploader, Downloader } from '../transfer/index.js'
 import { StorageNode } from '../node/index.js'
 import { RetryOpts } from '../types.js'
 import { AbstractFile } from '../file/AbstractFile.js'
+import { ethers } from 'ethers'
 
 export class Indexer extends HttpProvider {
-    blockchain_rpc: string | undefined
-    private_key: string | undefined
-    flow_contract: string | undefined
-
+    
     constructor(
         url: string,
-        blockchain_rpc?: string,
-        private_key?: string,
-        flow_contract?: string
     ) {
         super({ url })
-        this.blockchain_rpc = blockchain_rpc
-        this.private_key = private_key
-        this.flow_contract = flow_contract
     }
 
     async getShardedNodes(): Promise<ShardedNodes> {
@@ -46,6 +38,9 @@ export class Indexer extends HttpProvider {
     }
 
     async newUploaderFromIndexerNodes(
+        blockchain_rpc: string,
+        signer: ethers.Wallet,
+        flow_contract: string,
         expectedReplica: number
     ): Promise<[Uploader | null, Error | null]> {
         let [clients, err] = await this.selectNodes(expectedReplica)
@@ -55,9 +50,9 @@ export class Indexer extends HttpProvider {
 
         let uploader: Uploader = new Uploader(
             clients,
-            this.blockchain_rpc!,
-            this.private_key!,
-            this.flow_contract!
+            blockchain_rpc,
+            signer,
+            flow_contract
         )
         return [uploader, null]
     }
@@ -87,18 +82,20 @@ export class Indexer extends HttpProvider {
     async upload(
         file: AbstractFile,
         segIndex: number = 0,
+        blockchain_rpc: string,
+        signer: ethers.Wallet,
+        flow_contract: string,
         opts?: UploadOption,
         retryOpts?: RetryOpts
     ): Promise<[string, Error | null]> {
-        if (this.blockchain_rpc === undefined || this.private_key === undefined || this.flow_contract === undefined) {
-            return ['', new Error('missing rpc, private key or flow contract')]
-        }
-
         var expectedReplica = 1
         if (opts != undefined && opts.expectedReplica != null) {
             expectedReplica = Math.max(1, opts.expectedReplica)
         }
         let [uploader, err] = await this.newUploaderFromIndexerNodes(
+            blockchain_rpc,
+            signer,
+            flow_contract,
             expectedReplica
         )
         if (err != null || uploader == null) {
@@ -115,7 +112,12 @@ export class Indexer extends HttpProvider {
             }
         }
 
-        return await uploader.uploadFile(file, segIndex, opts, retryOpts)
+        return await uploader.uploadFile(
+            file,
+            segIndex,
+            opts,
+            retryOpts
+        )
     }
 
     async download(

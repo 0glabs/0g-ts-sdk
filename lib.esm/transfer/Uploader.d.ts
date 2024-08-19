@@ -12,7 +12,7 @@ export declare class Uploader {
     signer: ethers.Wallet;
     gasPrice: bigint;
     gasLimit: bigint;
-    constructor(nodes: StorageNode[], providerRpc: string, privateKey: string, flowContract: string, gasPrice?: bigint, gasLimit?: bigint);
+    constructor(nodes: StorageNode[], providerRpc: string, signer: ethers.Wallet, flowContract: string, gasPrice?: bigint, gasLimit?: bigint);
     uploadFile(file: AbstractFile, segIndex: number | undefined, opts: UploadOption, retryOpts?: RetryOpts): Promise<[string, Error | null]>;
     processTasksInParallel(file: AbstractFile, tree: MerkleTree, tasks: UploadTask[]): Promise<void>;
     segmentUpload(file: AbstractFile, tree: MerkleTree, segIndex: number, taskSize: number): Promise<UploadTask[] | null>;
