@@ -9,7 +9,7 @@ export function getFlowContract(address: string, signer: Signer) {
     return FixedPriceFlow__factory.connect(address, signer)
 }
 
-export function getMarketContract(address: string, signer: Signer) {
+export function getMarketContract(address: string, signer?: Signer) {
     return FixedPrice__factory.connect(address, signer)
 }
 

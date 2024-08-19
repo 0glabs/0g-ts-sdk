@@ -5,14 +5,14 @@ import { MerkleTree } from '../file/index.js';
 import { ethers } from 'ethers';
 import { UploadOption, UploadTask } from './types.js';
 import { AbstractFile } from '../file/AbstractFile.js';
+import { Signer } from 'ethers';
 export declare class Uploader {
     nodes: StorageNode[];
     provider: ethers.JsonRpcProvider;
     flow: FixedPriceFlow;
-    signer: ethers.Wallet;
     gasPrice: bigint;
     gasLimit: bigint;
-    constructor(nodes: StorageNode[], providerRpc: string, signer: ethers.Wallet, flowContract: string, gasPrice?: bigint, gasLimit?: bigint);
+    constructor(nodes: StorageNode[], providerRpc: string, signer: Signer, flowContract: string, gasPrice?: bigint, gasLimit?: bigint);
     uploadFile(file: AbstractFile, segIndex: number | undefined, opts: UploadOption, retryOpts?: RetryOpts): Promise<[string, Error | null]>;
     processTasksInParallel(file: AbstractFile, tree: MerkleTree, tasks: UploadTask[]): Promise<void>;
     segmentUpload(file: AbstractFile, tree: MerkleTree, segIndex: number, taskSize: number): Promise<UploadTask[] | null>;
