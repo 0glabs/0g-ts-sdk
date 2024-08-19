@@ -6,14 +6,12 @@ export class Uploader {
     nodes;
     provider;
     flow;
-    signer;
     gasPrice;
     gasLimit;
     constructor(nodes, providerRpc, signer, flowContract, gasPrice = BigInt('0'), gasLimit = BigInt('0')) {
         this.nodes = nodes;
         this.provider = new ethers.JsonRpcProvider(providerRpc);
-        this.signer = signer;
-        this.flow = getFlowContract(flowContract, this.signer);
+        this.flow = getFlowContract(flowContract, signer);
         this.gasPrice = gasPrice;
         this.gasLimit = gasLimit;
     }
@@ -31,7 +29,7 @@ export class Uploader {
             return ['', new Error('Failed to create submission')];
         }
         let marketAddr = await this.flow.market();
-        let marketContract = getMarketContract(marketAddr, this.signer);
+        let marketContract = getMarketContract(marketAddr);
         let pricePerSector = await marketContract.pricePerSector();
         let fee = BigInt('0');
         if (opts.fee > 0) {

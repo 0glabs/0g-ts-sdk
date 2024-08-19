@@ -12,19 +12,19 @@ import { encodeBase64, ethers } from 'ethers'
 import { calculatePrice, getShardConfigs } from './utils.js'
 import { UploadOption, UploadTask } from './types.js'
 import { AbstractFile } from '../file/AbstractFile.js'
+import { Signer } from 'ethers'
 
 export class Uploader {
     nodes: StorageNode[]
     provider: ethers.JsonRpcProvider
     flow: FixedPriceFlow
-    signer: ethers.Wallet
     gasPrice: bigint
     gasLimit: bigint
 
     constructor(
         nodes: StorageNode[],
         providerRpc: string,
-        signer: ethers.Wallet,
+        signer: Signer,
         flowContract: string,
         gasPrice: bigint = BigInt('0'),
         gasLimit: bigint = BigInt('0')
@@ -32,9 +32,8 @@ export class Uploader {
         this.nodes = nodes
 
         this.provider = new ethers.JsonRpcProvider(providerRpc)
-        this.signer = signer
 
-        this.flow = getFlowContract(flowContract, this.signer)
+        this.flow = getFlowContract(flowContract, signer)
 
         this.gasPrice = gasPrice
         this.gasLimit = gasLimit
@@ -64,7 +63,7 @@ export class Uploader {
         }
 
         let marketAddr = await this.flow.market()
-        let marketContract = getMarketContract(marketAddr, this.signer)
+        let marketContract = getMarketContract(marketAddr)
 
         let pricePerSector = await marketContract.pricePerSector()
 
