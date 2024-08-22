@@ -5,8 +5,8 @@ import path from 'path';
 export function getFlowContract(address, signer) {
     return FixedPriceFlow__factory.connect(address, signer);
 }
-export function getMarketContract(address, signer) {
-    return FixedPrice__factory.connect(address, signer);
+export function getMarketContract(address, runner) {
+    return FixedPrice__factory.connect(address, runner);
 }
 export function checkExist(inputPath) {
     const dirName = path.dirname(inputPath);
