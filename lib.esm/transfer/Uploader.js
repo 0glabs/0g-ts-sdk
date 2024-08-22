@@ -29,7 +29,7 @@ export class Uploader {
             return ['', new Error('Failed to create submission')];
         }
         let marketAddr = await this.flow.market();
-        let marketContract = getMarketContract(marketAddr);
+        let marketContract = getMarketContract(marketAddr, this.provider);
         let pricePerSector = await marketContract.pricePerSector();
         let fee = BigInt('0');
         if (opts.fee > 0) {

@@ -4,13 +4,14 @@ import { FixedPrice__factory } from './contracts/market/index.js'
 import fs from 'fs'
 import path from 'path'
 import { RetryOpts } from './types.js'
+import { ContractRunner } from 'ethers'
 
 export function getFlowContract(address: string, signer: Signer) {
     return FixedPriceFlow__factory.connect(address, signer)
 }
 
-export function getMarketContract(address: string, signer?: Signer) {
-    return FixedPrice__factory.connect(address, signer)
+export function getMarketContract(address: string, runner: ContractRunner) {
+    return FixedPrice__factory.connect(address, runner)
 }
 
 export function checkExist(inputPath: string): boolean {

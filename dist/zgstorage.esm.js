@@ -21503,8 +21503,8 @@ class FixedPrice__factory extends ContractFactory {
 function getFlowContract(address, signer) {
     return FixedPriceFlow__factory.connect(address, signer);
 }
-function getMarketContract(address, signer) {
-    return FixedPrice__factory.connect(address, signer);
+function getMarketContract(address, runner) {
+    return FixedPrice__factory.connect(address, runner);
 }
 function checkExist(inputPath) {
     const dirName = path.dirname(inputPath);
@@ -24180,7 +24180,7 @@ class Uploader {
             return ['', new Error('Failed to create submission')];
         }
         let marketAddr = await this.flow.market();
-        let marketContract = getMarketContract(marketAddr);
+        let marketContract = getMarketContract(marketAddr, this.provider);
         let pricePerSector = await marketContract.pricePerSector();
         let fee = BigInt('0');
         if (opts.fee > 0) {

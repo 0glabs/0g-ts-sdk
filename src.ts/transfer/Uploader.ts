@@ -63,7 +63,7 @@ export class Uploader {
         }
 
         let marketAddr = await this.flow.market()
-        let marketContract = getMarketContract(marketAddr)
+        let marketContract = getMarketContract(marketAddr, this.provider)
 
         let pricePerSector = await marketContract.pricePerSector()
 
