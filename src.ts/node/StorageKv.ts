@@ -13,12 +13,15 @@ export class StorageKv extends HttpProvider {
         key: Bytes,
         startIndex: number,
         length: number,
-        version?: number
+        version?: bigint
     ): Promise<Value> {
-        var params = [streamId, key, startIndex, length]
-        if (version !== undefined) {
-            params.push(version)
+        var params
+        if (version === undefined) {
+            params = [streamId, key, startIndex, length]
+        } else {
+            params = [streamId, key, startIndex, length, version]
         }
+
         const res = await super.request({
             method: 'kv_getValue',
             params: params,
@@ -26,17 +29,19 @@ export class StorageKv extends HttpProvider {
         return res as Value
     }
 
-    async GetNext(
+    async getNext(
         streamId: Hash,
         key: Bytes,
         startIndex: number,
         length: number,
         inclusive: boolean,
-        version?: number
+        version?: bigint
     ): Promise<KeyValue> {
-        var params = [streamId, key, startIndex, length, inclusive]
-        if (version !== undefined) {
-            params.push(version)
+        var params
+        if (version === undefined) {
+            params = [streamId, key, startIndex, length, inclusive]
+        } else {
+            params = [streamId, key, startIndex, length, inclusive, version]
         }
         const res = await super.request({
             method: 'kv_getNext',
@@ -51,11 +56,13 @@ export class StorageKv extends HttpProvider {
         startIndex: number,
         length: number,
         inclusive: boolean,
-        version?: number
+        version?: bigint
     ): Promise<KeyValue> {
-        var params = [streamId, key, startIndex, length, inclusive]
-        if (version !== undefined) {
-            params.push(version)
+        var params
+        if (version === undefined) {
+            params = [streamId, key, startIndex, length, inclusive]
+        } else {
+            params = [streamId, key, startIndex, length, inclusive, version]
         }
         const res = await super.request({
             method: 'kv_getPrev',
@@ -68,11 +75,13 @@ export class StorageKv extends HttpProvider {
         streamId: Hash,
         startIndex: number,
         length: number,
-        version?: number
+        version?: bigint
     ): Promise<KeyValue> {
-        var params = [streamId, startIndex, length]
-        if (version !== undefined) {
-            params.push(version)
+        var params
+        if (version === undefined) {
+            params = [streamId, startIndex, length]
+        } else {
+            params = [streamId, startIndex, length, version]
         }
         const res = await super.request({
             method: 'kv_getFirst',
@@ -85,11 +94,13 @@ export class StorageKv extends HttpProvider {
         streamId: Hash,
         startIndex: number,
         length: number,
-        version?: number
+        version?: bigint
     ): Promise<KeyValue> {
-        var params = [streamId, startIndex, length]
-        if (version !== undefined) {
-            params.push(version)
+        var params
+        if (version === undefined) {
+            params = [streamId, startIndex, length]
+        } else {
+            params = [streamId, startIndex, length, version]
         }
         const res = await super.request({
             method: 'kv_getLast',
@@ -117,11 +128,13 @@ export class StorageKv extends HttpProvider {
         account: Hash,
         streamId: Hash,
         key: Bytes,
-        version?: number
+        version?: bigint
     ): Promise<boolean> {
-        var params: (Hash | Bytes | number)[] = [account, streamId, key]
-        if (version !== undefined) {
-            params.push(version)
+        var params
+        if (version === undefined) {
+            params = [account, streamId, key]
+        } else {
+            params = [account, streamId, key, version]
         }
         const res = await super.request({
             method: 'kv_hasWritePermission',
@@ -133,11 +146,13 @@ export class StorageKv extends HttpProvider {
     async IsAdmin(
         account: Hash,
         streamId: Hash,
-        version?: number
+        version?: bigint
     ): Promise<boolean> {
-        var params: (Hash | number)[] = [account, streamId]
-        if (version !== undefined) {
-            params.push(version)
+        var params
+        if (version === undefined) {
+            params = [account, streamId]
+        } else {
+            params = [account, streamId, version]
         }
         const res = await super.request({
             method: 'kv_IsAdmin',
@@ -149,11 +164,13 @@ export class StorageKv extends HttpProvider {
     async isSpecialKey(
         stremId: Bytes,
         key: Bytes,
-        version?: number
+        version?: bigint
     ): Promise<boolean> {
-        var params: (Bytes | number)[] = [stremId, key]
-        if (version !== undefined) {
-            params.push(version)
+        var params
+        if (version === undefined) {
+            params = [stremId, key]
+        } else {
+            params = [stremId, key, version]
         }
         const res = await super.request({
             method: 'kv_isSpecialKey',

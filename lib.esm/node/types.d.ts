@@ -40,12 +40,12 @@ export interface Metadata {
  * StorageKV types
  */
 export interface Value {
-    version: number;
+    version: bigint;
     data: Bytes;
     size: number;
 }
 export interface KeyValue {
-    version: number;
+    version: bigint;
     data: Bytes;
     size: number;
     key: Bytes;

@@ -11,10 +11,10 @@ class Uploader {
     flow;
     gasPrice;
     gasLimit;
-    constructor(nodes, providerRpc, signer, flowContract, gasPrice = BigInt('0'), gasLimit = BigInt('0')) {
+    constructor(nodes, providerRpc, flow, gasPrice = BigInt('0'), gasLimit = BigInt('0')) {
         this.nodes = nodes;
         this.provider = new ethers_1.ethers.JsonRpcProvider(providerRpc);
-        this.flow = (0, utils_js_1.getFlowContract)(flowContract, signer);
+        this.flow = flow;
         this.gasPrice = gasPrice;
         this.gasLimit = gasLimit;
     }

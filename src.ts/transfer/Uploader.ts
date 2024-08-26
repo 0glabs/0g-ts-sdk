@@ -5,14 +5,13 @@ import {
 } from '../constant.js'
 import { StorageNode, SegmentWithProof } from '../node/index.js'
 import { FixedPriceFlow } from '../contracts/flow/FixedPriceFlow.js'
-import { getFlowContract, getMarketContract, WaitForReceipt } from '../utils.js'
+import { getMarketContract, WaitForReceipt } from '../utils.js'
 import { RetryOpts } from '../types.js'
 import { MerkleTree } from '../file/index.js'
 import { encodeBase64, ethers } from 'ethers'
 import { calculatePrice, getShardConfigs } from './utils.js'
 import { UploadOption, UploadTask } from './types.js'
 import { AbstractFile } from '../file/AbstractFile.js'
-import { Signer } from 'ethers'
 
 export class Uploader {
     nodes: StorageNode[]
@@ -24,8 +23,7 @@ export class Uploader {
     constructor(
         nodes: StorageNode[],
         providerRpc: string,
-        signer: Signer,
-        flowContract: string,
+        flow: FixedPriceFlow,
         gasPrice: bigint = BigInt('0'),
         gasLimit: bigint = BigInt('0')
     ) {
@@ -33,7 +31,7 @@ export class Uploader {
 
         this.provider = new ethers.JsonRpcProvider(providerRpc)
 
-        this.flow = getFlowContract(flowContract, signer)
+        this.flow = flow
 
         this.gasPrice = gasPrice
         this.gasLimit = gasLimit

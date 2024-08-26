@@ -4,9 +4,12 @@ export class StorageKv extends HttpProvider {
         super({ url });
     }
     async getValue(streamId, key, startIndex, length, version) {
-        var params = [streamId, key, startIndex, length];
-        if (version !== undefined) {
-            params.push(version);
+        var params;
+        if (version === undefined) {
+            params = [streamId, key, startIndex, length];
+        }
+        else {
+            params = [streamId, key, startIndex, length, version];
         }
         const res = await super.request({
             method: 'kv_getValue',
@@ -14,10 +17,13 @@ export class StorageKv extends HttpProvider {
         });
         return res;
     }
-    async GetNext(streamId, key, startIndex, length, inclusive, version) {
-        var params = [streamId, key, startIndex, length, inclusive];
-        if (version !== undefined) {
-            params.push(version);
+    async getNext(streamId, key, startIndex, length, inclusive, version) {
+        var params;
+        if (version === undefined) {
+            params = [streamId, key, startIndex, length, inclusive];
+        }
+        else {
+            params = [streamId, key, startIndex, length, inclusive, version];
         }
         const res = await super.request({
             method: 'kv_getNext',
@@ -26,9 +32,12 @@ export class StorageKv extends HttpProvider {
         return res;
     }
     async getPrev(streamId, key, startIndex, length, inclusive, version) {
-        var params = [streamId, key, startIndex, length, inclusive];
-        if (version !== undefined) {
-            params.push(version);
+        var params;
+        if (version === undefined) {
+            params = [streamId, key, startIndex, length, inclusive];
+        }
+        else {
+            params = [streamId, key, startIndex, length, inclusive, version];
         }
         const res = await super.request({
             method: 'kv_getPrev',
@@ -37,9 +46,12 @@ export class StorageKv extends HttpProvider {
         return res;
     }
     async getFirst(streamId, startIndex, length, version) {
-        var params = [streamId, startIndex, length];
-        if (version !== undefined) {
-            params.push(version);
+        var params;
+        if (version === undefined) {
+            params = [streamId, startIndex, length];
+        }
+        else {
+            params = [streamId, startIndex, length, version];
         }
         const res = await super.request({
             method: 'kv_getFirst',
@@ -48,9 +60,12 @@ export class StorageKv extends HttpProvider {
         return res;
     }
     async getLast(streamId, startIndex, length, version) {
-        var params = [streamId, startIndex, length];
-        if (version !== undefined) {
-            params.push(version);
+        var params;
+        if (version === undefined) {
+            params = [streamId, startIndex, length];
+        }
+        else {
+            params = [streamId, startIndex, length, version];
         }
         const res = await super.request({
             method: 'kv_getLast',
@@ -72,9 +87,12 @@ export class StorageKv extends HttpProvider {
         return res;
     }
     async hasWritePermission(account, streamId, key, version) {
-        var params = [account, streamId, key];
-        if (version !== undefined) {
-            params.push(version);
+        var params;
+        if (version === undefined) {
+            params = [account, streamId, key];
+        }
+        else {
+            params = [account, streamId, key, version];
         }
         const res = await super.request({
             method: 'kv_hasWritePermission',
@@ -83,9 +101,12 @@ export class StorageKv extends HttpProvider {
         return res;
     }
     async IsAdmin(account, streamId, version) {
-        var params = [account, streamId];
-        if (version !== undefined) {
-            params.push(version);
+        var params;
+        if (version === undefined) {
+            params = [account, streamId];
+        }
+        else {
+            params = [account, streamId, version];
         }
         const res = await super.request({
             method: 'kv_IsAdmin',
@@ -94,9 +115,12 @@ export class StorageKv extends HttpProvider {
         return res;
     }
     async isSpecialKey(stremId, key, version) {
-        var params = [stremId, key];
-        if (version !== undefined) {
-            params.push(version);
+        var params;
+        if (version === undefined) {
+            params = [stremId, key];
+        }
+        else {
+            params = [stremId, key, version];
         }
         const res = await super.request({
             method: 'kv_isSpecialKey',

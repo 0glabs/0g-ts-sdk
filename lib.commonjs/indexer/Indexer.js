@@ -28,12 +28,12 @@ class Indexer extends open_jsonrpc_provider_1.HttpProvider {
         });
         return res;
     }
-    async newUploaderFromIndexerNodes(blockchain_rpc, signer, flow_contract, expectedReplica) {
+    async newUploaderFromIndexerNodes(blockchain_rpc, flow, expectedReplica) {
         let [clients, err] = await this.selectNodes(expectedReplica);
         if (err != null) {
             return [null, err];
         }
-        let uploader = new index_js_2.Uploader(clients, blockchain_rpc, signer, flow_contract);
+        let uploader = new index_js_2.Uploader(clients, blockchain_rpc, flow);
         return [uploader, null];
     }
     async selectNodes(expectedReplica) {
@@ -52,12 +52,12 @@ class Indexer extends open_jsonrpc_provider_1.HttpProvider {
         });
         return [clients, null];
     }
-    async upload(file, segIndex = 0, blockchain_rpc, signer, flow_contract, opts, retryOpts) {
+    async upload(file, segIndex = 0, blockchain_rpc, flow_contract, opts, retryOpts) {
         var expectedReplica = 1;
         if (opts != undefined && opts.expectedReplica != null) {
             expectedReplica = Math.max(1, opts.expectedReplica);
         }
-        let [uploader, err] = await this.newUploaderFromIndexerNodes(blockchain_rpc, signer, flow_contract, expectedReplica);
+        let [uploader, err] = await this.newUploaderFromIndexerNodes(blockchain_rpc, flow_contract, expectedReplica);
         if (err != null || uploader == null) {
             return ['', new Error('failed to create uploader')];
         }

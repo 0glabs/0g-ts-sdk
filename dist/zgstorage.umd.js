@@ -24167,9 +24167,12 @@
 	        super({ url });
 	    }
 	    async getValue(streamId, key, startIndex, length, version) {
-	        var params = [streamId, key, startIndex, length];
-	        if (version !== undefined) {
-	            params.push(version);
+	        var params;
+	        if (version === undefined) {
+	            params = [streamId, key, startIndex, length];
+	        }
+	        else {
+	            params = [streamId, key, startIndex, length, version];
 	        }
 	        const res = await super.request({
 	            method: 'kv_getValue',
@@ -24177,10 +24180,13 @@
 	        });
 	        return res;
 	    }
-	    async GetNext(streamId, key, startIndex, length, inclusive, version) {
-	        var params = [streamId, key, startIndex, length, inclusive];
-	        if (version !== undefined) {
-	            params.push(version);
+	    async getNext(streamId, key, startIndex, length, inclusive, version) {
+	        var params;
+	        if (version === undefined) {
+	            params = [streamId, key, startIndex, length, inclusive];
+	        }
+	        else {
+	            params = [streamId, key, startIndex, length, inclusive, version];
 	        }
 	        const res = await super.request({
 	            method: 'kv_getNext',
@@ -24189,9 +24195,12 @@
 	        return res;
 	    }
 	    async getPrev(streamId, key, startIndex, length, inclusive, version) {
-	        var params = [streamId, key, startIndex, length, inclusive];
-	        if (version !== undefined) {
-	            params.push(version);
+	        var params;
+	        if (version === undefined) {
+	            params = [streamId, key, startIndex, length, inclusive];
+	        }
+	        else {
+	            params = [streamId, key, startIndex, length, inclusive, version];
 	        }
 	        const res = await super.request({
 	            method: 'kv_getPrev',
@@ -24200,9 +24209,12 @@
 	        return res;
 	    }
 	    async getFirst(streamId, startIndex, length, version) {
-	        var params = [streamId, startIndex, length];
-	        if (version !== undefined) {
-	            params.push(version);
+	        var params;
+	        if (version === undefined) {
+	            params = [streamId, startIndex, length];
+	        }
+	        else {
+	            params = [streamId, startIndex, length, version];
 	        }
 	        const res = await super.request({
 	            method: 'kv_getFirst',
@@ -24211,9 +24223,12 @@
 	        return res;
 	    }
 	    async getLast(streamId, startIndex, length, version) {
-	        var params = [streamId, startIndex, length];
-	        if (version !== undefined) {
-	            params.push(version);
+	        var params;
+	        if (version === undefined) {
+	            params = [streamId, startIndex, length];
+	        }
+	        else {
+	            params = [streamId, startIndex, length, version];
 	        }
 	        const res = await super.request({
 	            method: 'kv_getLast',
@@ -24235,9 +24250,12 @@
 	        return res;
 	    }
 	    async hasWritePermission(account, streamId, key, version) {
-	        var params = [account, streamId, key];
-	        if (version !== undefined) {
-	            params.push(version);
+	        var params;
+	        if (version === undefined) {
+	            params = [account, streamId, key];
+	        }
+	        else {
+	            params = [account, streamId, key, version];
 	        }
 	        const res = await super.request({
 	            method: 'kv_hasWritePermission',
@@ -24246,9 +24264,12 @@
 	        return res;
 	    }
 	    async IsAdmin(account, streamId, version) {
-	        var params = [account, streamId];
-	        if (version !== undefined) {
-	            params.push(version);
+	        var params;
+	        if (version === undefined) {
+	            params = [account, streamId];
+	        }
+	        else {
+	            params = [account, streamId, version];
 	        }
 	        const res = await super.request({
 	            method: 'kv_IsAdmin',
@@ -24257,9 +24278,12 @@
 	        return res;
 	    }
 	    async isSpecialKey(stremId, key, version) {
-	        var params = [stremId, key];
-	        if (version !== undefined) {
-	            params.push(version);
+	        var params;
+	        if (version === undefined) {
+	            params = [stremId, key];
+	        }
+	        else {
+	            params = [stremId, key, version];
 	        }
 	        const res = await super.request({
 	            method: 'kv_isSpecialKey',
@@ -24396,10 +24420,10 @@
 	    flow;
 	    gasPrice;
 	    gasLimit;
-	    constructor(nodes, providerRpc, signer, flowContract, gasPrice = BigInt('0'), gasLimit = BigInt('0')) {
+	    constructor(nodes, providerRpc, flow, gasPrice = BigInt('0'), gasLimit = BigInt('0')) {
 	        this.nodes = nodes;
 	        this.provider = new JsonRpcProvider(providerRpc);
-	        this.flow = getFlowContract(flowContract, signer);
+	        this.flow = flow;
 	        this.gasPrice = gasPrice;
 	        this.gasLimit = gasLimit;
 	    }
@@ -24684,12 +24708,12 @@
 	        });
 	        return res;
 	    }
-	    async newUploaderFromIndexerNodes(blockchain_rpc, signer, flow_contract, expectedReplica) {
+	    async newUploaderFromIndexerNodes(blockchain_rpc, flow, expectedReplica) {
 	        let [clients, err] = await this.selectNodes(expectedReplica);
 	        if (err != null) {
 	            return [null, err];
 	        }
-	        let uploader = new Uploader(clients, blockchain_rpc, signer, flow_contract);
+	        let uploader = new Uploader(clients, blockchain_rpc, flow);
 	        return [uploader, null];
 	    }
 	    async selectNodes(expectedReplica) {
@@ -24708,12 +24732,12 @@
 	        });
 	        return [clients, null];
 	    }
-	    async upload(file, segIndex = 0, blockchain_rpc, signer, flow_contract, opts, retryOpts) {
+	    async upload(file, segIndex = 0, blockchain_rpc, flow_contract, opts, retryOpts) {
 	        var expectedReplica = 1;
 	        if (opts != undefined && opts.expectedReplica != null) {
 	            expectedReplica = Math.max(1, opts.expectedReplica);
 	        }
-	        let [uploader, err] = await this.newUploaderFromIndexerNodes(blockchain_rpc, signer, flow_contract, expectedReplica);
+	        let [uploader, err] = await this.newUploaderFromIndexerNodes(blockchain_rpc, flow_contract, expectedReplica);
 	        if (err != null || uploader == null) {
 	            return ['', new Error('failed to create uploader')];
 	        }

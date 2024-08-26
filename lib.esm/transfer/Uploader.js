@@ -1,5 +1,5 @@
 import { DEFAULT_SEGMENT_SIZE, DEFAULT_SEGMENT_MAX_CHUNKS, DEFAULT_CHUNK_SIZE, } from '../constant.js';
-import { getFlowContract, getMarketContract, WaitForReceipt } from '../utils.js';
+import { getMarketContract, WaitForReceipt } from '../utils.js';
 import { encodeBase64, ethers } from 'ethers';
 import { calculatePrice, getShardConfigs } from './utils.js';
 export class Uploader {
@@ -8,10 +8,10 @@ export class Uploader {
     flow;
     gasPrice;
     gasLimit;
-    constructor(nodes, providerRpc, signer, flowContract, gasPrice = BigInt('0'), gasLimit = BigInt('0')) {
+    constructor(nodes, providerRpc, flow, gasPrice = BigInt('0'), gasLimit = BigInt('0')) {
         this.nodes = nodes;
         this.provider = new ethers.JsonRpcProvider(providerRpc);
-        this.flow = getFlowContract(flowContract, signer);
+        this.flow = flow;
         this.gasPrice = gasPrice;
         this.gasLimit = gasLimit;
     }
