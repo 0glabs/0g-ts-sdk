@@ -42,7 +42,10 @@ export class Iterator {
                 val.data = [];
             }
             val.size = seg.size;
-            const data = ethers.concat([new Uint8Array(val.data), new Uint8Array(seg.data)]);
+            const data = ethers.concat([
+                new Uint8Array(val.data),
+                new Uint8Array(seg.data),
+            ]);
             val.data = ethers.toUtf8Bytes(data);
             if (val.data.length == val.size) {
                 return val;

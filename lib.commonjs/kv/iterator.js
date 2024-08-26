@@ -45,7 +45,10 @@ class Iterator {
                 val.data = [];
             }
             val.size = seg.size;
-            const data = ethers_1.ethers.concat([new Uint8Array(val.data), new Uint8Array(seg.data)]);
+            const data = ethers_1.ethers.concat([
+                new Uint8Array(val.data),
+                new Uint8Array(seg.data),
+            ]);
             val.data = ethers_1.ethers.toUtf8Bytes(data);
             if (val.data.length == val.size) {
                 return val;

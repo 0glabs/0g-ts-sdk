@@ -1,6 +1,7 @@
 import { ethers } from 'ethers'
 import { MAX_KEY_SIZE, MAX_SET_SIZE, StreamDomain } from './constants'
 import { AccessControl, StreamData } from './types'
+import { Bytes } from '@ethersproject/bytes'
 
 // Assuming common.Hash is equivalent to string (hex string) in TypeScript
 type Hash = string
@@ -10,7 +11,7 @@ export class StreamDataBuilder {
     streamIds: Map<Hash, boolean>
     controls: AccessControl[]
     reads: Map<Hash, Map<string, boolean>>
-    writes: Map<Hash, Map<string, Uint8Array>>
+    writes: Map<Hash, Map<string, Bytes>>
 
     constructor(version: bigint) {
         this.version = version
@@ -62,7 +63,7 @@ export class StreamDataBuilder {
                 data.Writes.push({
                     StreamId: streamId,
                     Key: key,
-                    Data: d,
+                    Data: Uint8Array.from(d),
                 })
 
                 if (data.Writes.length > MAX_SET_SIZE) {
@@ -97,6 +98,19 @@ export class StreamDataBuilder {
         }
 
         return data
+    }
+
+    public set(streamId: string, key: Bytes, data: Bytes) {
+        this.addStreamId(streamId)
+
+        const b = ethers.hexlify(new Uint8Array(key))
+    
+        if (this.writes.has(streamId)) {
+            this.writes.get(streamId)!.set(b, data)
+        } else {
+            this.writes.set(streamId, new Map<string, Uint8Array>())
+            this.writes.get(streamId)!.set(b, data)
+        }
     }
 
     addStreamId(streamId: Hash): void {

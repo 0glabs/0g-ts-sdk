@@ -55,7 +55,7 @@ class StreamDataBuilder {
                 data.Writes.push({
                     StreamId: streamId,
                     Key: key,
-                    Data: d,
+                    Data: Uint8Array.from(d),
                 });
                 if (data.Writes.length > constants_1.MAX_SET_SIZE) {
                     throw new Error('errSizeTooLarge');
@@ -89,6 +89,17 @@ class StreamDataBuilder {
             });
         }
         return data;
+    }
+    set(streamId, key, data) {
+        this.addStreamId(streamId);
+        const b = ethers_1.ethers.hexlify(new Uint8Array(key));
+        if (this.writes.has(streamId)) {
+            this.writes.get(streamId).set(b, data);
+        }
+        else {
+            this.writes.set(streamId, new Map());
+            this.writes.get(streamId).set(b, data);
+        }
     }
     addStreamId(streamId) {
         this.streamIds.set(streamId, true);
