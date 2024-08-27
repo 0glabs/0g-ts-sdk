@@ -1,7 +1,4 @@
-import { MAX_QUERY_SIZE } from './constants.js';
-import { ethers } from 'ethers';
-const maxUint64 = BigInt('18446744073709551615');
-export class Iterator {
+export class KvIterator {
     // client is the client to use for requests.
     client;
     // streamId is the stream ID.
@@ -14,7 +11,7 @@ export class Iterator {
     constructor(client, streamId, version) {
         this.client = client;
         this.streamId = streamId;
-        this.version = version || maxUint64;
+        this.version = version;
     }
     // Valid check if current position is exist
     valid() {
@@ -23,41 +20,12 @@ export class Iterator {
     getCurrentPair() {
         return this.currentPair;
     }
-    async getValue(streamId, key, version) {
-        let val = {
-            data: [],
-            size: 0,
-            version: version || maxUint64,
-        };
-        while (true) {
-            const seg = await this.client.getValue(streamId, key, val.data.length, MAX_QUERY_SIZE, val.version);
-            if (seg === undefined) {
-                return null;
-            }
-            if (val.version == maxUint64) {
-                val.version = seg.version;
-            }
-            else if (val.version != seg.version) {
-                val.version = seg.version;
-                val.data = [];
-            }
-            val.size = seg.size;
-            const data = ethers.concat([
-                new Uint8Array(val.data),
-                new Uint8Array(seg.data),
-            ]);
-            val.data = ethers.toUtf8Bytes(data);
-            if (val.data.length == val.size) {
-                return val;
-            }
-        }
-    }
     async move(kv) {
         if (kv === undefined) {
             this.currentPair = undefined;
             return null;
         }
-        let value = await this.getValue(this.streamId, kv.key, kv.version);
+        let value = await this.client.getValue(this.streamId, kv.key, kv.version);
         if (value === null) {
             return new Error('errValueNotFound');
         }
@@ -68,6 +36,36 @@ export class Iterator {
             version: kv.version,
         };
         return null;
+    }
+    async seekBefore(key) {
+        let kv = await this.client.getPrev(this.streamId, key, 0, 0, true, this.version);
+        return this.move(kv);
+    }
+    async seekAfter(key) {
+        let kv = await this.client.getNext(this.streamId, key, 0, 0, true, this.version);
+        return this.move(kv);
+    }
+    async seekToFirst() {
+        let kv = await this.client.getFirst(this.streamId, 0, 0, this.version);
+        return this.move(kv);
+    }
+    async seekToLast() {
+        let kv = await this.client.getLast(this.streamId, 0, 0, this.version);
+        return this.move(kv);
+    }
+    async next() {
+        if (!this.valid()) {
+            return new Error('errIteratorInvalid');
+        }
+        let kv = await this.client.getNext(this.streamId, this.currentPair.key, 0, 0, false, this.version);
+        return this.move(kv);
+    }
+    async prev() {
+        if (!this.valid()) {
+            return new Error('errIteratorInvalid');
+        }
+        let kv = await this.client.getPrev(this.streamId, this.currentPair.key, 0, 0, false, this.version);
+        return this.move(kv);
     }
 }
 //# sourceMappingURL=iterator.js.map

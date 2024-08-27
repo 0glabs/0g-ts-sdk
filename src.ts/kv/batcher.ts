@@ -2,7 +2,7 @@ import { StreamDataBuilder } from './builder.js'
 import { FixedPriceFlow } from '../contracts/flow/index.js'
 import { StorageNode } from '../node/index.js'
 import { MemData } from '../file/index.js'
-import { Uploader, UploadOption } from '../transfer/index.js'
+import { defaultUploadOption, Uploader, UploadOption } from '../transfer/index.js'
 
 export class Batcher {
     streamDataBuilder: StreamDataBuilder
@@ -11,7 +11,7 @@ export class Batcher {
     blockchainRpc: string
 
     constructor(
-        version: bigint,
+        version: number,
         clients: StorageNode[],
         flow: FixedPriceFlow,
         provider: string
@@ -22,7 +22,7 @@ export class Batcher {
         this.blockchainRpc = provider
     }
 
-    public exec(opts: UploadOption) {
+    async exec(opts?: UploadOption): Promise<[string, Error | null]> {
         // build stream data
         const streamData = this.streamDataBuilder.build()
         const encoded = streamData.encode()
@@ -34,7 +34,10 @@ export class Batcher {
             this.flow
         )
 
+        if (opts === undefined) {
+            opts = defaultUploadOption
+        }
         opts.tags = this.streamDataBuilder.buildTags()
-        uploader.uploadFile(data, 0, opts)
+        return await uploader.uploadFile(data, 0, opts)
     }
 }

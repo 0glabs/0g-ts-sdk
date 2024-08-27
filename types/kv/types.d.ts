@@ -21,18 +21,18 @@ interface StreamWrite {
     Key: Uint8Array;
     Data: Uint8Array;
 }
-export type AccessControl = {
+export interface AccessControl {
     Type: AccessControlType;
     StreamId: Hash;
     Account?: Address;
     Key?: Uint8Array;
-};
+}
 export declare class StreamData {
-    Version: bigint;
+    Version: number;
     Reads: StreamRead[];
     Writes: StreamWrite[];
     Controls: AccessControl[];
-    constructor(version: bigint);
+    constructor(version: number);
     size(): number;
     private encodeSize24;
     private encodeSize32;

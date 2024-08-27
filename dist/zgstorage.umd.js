@@ -1,8 +1,8 @@
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('node:fs/promises')) :
-	typeof define === 'function' && define.amd ? define(['exports', 'node:fs/promises'], factory) :
-	(global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.zgstorage = {}, global.promises));
-})(this, (function (exports, promises) { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('node:crypto'), require('node:fs/promises')) :
+	typeof define === 'function' && define.amd ? define(['exports', 'node:crypto', 'node:fs/promises'], factory) :
+	(global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.zgstorage = {}, global.node_crypto, global.promises));
+})(this, (function (exports, node_crypto, promises) { 'use strict';
 
 	var fs = {};
 
@@ -24167,12 +24167,9 @@
 	        super({ url });
 	    }
 	    async getValue(streamId, key, startIndex, length, version) {
-	        var params;
-	        if (version === undefined) {
-	            params = [streamId, key, startIndex, length];
-	        }
-	        else {
-	            params = [streamId, key, startIndex, length, version];
+	        let params = [streamId, key, startIndex, length];
+	        if (version !== undefined) {
+	            params.push(version);
 	        }
 	        const res = await super.request({
 	            method: 'kv_getValue',
@@ -24181,12 +24178,9 @@
 	        return res;
 	    }
 	    async getNext(streamId, key, startIndex, length, inclusive, version) {
-	        var params;
-	        if (version === undefined) {
-	            params = [streamId, key, startIndex, length, inclusive];
-	        }
-	        else {
-	            params = [streamId, key, startIndex, length, inclusive, version];
+	        let params = [streamId, key, startIndex, length, inclusive];
+	        if (version !== undefined) {
+	            params.push(version);
 	        }
 	        const res = await super.request({
 	            method: 'kv_getNext',
@@ -24195,12 +24189,9 @@
 	        return res;
 	    }
 	    async getPrev(streamId, key, startIndex, length, inclusive, version) {
-	        var params;
-	        if (version === undefined) {
-	            params = [streamId, key, startIndex, length, inclusive];
-	        }
-	        else {
-	            params = [streamId, key, startIndex, length, inclusive, version];
+	        let params = [streamId, key, startIndex, length, inclusive];
+	        if (version !== undefined) {
+	            params.push(version);
 	        }
 	        const res = await super.request({
 	            method: 'kv_getPrev',
@@ -24209,12 +24200,9 @@
 	        return res;
 	    }
 	    async getFirst(streamId, startIndex, length, version) {
-	        var params;
-	        if (version === undefined) {
-	            params = [streamId, startIndex, length];
-	        }
-	        else {
-	            params = [streamId, startIndex, length, version];
+	        let params = [streamId, startIndex, length];
+	        if (version !== undefined) {
+	            params.push(version);
 	        }
 	        const res = await super.request({
 	            method: 'kv_getFirst',
@@ -24223,12 +24211,9 @@
 	        return res;
 	    }
 	    async getLast(streamId, startIndex, length, version) {
-	        var params;
-	        if (version === undefined) {
-	            params = [streamId, startIndex, length];
-	        }
-	        else {
-	            params = [streamId, startIndex, length, version];
+	        let params = [streamId, startIndex, length];
+	        if (version !== undefined) {
+	            params.push(version);
 	        }
 	        const res = await super.request({
 	            method: 'kv_getLast',
@@ -24239,7 +24224,7 @@
 	    async getTransactionResult(txSeq) {
 	        const res = await super.request({
 	            method: 'kv_getTransactionResult',
-	            params: [txSeq],
+	            params: [txSeq.toString()],
 	        });
 	        return res;
 	    }
@@ -24250,12 +24235,9 @@
 	        return res;
 	    }
 	    async hasWritePermission(account, streamId, key, version) {
-	        var params;
-	        if (version === undefined) {
-	            params = [account, streamId, key];
-	        }
-	        else {
-	            params = [account, streamId, key, version];
+	        let params = [account, streamId, key];
+	        if (version !== undefined) {
+	            params.push(version);
 	        }
 	        const res = await super.request({
 	            method: 'kv_hasWritePermission',
@@ -24263,13 +24245,10 @@
 	        });
 	        return res;
 	    }
-	    async IsAdmin(account, streamId, version) {
-	        var params;
-	        if (version === undefined) {
-	            params = [account, streamId];
-	        }
-	        else {
-	            params = [account, streamId, version];
+	    async isAdmin(account, streamId, version) {
+	        let params = [account, streamId];
+	        if (version !== undefined) {
+	            params.push(version);
 	        }
 	        const res = await super.request({
 	            method: 'kv_IsAdmin',
@@ -24278,15 +24257,34 @@
 	        return res;
 	    }
 	    async isSpecialKey(stremId, key, version) {
-	        var params;
-	        if (version === undefined) {
-	            params = [stremId, key];
-	        }
-	        else {
-	            params = [stremId, key, version];
+	        let params = [stremId, key];
+	        if (version !== undefined) {
+	            params.push(version);
 	        }
 	        const res = await super.request({
 	            method: 'kv_isSpecialKey',
+	            params: params,
+	        });
+	        return res;
+	    }
+	    async isWriterOfKey(account, streamId, key, version) {
+	        let params = [account, streamId, key];
+	        if (version !== undefined) {
+	            params.push(version);
+	        }
+	        const res = await super.request({
+	            method: 'kv_isWriterOfKey',
+	            params: params,
+	        });
+	        return res;
+	    }
+	    async isWriterOfStream(account, streamId, version) {
+	        let params = [account, streamId];
+	        if (version !== undefined) {
+	            params.push(version);
+	        }
+	        const res = await super.request({
+	            method: 'kv_isWriterOfStream',
 	            params: params,
 	        });
 	        return res;
@@ -24381,7 +24379,6 @@
 	    }
 	    async downloadFile(root, filePath, proof) {
 	        var [info, err] = await this.queryFile(root);
-	        console.log(info);
 	        if (err != null || info === null) {
 	            return new Error(err?.message);
 	        }
@@ -24619,6 +24616,15 @@
 	    }
 	}
 
+	var defaultUploadOption = {
+	    tags: '0x',
+	    finalityRequired: true,
+	    taskSize: 10,
+	    expectedReplica: 1,
+	    skipTx: false,
+	    fee: BigInt(0),
+	};
+
 	function pushdown(node) {
 	    if (node.childs === null) {
 	        node.childs = [];
@@ -24765,6 +24771,266 @@
 	        });
 	        let downloader = new Downloader(clients);
 	        return await downloader.downloadFile(rootHash, filePath, proof);
+	    }
+	}
+
+	var AccessControlType;
+	(function (AccessControlType) {
+	    AccessControlType[AccessControlType["GrantAdminRole"] = 0] = "GrantAdminRole";
+	    AccessControlType[AccessControlType["RenounceAdminRole"] = 1] = "RenounceAdminRole";
+	    AccessControlType[AccessControlType["SetKeyToSpecial"] = 16] = "SetKeyToSpecial";
+	    AccessControlType[AccessControlType["SetKeyToNormal"] = 17] = "SetKeyToNormal";
+	    AccessControlType[AccessControlType["GrantWriteRole"] = 32] = "GrantWriteRole";
+	    AccessControlType[AccessControlType["RevokeWriteRole"] = 33] = "RevokeWriteRole";
+	    AccessControlType[AccessControlType["RenounceWriteRole"] = 34] = "RenounceWriteRole";
+	    AccessControlType[AccessControlType["GrantSpecialWriteRole"] = 48] = "GrantSpecialWriteRole";
+	    AccessControlType[AccessControlType["RevokeSpecialWriteRole"] = 49] = "RevokeSpecialWriteRole";
+	    AccessControlType[AccessControlType["RenounceSpecialWriteRole"] = 50] = "RenounceSpecialWriteRole";
+	})(AccessControlType || (AccessControlType = {}));
+	class StreamData {
+	    Version;
+	    Reads = [];
+	    Writes = [];
+	    Controls = [];
+	    constructor(version) {
+	        this.Version = version;
+	    }
+	    size() {
+	        let size = 8; // version size in bytes
+	        size += 4; // Reads size prefix
+	        for (const v of this.Reads) {
+	            size += 32 + 3 + v.Key.length;
+	        }
+	        size += 4; // Writes size prefix
+	        for (const v of this.Writes) {
+	            size += 32 + 3 + v.Key.length + 8 + v.Data.length;
+	        }
+	        size += 4; // Controls size prefix
+	        for (const v of this.Controls) {
+	            size += 1 + 32; // Type + StreamId
+	            if (v.Account) {
+	                size += 20; // Address length
+	            }
+	            if (v.Key) {
+	                size += 3 + v.Key.length;
+	            }
+	        }
+	        return size;
+	    }
+	    encodeSize24(size) {
+	        if (size === 0) {
+	            throw new Error('errKeyIsEmpty');
+	        }
+	        const buf = new Uint8Array(4);
+	        const view = new DataView(buf.buffer);
+	        view.setUint32(0, size, false);
+	        if (buf[0] !== 0) {
+	            throw new Error('errKeyTooLarge');
+	        }
+	        return buf.slice(1);
+	    }
+	    encodeSize32(size) {
+	        const buf = new Uint8Array(4);
+	        const view = new DataView(buf.buffer);
+	        view.setUint32(0, size, false);
+	        return buf;
+	    }
+	    encodeSize64(size) {
+	        const buf = new Uint8Array(8);
+	        const view = new DataView(buf.buffer);
+	        view.setBigUint64(0, BigInt(size), false);
+	        return buf;
+	    }
+	    encode() {
+	        const encoded = new Uint8Array(this.size());
+	        let offset = 0;
+	        // version
+	        encoded.set(this.encodeSize64(this.Version), offset);
+	        offset += 8;
+	        // reads
+	        encoded.set(this.encodeSize32(this.Reads.length), offset);
+	        offset += 4;
+	        for (const v of this.Reads) {
+	            encoded.set(getBytes(v.StreamId), offset);
+	            offset += 4;
+	            const keySize = this.encodeSize24(v.Key.length);
+	            encoded.set(keySize, offset);
+	            offset += keySize.length;
+	            encoded.set(v.Key, offset);
+	            offset += v.Key.length;
+	        }
+	        // writes
+	        encoded.set(this.encodeSize32(this.Writes.length), offset);
+	        offset += 4;
+	        for (const v of this.Writes) {
+	            encoded.set(getBytes(v.StreamId), offset);
+	            offset += 4;
+	            const keySize = this.encodeSize24(v.Key.length);
+	            encoded.set(keySize, offset);
+	            offset += keySize.length;
+	            encoded.set(v.Key, offset);
+	            offset += v.Key.length;
+	            const dataSize = this.encodeSize64(v.Data.length);
+	            encoded.set(dataSize, offset);
+	            offset += dataSize.length;
+	            encoded.set(v.Data, offset);
+	            offset += v.Data.length;
+	        }
+	        // controls
+	        encoded.set(this.encodeSize32(this.Controls.length), offset);
+	        offset += 4;
+	        for (const v of this.Controls) {
+	            encoded[offset] = v.Type;
+	            offset += 1;
+	            encoded.set(getBytes(v.StreamId), offset);
+	            offset += 4;
+	            if (v.Key !== undefined) {
+	                const keySize = this.encodeSize24(v.Key.length);
+	                encoded.set(keySize, offset);
+	                offset += keySize.length;
+	                encoded.set(v.Key, offset);
+	                offset += v.Key.length;
+	            }
+	            if (v.Account !== undefined) {
+	                encoded.set(getBytes(v.Account), offset);
+	                offset += 20;
+	            }
+	        }
+	        return encoded;
+	    }
+	}
+
+	const MAX_SET_SIZE = 1 << 16; // 64K
+	const MAX_KEY_SIZE = 1 << 24; // 16.7M
+	const MAX_QUERY_SIZE = 1024 * 256;
+	// df2ff3bb0af36c6384e6206552a4ed807f6f6a26e7d0aa6bff772ddc9d4307aa
+	const STREAM_DOMAIN = node_crypto.createHash('sha256').update('STREAM').digest().toString('hex');
+
+	class StreamDataBuilder {
+	    version;
+	    streamIds;
+	    controls;
+	    reads;
+	    writes;
+	    constructor(version) {
+	        this.version = version;
+	        this.streamIds = new Map();
+	        this.controls = [];
+	        this.reads = new Map();
+	        this.writes = new Map();
+	    }
+	    hexToBytes(hex) {
+	        // Remove '0x' prefix if it exists
+	        if (hex.startsWith('0x')) {
+	            hex = hex.slice(2);
+	        }
+	        return Buffer.from(hex, 'hex');
+	    }
+	    build(sorted = false) {
+	        const data = new StreamData(this.version);
+	        // controls
+	        data.Controls = this.buildAccessControl();
+	        // reads
+	        data.Reads = [];
+	        for (const [streamId, keys] of this.reads.entries()) {
+	            for (const k of keys.keys()) {
+	                const key = this.hexToBytes(k);
+	                if (key.length > MAX_KEY_SIZE) {
+	                    throw new Error('errKeyTooLarge');
+	                }
+	                if (key.length === 0) {
+	                    throw new Error('errKeyIsEmpty');
+	                }
+	                data.Reads.push({
+	                    StreamId: streamId,
+	                    Key: key,
+	                });
+	                if (data.Reads.length > MAX_SET_SIZE) {
+	                    throw new Error('errSizeTooLarge');
+	                }
+	            }
+	        }
+	        // writes
+	        data.Writes = [];
+	        for (const [streamId, keys] of this.writes.entries()) {
+	            for (const [k, d] of keys.entries()) {
+	                const key = this.hexToBytes(k);
+	                if (key.length > MAX_KEY_SIZE) {
+	                    throw new Error('errKeyTooLarge');
+	                }
+	                if (key.length === 0) {
+	                    throw new Error('errKeyIsEmpty');
+	                }
+	                data.Writes.push({
+	                    StreamId: streamId,
+	                    Key: key,
+	                    Data: Uint8Array.from(d),
+	                });
+	                if (data.Writes.length > MAX_SET_SIZE) {
+	                    throw new Error('errSizeTooLarge');
+	                }
+	            }
+	        }
+	        if (sorted) {
+	            data.Reads.sort((a, b) => {
+	                const streamIdI = a.StreamId;
+	                const streamIdJ = b.StreamId;
+	                if (streamIdI === streamIdJ) {
+	                    return hexlify(a.Key) < hexlify(b.Key)
+	                        ? -1
+	                        : 1;
+	                }
+	                else {
+	                    return streamIdI < streamIdJ ? -1 : 1;
+	                }
+	            });
+	            data.Writes.sort((a, b) => {
+	                const streamIdI = a.StreamId;
+	                const streamIdJ = b.StreamId;
+	                if (streamIdI === streamIdJ) {
+	                    return hexlify(a.Key) < hexlify(b.Key)
+	                        ? -1
+	                        : 1;
+	                }
+	                else {
+	                    return streamIdI < streamIdJ ? -1 : 1;
+	                }
+	            });
+	        }
+	        return data;
+	    }
+	    set(streamId, key, data) {
+	        this.addStreamId(streamId);
+	        if (!this.writes.has(streamId)) {
+	            this.writes.set(streamId, new Map());
+	        }
+	        let maps = this.writes.get(streamId);
+	        maps.set(Buffer.from(key).toString('hex'), data);
+	        this.writes.set(streamId, maps);
+	    }
+	    addStreamId(streamId) {
+	        this.streamIds.set(streamId, true);
+	    }
+	    buildTags(sorted = false) {
+	        let ids = Array.from(this.streamIds.keys());
+	        if (sorted) {
+	            ids.sort((a, b) => (a < b ? -1 : 1));
+	        }
+	        return this.createTags(ids);
+	    }
+	    createTags(streamIds) {
+	        let result = new Uint8Array((1 + streamIds.length) * 32); // Assuming Hash is 32 bytes
+	        result.set(Buffer.from(STREAM_DOMAIN, 'utf-8'), 0);
+	        streamIds.forEach((id, index) => {
+	            result.set(getBytes(id), 32 * (index + 1));
+	        });
+	        return result;
+	    }
+	    buildAccessControl() {
+	        if (this.controls.length > MAX_SET_SIZE) {
+	            throw new Error('errSizeTooLarge');
+	        }
+	        return this.controls;
 	    }
 	}
 
@@ -25377,6 +25643,179 @@
 	    }
 	}
 
+	class Batcher {
+	    streamDataBuilder;
+	    clients;
+	    flow;
+	    blockchainRpc;
+	    constructor(version, clients, flow, provider) {
+	        this.streamDataBuilder = new StreamDataBuilder(version);
+	        this.clients = clients;
+	        this.flow = flow;
+	        this.blockchainRpc = provider;
+	    }
+	    async exec(opts) {
+	        // build stream data
+	        const streamData = this.streamDataBuilder.build();
+	        const encoded = streamData.encode();
+	        const data = new MemData(encoded);
+	        const uploader = new Uploader(this.clients, this.blockchainRpc, this.flow);
+	        if (opts === undefined) {
+	            opts = defaultUploadOption;
+	        }
+	        opts.tags = this.streamDataBuilder.buildTags();
+	        return await uploader.uploadFile(data, 0, opts);
+	    }
+	}
+
+	class KvIterator {
+	    // client is the client to use for requests.
+	    client;
+	    // streamId is the stream ID.
+	    streamId;
+	    // version is the version of the stream.
+	    version;
+	    // currentPair is the current key-value pair.
+	    currentPair;
+	    // NewIterator creates an iterator.
+	    constructor(client, streamId, version) {
+	        this.client = client;
+	        this.streamId = streamId;
+	        this.version = version;
+	    }
+	    // Valid check if current position is exist
+	    valid() {
+	        return this.currentPair !== undefined;
+	    }
+	    getCurrentPair() {
+	        return this.currentPair;
+	    }
+	    async move(kv) {
+	        if (kv === undefined) {
+	            this.currentPair = undefined;
+	            return null;
+	        }
+	        let value = await this.client.getValue(this.streamId, kv.key, kv.version);
+	        if (value === null) {
+	            return new Error('errValueNotFound');
+	        }
+	        this.currentPair = {
+	            key: kv.key,
+	            data: value.data,
+	            size: value.size,
+	            version: kv.version,
+	        };
+	        return null;
+	    }
+	    async seekBefore(key) {
+	        let kv = await this.client.getPrev(this.streamId, key, 0, 0, true, this.version);
+	        return this.move(kv);
+	    }
+	    async seekAfter(key) {
+	        let kv = await this.client.getNext(this.streamId, key, 0, 0, true, this.version);
+	        return this.move(kv);
+	    }
+	    async seekToFirst() {
+	        let kv = await this.client.getFirst(this.streamId, 0, 0, this.version);
+	        return this.move(kv);
+	    }
+	    async seekToLast() {
+	        let kv = await this.client.getLast(this.streamId, 0, 0, this.version);
+	        return this.move(kv);
+	    }
+	    async next() {
+	        if (!this.valid()) {
+	            return new Error('errIteratorInvalid');
+	        }
+	        let kv = await this.client.getNext(this.streamId, this.currentPair.key, 0, 0, false, this.version);
+	        return this.move(kv);
+	    }
+	    async prev() {
+	        if (!this.valid()) {
+	            return new Error('errIteratorInvalid');
+	        }
+	        let kv = await this.client.getPrev(this.streamId, this.currentPair.key, 0, 0, false, this.version);
+	        return this.move(kv);
+	    }
+	}
+
+	class KvClient {
+	    inner;
+	    constructor(rpc) {
+	        const client = new StorageKv(rpc);
+	        this.inner = client;
+	    }
+	    newIterator(streamId, version) {
+	        return new KvIterator(this, streamId, version);
+	    }
+	    async getValue(streamId, key, version) {
+	        let val = {
+	            data: [],
+	            size: 0,
+	            version: version || 0,
+	        };
+	        while (true) {
+	            const seg = await this.inner.getValue(streamId, key, val.data.length, MAX_QUERY_SIZE, version);
+	            if (seg === undefined) {
+	                return null;
+	            }
+	            if (val.version == Number.MAX_SAFE_INTEGER) {
+	                val.version = seg.version;
+	            }
+	            else if (val.version != seg.version) {
+	                val.version = seg.version;
+	                val.data = [];
+	            }
+	            val.size = seg.size;
+	            const data = concat([
+	                new Uint8Array(val.data),
+	                new Uint8Array(seg.data),
+	            ]);
+	            val.data = toUtf8Bytes(data);
+	            if (seg.size == val.data.length) {
+	                return val;
+	            }
+	        }
+	    }
+	    async get(streamId, key, startIndex, length, version) {
+	        return this.inner.getValue(streamId, key, startIndex, length, version);
+	    }
+	    async getNext(streamId, key, startIndex, length, inclusive, version) {
+	        return this.inner.getNext(streamId, key, startIndex, length, inclusive, version);
+	    }
+	    async getPrev(streamId, key, startIndex, length, inclusive, version) {
+	        return this.inner.getPrev(streamId, key, startIndex, length, inclusive, version);
+	    }
+	    async getFirst(streamId, startIndex, length, version) {
+	        return this.inner.getFirst(streamId, startIndex, length, version);
+	    }
+	    async getLast(streamId, startIndex, length, version) {
+	        return this.inner.getLast(streamId, startIndex, length, version);
+	    }
+	    async getTransactionResult(txSeq) {
+	        return this.inner.getTransactionResult(txSeq);
+	    }
+	    async getHoldingStreamIds() {
+	        return this.inner.getHoldingStreamIds();
+	    }
+	    async hasWritePermission(account, streamId, key, version) {
+	        return this.inner.hasWritePermission(account, streamId, key, version);
+	    }
+	    async isAdmin(account, streamId, version) {
+	        return this.inner.isAdmin(account, streamId, version);
+	    }
+	    async isSpecialKey(streamId, key, version) {
+	        return this.inner.isSpecialKey(streamId, key, version);
+	    }
+	    async isWriterOfKey(account, streamId, key, version) {
+	        return this.inner.isWriterOfKey(account, streamId, key, version);
+	    }
+	    async isWriterOfStream(account, streamId, version) {
+	        return this.inner.isWriterOfStream(account, streamId, version);
+	    }
+	}
+
+	exports.Batcher = Batcher;
 	exports.Blob = Blob$1;
 	exports.DEFAULT_CHUNK_SIZE = DEFAULT_CHUNK_SIZE;
 	exports.DEFAULT_SEGMENT_MAX_CHUNKS = DEFAULT_SEGMENT_MAX_CHUNKS;
@@ -25387,13 +25826,21 @@
 	exports.FixedPriceFlow__factory = FixedPriceFlow__factory;
 	exports.GetSplitNum = GetSplitNum;
 	exports.Indexer = Indexer;
+	exports.KvClient = KvClient;
+	exports.KvIterator = KvIterator;
 	exports.LeafNode = LeafNode;
+	exports.MAX_KEY_SIZE = MAX_KEY_SIZE;
+	exports.MAX_QUERY_SIZE = MAX_QUERY_SIZE;
+	exports.MAX_SET_SIZE = MAX_SET_SIZE;
 	exports.MemData = MemData;
 	exports.MerkleTree = MerkleTree;
 	exports.Proof = Proof;
 	exports.SMALL_FILE_SIZE_THRESHOLD = SMALL_FILE_SIZE_THRESHOLD;
+	exports.STREAM_DOMAIN = STREAM_DOMAIN;
 	exports.StorageKv = StorageKv;
 	exports.StorageNode = StorageNode;
+	exports.StreamData = StreamData;
+	exports.StreamDataBuilder = StreamDataBuilder;
 	exports.Uploader = Uploader;
 	exports.WaitForReceipt = WaitForReceipt;
 	exports.ZERO_HASH = ZERO_HASH;
@@ -25401,6 +25848,7 @@
 	exports.calculatePrice = calculatePrice;
 	exports.checkExist = checkExist;
 	exports.computePaddedSize = computePaddedSize;
+	exports.defaultUploadOption = defaultUploadOption;
 	exports.factories = index;
 	exports.getFlowContract = getFlowContract;
 	exports.getMarketContract = getMarketContract;

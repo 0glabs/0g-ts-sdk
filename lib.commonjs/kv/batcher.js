@@ -15,14 +15,17 @@ class Batcher {
         this.flow = flow;
         this.blockchainRpc = provider;
     }
-    exec(opts) {
+    async exec(opts) {
         // build stream data
         const streamData = this.streamDataBuilder.build();
         const encoded = streamData.encode();
         const data = new index_js_1.MemData(encoded);
         const uploader = new index_js_2.Uploader(this.clients, this.blockchainRpc, this.flow);
+        if (opts === undefined) {
+            opts = index_js_2.defaultUploadOption;
+        }
         opts.tags = this.streamDataBuilder.buildTags();
-        uploader.uploadFile(data, 0, opts);
+        return await uploader.uploadFile(data, 0, opts);
     }
 }
 exports.Batcher = Batcher;

@@ -2,8 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StreamDataBuilder = void 0;
 const ethers_1 = require("ethers");
-const constants_1 = require("./constants");
-const types_1 = require("./types");
+const constants_js_1 = require("./constants.js");
+const types_js_1 = require("./types.js");
 class StreamDataBuilder {
     version;
     streamIds;
@@ -17,16 +17,23 @@ class StreamDataBuilder {
         this.reads = new Map();
         this.writes = new Map();
     }
+    hexToBytes(hex) {
+        // Remove '0x' prefix if it exists
+        if (hex.startsWith('0x')) {
+            hex = hex.slice(2);
+        }
+        return Buffer.from(hex, 'hex');
+    }
     build(sorted = false) {
-        const data = new types_1.StreamData(this.version);
+        const data = new types_js_1.StreamData(this.version);
         // controls
         data.Controls = this.buildAccessControl();
         // reads
         data.Reads = [];
         for (const [streamId, keys] of this.reads.entries()) {
             for (const k of keys.keys()) {
-                const key = ethers_1.ethers.toUtf8Bytes(k);
-                if (key.length > constants_1.MAX_KEY_SIZE) {
+                const key = this.hexToBytes(k);
+                if (key.length > constants_js_1.MAX_KEY_SIZE) {
                     throw new Error('errKeyTooLarge');
                 }
                 if (key.length === 0) {
@@ -36,7 +43,7 @@ class StreamDataBuilder {
                     StreamId: streamId,
                     Key: key,
                 });
-                if (data.Reads.length > constants_1.MAX_SET_SIZE) {
+                if (data.Reads.length > constants_js_1.MAX_SET_SIZE) {
                     throw new Error('errSizeTooLarge');
                 }
             }
@@ -45,8 +52,8 @@ class StreamDataBuilder {
         data.Writes = [];
         for (const [streamId, keys] of this.writes.entries()) {
             for (const [k, d] of keys.entries()) {
-                const key = ethers_1.ethers.toUtf8Bytes(k);
-                if (key.length > constants_1.MAX_KEY_SIZE) {
+                const key = this.hexToBytes(k);
+                if (key.length > constants_js_1.MAX_KEY_SIZE) {
                     throw new Error('errKeyTooLarge');
                 }
                 if (key.length === 0) {
@@ -57,7 +64,7 @@ class StreamDataBuilder {
                     Key: key,
                     Data: Uint8Array.from(d),
                 });
-                if (data.Writes.length > constants_1.MAX_SET_SIZE) {
+                if (data.Writes.length > constants_js_1.MAX_SET_SIZE) {
                     throw new Error('errSizeTooLarge');
                 }
             }
@@ -92,14 +99,12 @@ class StreamDataBuilder {
     }
     set(streamId, key, data) {
         this.addStreamId(streamId);
-        const b = ethers_1.ethers.hexlify(new Uint8Array(key));
-        if (this.writes.has(streamId)) {
-            this.writes.get(streamId).set(b, data);
-        }
-        else {
+        if (!this.writes.has(streamId)) {
             this.writes.set(streamId, new Map());
-            this.writes.get(streamId).set(b, data);
         }
+        let maps = this.writes.get(streamId);
+        maps.set(Buffer.from(key).toString('hex'), data);
+        this.writes.set(streamId, maps);
     }
     addStreamId(streamId) {
         this.streamIds.set(streamId, true);
@@ -112,15 +117,15 @@ class StreamDataBuilder {
         return this.createTags(ids);
     }
     createTags(streamIds) {
-        const result = new Uint8Array((1 + streamIds.length) * 32); // Assuming Hash is 32 bytes
-        result.set(ethers_1.ethers.toUtf8Bytes(constants_1.StreamDomain), 0);
+        let result = new Uint8Array((1 + streamIds.length) * 32); // Assuming Hash is 32 bytes
+        result.set(Buffer.from(constants_js_1.STREAM_DOMAIN, 'utf-8'), 0);
         streamIds.forEach((id, index) => {
-            result.set(ethers_1.ethers.toUtf8Bytes(id), 32 * (index + 1));
+            result.set(ethers_1.ethers.getBytes(id), 32 * (index + 1));
         });
         return result;
     }
     buildAccessControl() {
-        if (this.controls.length > constants_1.MAX_SET_SIZE) {
+        if (this.controls.length > constants_js_1.MAX_SET_SIZE) {
             throw new Error('errSizeTooLarge');
         }
         return this.controls;

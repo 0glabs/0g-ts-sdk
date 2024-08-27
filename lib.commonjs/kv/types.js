@@ -72,16 +72,15 @@ class StreamData {
     encode() {
         const encoded = new Uint8Array(this.size());
         let offset = 0;
-        const view = new DataView(encoded.buffer);
         // version
-        view.setBigUint64(0, BigInt(this.Version.toString()), false);
+        encoded.set(this.encodeSize64(this.Version), offset);
         offset += 8;
         // reads
         encoded.set(this.encodeSize32(this.Reads.length), offset);
         offset += 4;
         for (const v of this.Reads) {
-            encoded.set(ethers_1.ethers.toUtf8Bytes(v.StreamId), offset);
-            offset += 32;
+            encoded.set(ethers_1.ethers.getBytes(v.StreamId), offset);
+            offset += 4;
             const keySize = this.encodeSize24(v.Key.length);
             encoded.set(keySize, offset);
             offset += keySize.length;
@@ -92,8 +91,8 @@ class StreamData {
         encoded.set(this.encodeSize32(this.Writes.length), offset);
         offset += 4;
         for (const v of this.Writes) {
-            encoded.set(ethers_1.ethers.toUtf8Bytes(v.StreamId), offset);
-            offset += 32;
+            encoded.set(ethers_1.ethers.getBytes(v.StreamId), offset);
+            offset += 4;
             const keySize = this.encodeSize24(v.Key.length);
             encoded.set(keySize, offset);
             offset += keySize.length;
@@ -111,17 +110,17 @@ class StreamData {
         for (const v of this.Controls) {
             encoded[offset] = v.Type;
             offset += 1;
-            encoded.set(ethers_1.ethers.toUtf8Bytes(v.StreamId), offset);
-            offset += 32;
-            if (v.Key) {
+            encoded.set(ethers_1.ethers.getBytes(v.StreamId), offset);
+            offset += 4;
+            if (v.Key !== undefined) {
                 const keySize = this.encodeSize24(v.Key.length);
                 encoded.set(keySize, offset);
                 offset += keySize.length;
                 encoded.set(v.Key, offset);
                 offset += v.Key.length;
             }
-            if (v.Account) {
-                encoded.set(ethers_1.ethers.toUtf8Bytes(v.Account), offset);
+            if (v.Account !== undefined) {
+                encoded.set(ethers_1.ethers.getBytes(v.Account), offset);
                 offset += 20;
             }
         }

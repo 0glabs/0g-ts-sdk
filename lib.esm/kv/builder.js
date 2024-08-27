@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
-import { MAX_KEY_SIZE, MAX_SET_SIZE, StreamDomain } from './constants';
-import { StreamData } from './types';
+import { MAX_KEY_SIZE, MAX_SET_SIZE, STREAM_DOMAIN } from './constants.js';
+import { StreamData } from './types.js';
 export class StreamDataBuilder {
     version;
     streamIds;
@@ -14,6 +14,13 @@ export class StreamDataBuilder {
         this.reads = new Map();
         this.writes = new Map();
     }
+    hexToBytes(hex) {
+        // Remove '0x' prefix if it exists
+        if (hex.startsWith('0x')) {
+            hex = hex.slice(2);
+        }
+        return Buffer.from(hex, 'hex');
+    }
     build(sorted = false) {
         const data = new StreamData(this.version);
         // controls
@@ -22,7 +29,7 @@ export class StreamDataBuilder {
         data.Reads = [];
         for (const [streamId, keys] of this.reads.entries()) {
             for (const k of keys.keys()) {
-                const key = ethers.toUtf8Bytes(k);
+                const key = this.hexToBytes(k);
                 if (key.length > MAX_KEY_SIZE) {
                     throw new Error('errKeyTooLarge');
                 }
@@ -42,7 +49,7 @@ export class StreamDataBuilder {
         data.Writes = [];
         for (const [streamId, keys] of this.writes.entries()) {
             for (const [k, d] of keys.entries()) {
-                const key = ethers.toUtf8Bytes(k);
+                const key = this.hexToBytes(k);
                 if (key.length > MAX_KEY_SIZE) {
                     throw new Error('errKeyTooLarge');
                 }
@@ -89,14 +96,12 @@ export class StreamDataBuilder {
     }
     set(streamId, key, data) {
         this.addStreamId(streamId);
-        const b = ethers.hexlify(new Uint8Array(key));
-        if (this.writes.has(streamId)) {
-            this.writes.get(streamId).set(b, data);
-        }
-        else {
+        if (!this.writes.has(streamId)) {
             this.writes.set(streamId, new Map());
-            this.writes.get(streamId).set(b, data);
         }
+        let maps = this.writes.get(streamId);
+        maps.set(Buffer.from(key).toString('hex'), data);
+        this.writes.set(streamId, maps);
     }
     addStreamId(streamId) {
         this.streamIds.set(streamId, true);
@@ -109,10 +114,10 @@ export class StreamDataBuilder {
         return this.createTags(ids);
     }
     createTags(streamIds) {
-        const result = new Uint8Array((1 + streamIds.length) * 32); // Assuming Hash is 32 bytes
-        result.set(ethers.toUtf8Bytes(StreamDomain), 0);
+        let result = new Uint8Array((1 + streamIds.length) * 32); // Assuming Hash is 32 bytes
+        result.set(Buffer.from(STREAM_DOMAIN, 'utf-8'), 0);
         streamIds.forEach((id, index) => {
-            result.set(ethers.toUtf8Bytes(id), 32 * (index + 1));
+            result.set(ethers.getBytes(id), 32 * (index + 1));
         });
         return result;
     }

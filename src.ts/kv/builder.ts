@@ -1,19 +1,19 @@
 import { ethers } from 'ethers'
-import { MAX_KEY_SIZE, MAX_SET_SIZE, StreamDomain } from './constants'
-import { AccessControl, StreamData } from './types'
+import { MAX_KEY_SIZE, MAX_SET_SIZE, STREAM_DOMAIN } from './constants.js'
+import { AccessControl, StreamData } from './types.js'
 import { Bytes } from '@ethersproject/bytes'
 
 // Assuming common.Hash is equivalent to string (hex string) in TypeScript
 type Hash = string
 
 export class StreamDataBuilder {
-    version: bigint
+    version: number
     streamIds: Map<Hash, boolean>
     controls: AccessControl[]
     reads: Map<Hash, Map<string, boolean>>
     writes: Map<Hash, Map<string, Bytes>>
 
-    constructor(version: bigint) {
+    constructor(version: number) {
         this.version = version
         this.streamIds = new Map<Hash, boolean>()
         this.controls = []
@@ -21,7 +21,15 @@ export class StreamDataBuilder {
         this.writes = new Map<Hash, Map<string, Uint8Array>>()
     }
 
-    public build(sorted: boolean = false): StreamData {
+    private hexToBytes(hex: string): Uint8Array {
+        // Remove '0x' prefix if it exists
+        if (hex.startsWith('0x')) {
+            hex = hex.slice(2);
+        }
+        return Buffer.from(hex, 'hex');
+    }
+
+    build(sorted: boolean = false): StreamData {
         const data: StreamData = new StreamData(this.version)
 
         // controls
@@ -31,7 +39,7 @@ export class StreamDataBuilder {
         data.Reads = []
         for (const [streamId, keys] of this.reads.entries()) {
             for (const k of keys.keys()) {
-                const key = ethers.toUtf8Bytes(k)
+                const key = this.hexToBytes(k)
                 if (key.length > MAX_KEY_SIZE) {
                     throw new Error('errKeyTooLarge')
                 }
@@ -53,7 +61,7 @@ export class StreamDataBuilder {
         data.Writes = []
         for (const [streamId, keys] of this.writes.entries()) {
             for (const [k, d] of keys.entries()) {
-                const key = ethers.toUtf8Bytes(k)
+                const key = this.hexToBytes(k)
                 if (key.length > MAX_KEY_SIZE) {
                     throw new Error('errKeyTooLarge')
                 }
@@ -100,17 +108,16 @@ export class StreamDataBuilder {
         return data
     }
 
-    public set(streamId: string, key: Bytes, data: Bytes) {
+    set(streamId: string, key: Uint8Array, data: Uint8Array) {
         this.addStreamId(streamId)
 
-        const b = ethers.hexlify(new Uint8Array(key))
-    
-        if (this.writes.has(streamId)) {
-            this.writes.get(streamId)!.set(b, data)
-        } else {
+        if (!this.writes.has(streamId)) {
             this.writes.set(streamId, new Map<string, Uint8Array>())
-            this.writes.get(streamId)!.set(b, data)
         }
+
+        let maps = this.writes.get(streamId)!
+        maps.set(Buffer.from(key).toString('hex'), data)
+        this.writes.set(streamId, maps) 
     }
 
     addStreamId(streamId: Hash): void {
@@ -128,11 +135,11 @@ export class StreamDataBuilder {
     }
 
     private createTags(streamIds: Hash[]): Uint8Array {
-        const result = new Uint8Array((1 + streamIds.length) * 32) // Assuming Hash is 32 bytes
-        result.set(ethers.toUtf8Bytes(StreamDomain), 0)
+        let result = new Uint8Array((1 + streamIds.length) * 32) // Assuming Hash is 32 bytes
+        result.set(Buffer.from(STREAM_DOMAIN, 'utf-8'), 0)
 
         streamIds.forEach((id, index) => {
-            result.set(ethers.toUtf8Bytes(id), 32 * (index + 1))
+            result.set(ethers.getBytes(id), 32 * (index + 1))
         })
 
         return result

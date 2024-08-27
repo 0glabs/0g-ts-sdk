@@ -1,1 +1,1 @@
-{"version":3,"file":"types.js","sourceRoot":"","sources":["../../src.ts/transfer/types.ts"],"names":[],"mappings":""}
+{"version":3,"file":"types.js","sourceRoot":"","sources":["../../src.ts/transfer/types.ts"],"names":[],"mappings":";;;AAkBW,QAAA,mBAAmB,GAAiB;IAC3C,IAAI,EAAE,IAAI;IACV,gBAAgB,EAAE,IAAI;IACtB,QAAQ,EAAE,EAAE;IACZ,eAAe,EAAE,CAAC;IAClB,MAAM,EAAE,KAAK;IACb,GAAG,EAAE,MAAM,CAAC,CAAC,CAAC;CACjB,CAAA"}

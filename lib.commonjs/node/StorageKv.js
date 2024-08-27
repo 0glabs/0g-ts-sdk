@@ -7,12 +7,9 @@ class StorageKv extends open_jsonrpc_provider_1.HttpProvider {
         super({ url });
     }
     async getValue(streamId, key, startIndex, length, version) {
-        var params;
-        if (version === undefined) {
-            params = [streamId, key, startIndex, length];
-        }
-        else {
-            params = [streamId, key, startIndex, length, version];
+        let params = [streamId, key, startIndex, length];
+        if (version !== undefined) {
+            params.push(version);
         }
         const res = await super.request({
             method: 'kv_getValue',
@@ -21,12 +18,9 @@ class StorageKv extends open_jsonrpc_provider_1.HttpProvider {
         return res;
     }
     async getNext(streamId, key, startIndex, length, inclusive, version) {
-        var params;
-        if (version === undefined) {
-            params = [streamId, key, startIndex, length, inclusive];
-        }
-        else {
-            params = [streamId, key, startIndex, length, inclusive, version];
+        let params = [streamId, key, startIndex, length, inclusive];
+        if (version !== undefined) {
+            params.push(version);
         }
         const res = await super.request({
             method: 'kv_getNext',
@@ -35,12 +29,9 @@ class StorageKv extends open_jsonrpc_provider_1.HttpProvider {
         return res;
     }
     async getPrev(streamId, key, startIndex, length, inclusive, version) {
-        var params;
-        if (version === undefined) {
-            params = [streamId, key, startIndex, length, inclusive];
-        }
-        else {
-            params = [streamId, key, startIndex, length, inclusive, version];
+        let params = [streamId, key, startIndex, length, inclusive];
+        if (version !== undefined) {
+            params.push(version);
         }
         const res = await super.request({
             method: 'kv_getPrev',
@@ -49,12 +40,9 @@ class StorageKv extends open_jsonrpc_provider_1.HttpProvider {
         return res;
     }
     async getFirst(streamId, startIndex, length, version) {
-        var params;
-        if (version === undefined) {
-            params = [streamId, startIndex, length];
-        }
-        else {
-            params = [streamId, startIndex, length, version];
+        let params = [streamId, startIndex, length];
+        if (version !== undefined) {
+            params.push(version);
         }
         const res = await super.request({
             method: 'kv_getFirst',
@@ -63,12 +51,9 @@ class StorageKv extends open_jsonrpc_provider_1.HttpProvider {
         return res;
     }
     async getLast(streamId, startIndex, length, version) {
-        var params;
-        if (version === undefined) {
-            params = [streamId, startIndex, length];
-        }
-        else {
-            params = [streamId, startIndex, length, version];
+        let params = [streamId, startIndex, length];
+        if (version !== undefined) {
+            params.push(version);
         }
         const res = await super.request({
             method: 'kv_getLast',
@@ -79,7 +64,7 @@ class StorageKv extends open_jsonrpc_provider_1.HttpProvider {
     async getTransactionResult(txSeq) {
         const res = await super.request({
             method: 'kv_getTransactionResult',
-            params: [txSeq],
+            params: [txSeq.toString()],
         });
         return res;
     }
@@ -90,12 +75,9 @@ class StorageKv extends open_jsonrpc_provider_1.HttpProvider {
         return res;
     }
     async hasWritePermission(account, streamId, key, version) {
-        var params;
-        if (version === undefined) {
-            params = [account, streamId, key];
-        }
-        else {
-            params = [account, streamId, key, version];
+        let params = [account, streamId, key];
+        if (version !== undefined) {
+            params.push(version);
         }
         const res = await super.request({
             method: 'kv_hasWritePermission',
@@ -103,13 +85,10 @@ class StorageKv extends open_jsonrpc_provider_1.HttpProvider {
         });
         return res;
     }
-    async IsAdmin(account, streamId, version) {
-        var params;
-        if (version === undefined) {
-            params = [account, streamId];
-        }
-        else {
-            params = [account, streamId, version];
+    async isAdmin(account, streamId, version) {
+        let params = [account, streamId];
+        if (version !== undefined) {
+            params.push(version);
         }
         const res = await super.request({
             method: 'kv_IsAdmin',
@@ -118,15 +97,34 @@ class StorageKv extends open_jsonrpc_provider_1.HttpProvider {
         return res;
     }
     async isSpecialKey(stremId, key, version) {
-        var params;
-        if (version === undefined) {
-            params = [stremId, key];
-        }
-        else {
-            params = [stremId, key, version];
+        let params = [stremId, key];
+        if (version !== undefined) {
+            params.push(version);
         }
         const res = await super.request({
             method: 'kv_isSpecialKey',
+            params: params,
+        });
+        return res;
+    }
+    async isWriterOfKey(account, streamId, key, version) {
+        let params = [account, streamId, key];
+        if (version !== undefined) {
+            params.push(version);
+        }
+        const res = await super.request({
+            method: 'kv_isWriterOfKey',
+            params: params,
+        });
+        return res;
+    }
+    async isWriterOfStream(account, streamId, version) {
+        let params = [account, streamId];
+        if (version !== undefined) {
+            params.push(version);
+        }
+        const res = await super.request({
+            method: 'kv_isWriterOfStream',
             params: params,
         });
         return res;

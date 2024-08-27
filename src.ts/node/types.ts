@@ -50,18 +50,14 @@ export interface Metadata {
  * StorageKV types
  */
 export interface Value {
-    version: bigint
+    version: number
     data: Bytes
     size: number
 }
 
 export interface KeyValue {
-    version: bigint
+    version: number
     data: Bytes
     size: number
     key: Bytes
-}
-
-export interface ZgsClient {
-    url: string
 }

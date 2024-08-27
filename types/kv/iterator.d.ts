@@ -1,14 +1,20 @@
 import { Bytes } from '@ethersproject/bytes';
-import { KeyValue, StorageKv, Value } from '../node/index.js';
-export declare class Iterator {
-    client: StorageKv;
+import { KeyValue } from '../node/index.js';
+import { KvClient } from './client.js';
+export declare class KvIterator {
+    client: KvClient;
     streamId: string;
-    version: bigint;
+    version: number | undefined;
     currentPair: KeyValue | undefined;
-    constructor(client: StorageKv, streamId: string, version?: bigint);
+    constructor(client: KvClient, streamId: string, version?: number);
     valid(): boolean;
     getCurrentPair(): KeyValue | undefined;
-    getValue(streamId: string, key: Bytes, version?: bigint): Promise<Value | null>;
     move(kv: KeyValue): Promise<Error | null>;
+    seekBefore(key: Bytes): Promise<Error | null>;
+    seekAfter(key: Bytes): Promise<Error | null>;
+    seekToFirst(): Promise<Error | null>;
+    seekToLast(): Promise<Error | null>;
+    next(): Promise<Error | null>;
+    prev(): Promise<Error | null>;
 }
 //# sourceMappingURL=iterator.d.ts.map

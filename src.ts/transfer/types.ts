@@ -15,3 +15,12 @@ export interface UploadOption {
     skipTx: boolean // skip sending transaction on chain, this can set to true only if the data has already settled on chain before
     fee: bigint // fee to pay for data storage
 }
+
+export var defaultUploadOption: UploadOption = {
+    tags: '0x',
+    finalityRequired: true,
+    taskSize: 10,
+    expectedReplica: 1,
+    skipTx: false,
+    fee: BigInt(0),
+}
