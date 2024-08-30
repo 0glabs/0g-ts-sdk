@@ -41,6 +41,8 @@ export class StorageKv extends HttpProvider {
             params.push(version)
         }
 
+        console.log(params)
+
         const res = await super.request({
             method: 'kv_getNext',
             params: params,

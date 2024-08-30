@@ -21525,22 +21525,6 @@ function GetSplitNum(total, unit) {
     return Math.floor((total - 1) / unit + 1);
 }
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
-async function WaitForReceipt(provider, txHash, opts) {
-    var receipt;
-    if (opts === undefined) {
-        opts = { Retries: 10, Interval: 5 };
-    }
-    let nTries = 0;
-    while (nTries < opts.Retries) {
-        receipt = await provider.getTransactionReceipt(txHash);
-        if (receipt !== null && receipt.status == 1) {
-            return receipt;
-        }
-        await delay(opts.Interval * 1000);
-        nTries++;
-    }
-    return null;
-}
 
 class JsonRpcError extends Error {
     constructor(message, code, data) {
@@ -23946,6 +23930,7 @@ class StorageKv extends HttpProvider {
         if (version !== undefined) {
             params.push(version);
         }
+        console.log(params);
         const res = await super.request({
             method: 'kv_getNext',
             params: params,
@@ -24201,6 +24186,7 @@ class Uploader {
         if (err != null || submission == null) {
             return ['', new Error('Failed to create submission')];
         }
+        console.log('flow:', this.flow);
         let marketAddr = await this.flow.market();
         let marketContract = getMarketContract(marketAddr, this.provider);
         let pricePerSector = await marketContract.pricePerSector();
@@ -24223,14 +24209,16 @@ class Uploader {
         console.log('Submitting transaction with fee:', fee);
         let tx = await this.flow.submit(submission, txOpts);
         await tx.wait();
-        let receipt = WaitForReceipt(this.provider, tx.hash, retryOpts);
-        if (receipt == null) {
+        let receipt = await this.waitForReceipt(this.provider, tx.hash, retryOpts);
+        if (receipt === null) {
             return ['', new Error('Failed to get transaction receipt')];
         }
+        await this.waitForLogEntry(tree.rootHash(), opts.finalityRequired, receipt);
         const tasks = await this.segmentUpload(file, tree, segIndex, opts.taskSize);
-        if (tasks == null) {
+        if (tasks === null) {
             return ['', new Error('Failed to get upload tasks')];
         }
+        console.log('Processing tasks in parallel with ', tasks.length, ' tasks...');
         await this.processTasksInParallel(file, tree, tasks)
             .then(() => console.log('All tasks processed'))
             .catch((error) => {
@@ -24238,6 +24226,54 @@ class Uploader {
         });
         // await this.uploadFileHelper(file, tree, segIndex)
         return [tx.hash, null];
+    }
+    async waitForReceipt(provider, txHash, opts) {
+        var receipt;
+        if (opts === undefined) {
+            opts = { Retries: 10, Interval: 5 };
+        }
+        let nTries = 0;
+        while (nTries < opts.Retries) {
+            receipt = await provider.getTransactionReceipt(txHash);
+            if (receipt !== null && receipt.status == 1) {
+                return receipt;
+            }
+            await delay(opts.Interval * 1000);
+            nTries++;
+        }
+        return null;
+    }
+    async waitForLogEntry(root, finalityRequired, receipt) {
+        console.log('Wait for log entry on storage node');
+        while (true) {
+            await delay(1000);
+            let ok = true;
+            for (let client of this.nodes) {
+                let info = await client.getFileInfo(root);
+                if (info === null) {
+                    let logMsg = 'Log entry is unavailable yet';
+                    if (receipt !== undefined) {
+                        let status = await client.getStatus();
+                        if (status !== null) {
+                            const logSyncHeight = status.logSyncHeight;
+                            const txBlock = receipt.blockNumber;
+                            logMsg = `Log entry is unavailable yet, txBlock=${txBlock}, zgsNodeSyncHeight=${logSyncHeight}`;
+                        }
+                    }
+                    console.log(logMsg);
+                    ok = false;
+                    break;
+                }
+                if (finalityRequired && !info.finalized) {
+                    console.log('Log entry is available, but not finalized yet');
+                    ok = false;
+                    break;
+                }
+            }
+            if (ok) {
+                break;
+            }
+        }
     }
     // Function to process all tasks in parallel
     async processTasksInParallel(file, tree, tasks) {
@@ -24668,7 +24704,10 @@ const MAX_SET_SIZE = 1 << 16; // 64K
 const MAX_KEY_SIZE = 1 << 24; // 16.7M
 const MAX_QUERY_SIZE = 1024 * 256;
 // df2ff3bb0af36c6384e6206552a4ed807f6f6a26e7d0aa6bff772ddc9d4307aa
-const STREAM_DOMAIN = createHash$1('sha256').update('STREAM').digest().toString('hex');
+const STREAM_DOMAIN = createHash$1('sha256')
+    .update('STREAM')
+    .digest()
+    .toString('hex');
 
 class StreamDataBuilder {
     version;
@@ -25455,7 +25494,8 @@ class KvIterator {
         return this.currentPair;
     }
     async move(kv) {
-        if (kv === undefined) {
+        console.log('in move', kv);
+        if (kv === null) {
             this.currentPair = undefined;
             return null;
         }
@@ -25481,6 +25521,7 @@ class KvIterator {
     }
     async seekToFirst() {
         let kv = await this.client.getFirst(this.streamId, 0, 0, this.version);
+        console.log(kv);
         return this.move(kv);
     }
     async seekToLast() {
@@ -25514,7 +25555,7 @@ class KvClient {
     }
     async getValue(streamId, key, version) {
         let val = {
-            data: [],
+            data: '',
             size: 0,
             version: version || 0,
         };
@@ -25523,20 +25564,18 @@ class KvClient {
             if (seg === undefined) {
                 return null;
             }
-            if (val.version == Number.MAX_SAFE_INTEGER) {
+            if (val.version === Number.MAX_SAFE_INTEGER) {
                 val.version = seg.version;
             }
-            else if (val.version != seg.version) {
+            else if (val.version !== seg.version) {
                 val.version = seg.version;
-                val.data = [];
+                val.data = '';
             }
             val.size = seg.size;
-            const data = concat([
-                new Uint8Array(val.data),
-                new Uint8Array(seg.data),
-            ]);
-            val.data = toUtf8Bytes(data);
-            if (seg.size == val.data.length) {
+            const segData = Buffer.from(seg.data, 'base64');
+            const valData = Buffer.from(val.data, 'base64');
+            val.data = Buffer.concat([valData, segData]).toString('base64');
+            if (seg.size == segData.length + valData.length) {
                 return val;
             }
         }
@@ -25579,4 +25618,4 @@ class KvClient {
     }
 }
 
-export { Batcher, Blob$1 as Blob, DEFAULT_CHUNK_SIZE, DEFAULT_SEGMENT_MAX_CHUNKS, DEFAULT_SEGMENT_SIZE, Downloader, EMPTY_CHUNK, EMPTY_CHUNK_HASH, FixedPriceFlow__factory, GetSplitNum, Indexer, KvClient, KvIterator, LeafNode, MAX_KEY_SIZE, MAX_QUERY_SIZE, MAX_SET_SIZE, MemData, MerkleTree, Proof, ProofErrors, SMALL_FILE_SIZE_THRESHOLD, STREAM_DOMAIN, StorageKv, StorageNode, StreamData, StreamDataBuilder, Uploader, WaitForReceipt, ZERO_HASH, ZgFile, calculatePrice, checkExist, computePaddedSize, defaultUploadOption, index as factories, getFlowContract, getMarketContract, getShardConfigs, isValidConfig, nextPow2, numSplits };
+export { Batcher, Blob$1 as Blob, DEFAULT_CHUNK_SIZE, DEFAULT_SEGMENT_MAX_CHUNKS, DEFAULT_SEGMENT_SIZE, Downloader, EMPTY_CHUNK, EMPTY_CHUNK_HASH, FixedPriceFlow__factory, GetSplitNum, Indexer, KvClient, KvIterator, LeafNode, MAX_KEY_SIZE, MAX_QUERY_SIZE, MAX_SET_SIZE, MemData, MerkleTree, Proof, ProofErrors, SMALL_FILE_SIZE_THRESHOLD, STREAM_DOMAIN, StorageKv, StorageNode, StreamData, StreamDataBuilder, Uploader, ZERO_HASH, ZgFile, calculatePrice, checkExist, computePaddedSize, defaultUploadOption, delay, index as factories, getFlowContract, getMarketContract, getShardConfigs, isValidConfig, nextPow2, numSplits };

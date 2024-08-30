@@ -1,7 +1,6 @@
 import { StorageKv } from '../node/index.js';
 import { KvIterator } from './iterator.js';
 import { MAX_QUERY_SIZE } from './constants.js';
-import { ethers } from 'ethers';
 export class KvClient {
     inner;
     constructor(rpc) {
@@ -13,7 +12,7 @@ export class KvClient {
     }
     async getValue(streamId, key, version) {
         let val = {
-            data: [],
+            data: '',
             size: 0,
             version: version || 0,
         };
@@ -22,20 +21,18 @@ export class KvClient {
             if (seg === undefined) {
                 return null;
             }
-            if (val.version == Number.MAX_SAFE_INTEGER) {
+            if (val.version === Number.MAX_SAFE_INTEGER) {
                 val.version = seg.version;
             }
-            else if (val.version != seg.version) {
+            else if (val.version !== seg.version) {
                 val.version = seg.version;
-                val.data = [];
+                val.data = '';
             }
             val.size = seg.size;
-            const data = ethers.concat([
-                new Uint8Array(val.data),
-                new Uint8Array(seg.data),
-            ]);
-            val.data = ethers.toUtf8Bytes(data);
-            if (seg.size == val.data.length) {
+            const segData = Buffer.from(seg.data, 'base64');
+            const valData = Buffer.from(val.data, 'base64');
+            val.data = Buffer.concat([valData, segData]).toString('base64');
+            if (seg.size == segData.length + valData.length) {
                 return val;
             }
         }

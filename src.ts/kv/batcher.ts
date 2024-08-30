@@ -2,7 +2,11 @@ import { StreamDataBuilder } from './builder.js'
 import { FixedPriceFlow } from '../contracts/flow/index.js'
 import { StorageNode } from '../node/index.js'
 import { MemData } from '../file/index.js'
-import { defaultUploadOption, Uploader, UploadOption } from '../transfer/index.js'
+import {
+    defaultUploadOption,
+    Uploader,
+    UploadOption,
+} from '../transfer/index.js'
 
 export class Batcher {
     streamDataBuilder: StreamDataBuilder

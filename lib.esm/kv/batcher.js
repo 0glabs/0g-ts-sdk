@@ -1,6 +1,6 @@
 import { StreamDataBuilder } from './builder.js';
 import { MemData } from '../file/index.js';
-import { defaultUploadOption, Uploader } from '../transfer/index.js';
+import { defaultUploadOption, Uploader, } from '../transfer/index.js';
 export class Batcher {
     streamDataBuilder;
     clients;

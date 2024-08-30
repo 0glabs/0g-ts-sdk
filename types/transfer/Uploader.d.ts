@@ -13,6 +13,8 @@ export declare class Uploader {
     gasLimit: bigint;
     constructor(nodes: StorageNode[], providerRpc: string, flow: FixedPriceFlow, gasPrice?: bigint, gasLimit?: bigint);
     uploadFile(file: AbstractFile, segIndex: number | undefined, opts: UploadOption, retryOpts?: RetryOpts): Promise<[string, Error | null]>;
+    waitForReceipt(provider: ethers.JsonRpcProvider, txHash: string, opts?: RetryOpts): Promise<ethers.TransactionReceipt | null>;
+    waitForLogEntry(root: string, finalityRequired: boolean, receipt?: ethers.TransactionReceipt): Promise<void>;
     processTasksInParallel(file: AbstractFile, tree: MerkleTree, tasks: UploadTask[]): Promise<void>;
     segmentUpload(file: AbstractFile, tree: MerkleTree, segIndex: number, taskSize: number): Promise<UploadTask[] | null>;
     uploadTask(file: AbstractFile, tree: MerkleTree, uploadTask: UploadTask): Promise<number | Error>;

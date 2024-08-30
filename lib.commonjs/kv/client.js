@@ -4,7 +4,6 @@ exports.KvClient = void 0;
 const index_js_1 = require("../node/index.js");
 const iterator_js_1 = require("./iterator.js");
 const constants_js_1 = require("./constants.js");
-const ethers_1 = require("ethers");
 class KvClient {
     inner;
     constructor(rpc) {
@@ -16,7 +15,7 @@ class KvClient {
     }
     async getValue(streamId, key, version) {
         let val = {
-            data: [],
+            data: '',
             size: 0,
             version: version || 0,
         };
@@ -25,20 +24,18 @@ class KvClient {
             if (seg === undefined) {
                 return null;
             }
-            if (val.version == Number.MAX_SAFE_INTEGER) {
+            if (val.version === Number.MAX_SAFE_INTEGER) {
                 val.version = seg.version;
             }
-            else if (val.version != seg.version) {
+            else if (val.version !== seg.version) {
                 val.version = seg.version;
-                val.data = [];
+                val.data = '';
             }
             val.size = seg.size;
-            const data = ethers_1.ethers.concat([
-                new Uint8Array(val.data),
-                new Uint8Array(seg.data),
-            ]);
-            val.data = ethers_1.ethers.toUtf8Bytes(data);
-            if (seg.size == val.data.length) {
+            const segData = Buffer.from(seg.data, 'base64');
+            const valData = Buffer.from(val.data, 'base64');
+            val.data = Buffer.concat([valData, segData]).toString('base64');
+            if (seg.size == segData.length + valData.length) {
                 return val;
             }
         }

@@ -1,5 +1,5 @@
 import { DEFAULT_SEGMENT_SIZE, DEFAULT_SEGMENT_MAX_CHUNKS, DEFAULT_CHUNK_SIZE, } from '../constant.js';
-import { getMarketContract, WaitForReceipt } from '../utils.js';
+import { delay, getMarketContract } from '../utils.js';
 import { encodeBase64, ethers } from 'ethers';
 import { calculatePrice, getShardConfigs } from './utils.js';
 export class Uploader {
@@ -28,6 +28,7 @@ export class Uploader {
         if (err != null || submission == null) {
             return ['', new Error('Failed to create submission')];
         }
+        console.log('flow:', this.flow);
         let marketAddr = await this.flow.market();
         let marketContract = getMarketContract(marketAddr, this.provider);
         let pricePerSector = await marketContract.pricePerSector();
@@ -50,14 +51,16 @@ export class Uploader {
         console.log('Submitting transaction with fee:', fee);
         let tx = await this.flow.submit(submission, txOpts);
         await tx.wait();
-        let receipt = WaitForReceipt(this.provider, tx.hash, retryOpts);
-        if (receipt == null) {
+        let receipt = await this.waitForReceipt(this.provider, tx.hash, retryOpts);
+        if (receipt === null) {
             return ['', new Error('Failed to get transaction receipt')];
         }
+        await this.waitForLogEntry(tree.rootHash(), opts.finalityRequired, receipt);
         const tasks = await this.segmentUpload(file, tree, segIndex, opts.taskSize);
-        if (tasks == null) {
+        if (tasks === null) {
             return ['', new Error('Failed to get upload tasks')];
         }
+        console.log('Processing tasks in parallel with ', tasks.length, ' tasks...');
         await this.processTasksInParallel(file, tree, tasks)
             .then(() => console.log('All tasks processed'))
             .catch((error) => {
@@ -65,6 +68,54 @@ export class Uploader {
         });
         // await this.uploadFileHelper(file, tree, segIndex)
         return [tx.hash, null];
+    }
+    async waitForReceipt(provider, txHash, opts) {
+        var receipt;
+        if (opts === undefined) {
+            opts = { Retries: 10, Interval: 5 };
+        }
+        let nTries = 0;
+        while (nTries < opts.Retries) {
+            receipt = await provider.getTransactionReceipt(txHash);
+            if (receipt !== null && receipt.status == 1) {
+                return receipt;
+            }
+            await delay(opts.Interval * 1000);
+            nTries++;
+        }
+        return null;
+    }
+    async waitForLogEntry(root, finalityRequired, receipt) {
+        console.log('Wait for log entry on storage node');
+        while (true) {
+            await delay(1000);
+            let ok = true;
+            for (let client of this.nodes) {
+                let info = await client.getFileInfo(root);
+                if (info === null) {
+                    let logMsg = 'Log entry is unavailable yet';
+                    if (receipt !== undefined) {
+                        let status = await client.getStatus();
+                        if (status !== null) {
+                            const logSyncHeight = status.logSyncHeight;
+                            const txBlock = receipt.blockNumber;
+                            logMsg = `Log entry is unavailable yet, txBlock=${txBlock}, zgsNodeSyncHeight=${logSyncHeight}`;
+                        }
+                    }
+                    console.log(logMsg);
+                    ok = false;
+                    break;
+                }
+                if (finalityRequired && !info.finalized) {
+                    console.log('Log entry is available, but not finalized yet');
+                    ok = false;
+                    break;
+                }
+            }
+            if (ok) {
+                break;
+            }
+        }
     }
     // Function to process all tasks in parallel
     async processTasksInParallel(file, tree, tasks) {

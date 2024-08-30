@@ -24,9 +24,9 @@ export class StreamDataBuilder {
     private hexToBytes(hex: string): Uint8Array {
         // Remove '0x' prefix if it exists
         if (hex.startsWith('0x')) {
-            hex = hex.slice(2);
+            hex = hex.slice(2)
         }
-        return Buffer.from(hex, 'hex');
+        return Buffer.from(hex, 'hex')
     }
 
     build(sorted: boolean = false): StreamData {
@@ -117,7 +117,7 @@ export class StreamDataBuilder {
 
         let maps = this.writes.get(streamId)!
         maps.set(Buffer.from(key).toString('hex'), data)
-        this.writes.set(streamId, maps) 
+        this.writes.set(streamId, maps)
     }
 
     addStreamId(streamId: Hash): void {

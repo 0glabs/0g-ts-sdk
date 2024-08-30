@@ -71,7 +71,7 @@ export class StreamData {
 
         return size
     }
-    
+
     private encodeSize24(size: number): Uint8Array {
         if (size === 0) {
             throw new Error('errKeyIsEmpty')

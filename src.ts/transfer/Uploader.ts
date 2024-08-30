@@ -5,7 +5,7 @@ import {
 } from '../constant.js'
 import { StorageNode, SegmentWithProof } from '../node/index.js'
 import { FixedPriceFlow } from '../contracts/flow/FixedPriceFlow.js'
-import { getMarketContract, WaitForReceipt } from '../utils.js'
+import { delay, getMarketContract } from '../utils.js'
 import { RetryOpts } from '../types.js'
 import { MerkleTree } from '../file/index.js'
 import { encodeBase64, ethers } from 'ethers'
@@ -60,6 +60,7 @@ export class Uploader {
             return ['', new Error('Failed to create submission')]
         }
 
+        console.log('flow:', this.flow)
         let marketAddr = await this.flow.market()
         let marketContract = getMarketContract(marketAddr, this.provider)
 
@@ -87,10 +88,20 @@ export class Uploader {
         let tx = await this.flow.submit(submission, txOpts)
         await tx.wait()
 
-        let receipt = WaitForReceipt(this.provider, tx.hash, retryOpts)
-        if (receipt == null) {
+        let receipt = await this.waitForReceipt(
+            this.provider,
+            tx.hash,
+            retryOpts
+        )
+        if (receipt === null) {
             return ['', new Error('Failed to get transaction receipt')]
         }
+
+        await this.waitForLogEntry(
+            tree.rootHash() as string,
+            opts.finalityRequired,
+            receipt
+        )
 
         const tasks = await this.segmentUpload(
             file,
@@ -98,9 +109,15 @@ export class Uploader {
             segIndex,
             opts.taskSize
         )
-        if (tasks == null) {
+        if (tasks === null) {
             return ['', new Error('Failed to get upload tasks')]
         }
+
+        console.log(
+            'Processing tasks in parallel with ',
+            tasks.length,
+            ' tasks...'
+        )
 
         await this.processTasksInParallel(file, tree, tasks)
             .then(() => console.log('All tasks processed'))
@@ -110,6 +127,72 @@ export class Uploader {
         // await this.uploadFileHelper(file, tree, segIndex)
 
         return [tx.hash, null]
+    }
+
+    async waitForReceipt(
+        provider: ethers.JsonRpcProvider,
+        txHash: string,
+        opts?: RetryOpts
+    ): Promise<ethers.TransactionReceipt | null> {
+        var receipt
+
+        if (opts === undefined) {
+            opts = { Retries: 10, Interval: 5 }
+        }
+
+        let nTries = 0
+
+        while (nTries < opts.Retries) {
+            receipt = await provider.getTransactionReceipt(txHash)
+            if (receipt !== null && receipt.status == 1) {
+                return receipt
+            }
+            await delay(opts.Interval * 1000)
+            nTries++
+        }
+
+        return null
+    }
+
+    async waitForLogEntry(
+        root: string,
+        finalityRequired: boolean,
+        receipt?: ethers.TransactionReceipt
+    ): Promise<void> {
+        console.log('Wait for log entry on storage node')
+
+        while (true) {
+            await delay(1000)
+
+            let ok = true
+            for (let client of this.nodes) {
+                let info = await client.getFileInfo(root)
+                if (info === null) {
+                    let logMsg = 'Log entry is unavailable yet'
+                    if (receipt !== undefined) {
+                        let status = await client.getStatus()
+                        if (status !== null) {
+                            const logSyncHeight = status.logSyncHeight
+                            const txBlock = receipt.blockNumber
+                            logMsg = `Log entry is unavailable yet, txBlock=${txBlock}, zgsNodeSyncHeight=${logSyncHeight}`
+                        }
+                    }
+                    console.log(logMsg)
+                    ok = false
+                    break
+                }
+
+                if (finalityRequired && !info.finalized) {
+                    console.log('Log entry is available, but not finalized yet')
+                    ok = false
+                    break
+                }
+            }
+
+            if (ok) {
+                break
+            }
+        }
     }
 
     // Function to process all tasks in parallel

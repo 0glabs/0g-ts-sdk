@@ -7,6 +7,8 @@ export type MerkleNode = [number, Hash]
 
 export interface Status {
     connectedPeers: number
+    logSyncHeight: number
+    logSyncBlock: Hash
 }
 
 // can direct use NeuraProof
@@ -51,13 +53,13 @@ export interface Metadata {
  */
 export interface Value {
     version: number
-    data: Bytes
+    data: Base64
     size: number
 }
 
 export interface KeyValue {
     version: number
-    data: Bytes
+    data: Base64
     size: number
     key: Bytes
 }
