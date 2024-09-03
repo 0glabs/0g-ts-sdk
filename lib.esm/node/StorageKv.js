@@ -4,7 +4,7 @@ export class StorageKv extends HttpProvider {
         super({ url });
     }
     async getValue(streamId, key, startIndex, length, version) {
-        var params = [streamId, key, startIndex, length];
+        let params = [streamId, key, startIndex, length];
         if (version !== undefined) {
             params.push(version);
         }
@@ -14,8 +14,8 @@ export class StorageKv extends HttpProvider {
         });
         return res;
     }
-    async GetNext(streamId, key, startIndex, length, inclusive, version) {
-        var params = [streamId, key, startIndex, length, inclusive];
+    async getNext(streamId, key, startIndex, length, inclusive, version) {
+        let params = [streamId, key, startIndex, length, inclusive];
         if (version !== undefined) {
             params.push(version);
         }
@@ -26,7 +26,7 @@ export class StorageKv extends HttpProvider {
         return res;
     }
     async getPrev(streamId, key, startIndex, length, inclusive, version) {
-        var params = [streamId, key, startIndex, length, inclusive];
+        let params = [streamId, key, startIndex, length, inclusive];
         if (version !== undefined) {
             params.push(version);
         }
@@ -37,7 +37,7 @@ export class StorageKv extends HttpProvider {
         return res;
     }
     async getFirst(streamId, startIndex, length, version) {
-        var params = [streamId, startIndex, length];
+        let params = [streamId, startIndex, length];
         if (version !== undefined) {
             params.push(version);
         }
@@ -48,7 +48,7 @@ export class StorageKv extends HttpProvider {
         return res;
     }
     async getLast(streamId, startIndex, length, version) {
-        var params = [streamId, startIndex, length];
+        let params = [streamId, startIndex, length];
         if (version !== undefined) {
             params.push(version);
         }
@@ -61,7 +61,7 @@ export class StorageKv extends HttpProvider {
     async getTransactionResult(txSeq) {
         const res = await super.request({
             method: 'kv_getTransactionResult',
-            params: [txSeq],
+            params: [txSeq.toString()],
         });
         return res;
     }
@@ -72,7 +72,7 @@ export class StorageKv extends HttpProvider {
         return res;
     }
     async hasWritePermission(account, streamId, key, version) {
-        var params = [account, streamId, key];
+        let params = [account, streamId, key];
         if (version !== undefined) {
             params.push(version);
         }
@@ -82,8 +82,8 @@ export class StorageKv extends HttpProvider {
         });
         return res;
     }
-    async IsAdmin(account, streamId, version) {
-        var params = [account, streamId];
+    async isAdmin(account, streamId, version) {
+        let params = [account, streamId];
         if (version !== undefined) {
             params.push(version);
         }
@@ -94,12 +94,34 @@ export class StorageKv extends HttpProvider {
         return res;
     }
     async isSpecialKey(stremId, key, version) {
-        var params = [stremId, key];
+        let params = [stremId, key];
         if (version !== undefined) {
             params.push(version);
         }
         const res = await super.request({
             method: 'kv_isSpecialKey',
+            params: params,
+        });
+        return res;
+    }
+    async isWriterOfKey(account, streamId, key, version) {
+        let params = [account, streamId, key];
+        if (version !== undefined) {
+            params.push(version);
+        }
+        const res = await super.request({
+            method: 'kv_isWriterOfKey',
+            params: params,
+        });
+        return res;
+    }
+    async isWriterOfStream(account, streamId, version) {
+        let params = [account, streamId];
+        if (version !== undefined) {
+            params.push(version);
+        }
+        const res = await super.request({
+            method: 'kv_isWriterOfStream',
             params: params,
         });
         return res;

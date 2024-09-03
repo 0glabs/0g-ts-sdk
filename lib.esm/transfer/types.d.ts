@@ -13,4 +13,5 @@ export interface UploadOption {
     skipTx: boolean;
     fee: bigint;
 }
+export declare var defaultUploadOption: UploadOption;
 //# sourceMappingURL=types.d.ts.map

@@ -4,6 +4,8 @@ export type Segment = Base64;
 export type MerkleNode = [number, Hash];
 export interface Status {
     connectedPeers: number;
+    logSyncHeight: number;
+    logSyncBlock: Hash;
 }
 export interface FileProof {
     lemma: Hash[];
@@ -41,16 +43,13 @@ export interface Metadata {
  */
 export interface Value {
     version: number;
-    data: Bytes;
+    data: Base64;
     size: number;
 }
 export interface KeyValue {
     version: number;
-    data: Bytes;
+    data: Base64;
     size: number;
     key: Bytes;
-}
-export interface ZgsClient {
-    url: string;
 }
 //# sourceMappingURL=types.d.ts.map

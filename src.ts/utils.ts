@@ -1,9 +1,8 @@
-import { ethers, Signer } from 'ethers'
+import { Signer } from 'ethers'
 import { FixedPriceFlow__factory } from './contracts/flow/index.js'
 import { FixedPrice__factory } from './contracts/market/index.js'
 import fs from 'fs'
 import path from 'path'
-import { RetryOpts } from './types.js'
 import { ContractRunner } from 'ethers'
 
 export function getFlowContract(address: string, signer: Signer) {
@@ -35,29 +34,4 @@ export function GetSplitNum(total: number, unit: number): number {
     return Math.floor((total - 1) / unit + 1)
 }
 
-const delay = (ms: number) => new Promise((res) => setTimeout(res, ms))
-
-export async function WaitForReceipt(
-    provider: ethers.JsonRpcProvider,
-    txHash: string,
-    opts?: RetryOpts
-): Promise<ethers.TransactionReceipt | null> {
-    var receipt
-
-    if (opts === undefined) {
-        opts = { Retries: 10, Interval: 5 }
-    }
-
-    let nTries = 0
-
-    while (nTries < opts.Retries) {
-        receipt = await provider.getTransactionReceipt(txHash)
-        if (receipt !== null && receipt.status == 1) {
-            return receipt
-        }
-        await delay(opts.Interval * 1000)
-        nTries++
-    }
-
-    return null
-}
+export const delay = (ms: number) => new Promise((res) => setTimeout(res, ms))

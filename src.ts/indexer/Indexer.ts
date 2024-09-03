@@ -5,13 +5,10 @@ import { UploadOption, Uploader, Downloader } from '../transfer/index.js'
 import { StorageNode } from '../node/index.js'
 import { RetryOpts } from '../types.js'
 import { AbstractFile } from '../file/AbstractFile.js'
-import { Signer } from 'ethers'
+import { FixedPriceFlow } from '../contracts/flow/FixedPriceFlow.js'
 
 export class Indexer extends HttpProvider {
-    
-    constructor(
-        url: string,
-    ) {
+    constructor(url: string) {
         super({ url })
     }
 
@@ -39,8 +36,7 @@ export class Indexer extends HttpProvider {
 
     async newUploaderFromIndexerNodes(
         blockchain_rpc: string,
-        signer: Signer,
-        flow_contract: string,
+        flow: FixedPriceFlow,
         expectedReplica: number
     ): Promise<[Uploader | null, Error | null]> {
         let [clients, err] = await this.selectNodes(expectedReplica)
@@ -48,12 +44,9 @@ export class Indexer extends HttpProvider {
             return [null, err]
         }
 
-        let uploader: Uploader = new Uploader(
-            clients,
-            blockchain_rpc,
-            signer,
-            flow_contract
-        )
+        console.log('Selected nodes:', clients)
+
+        let uploader: Uploader = new Uploader(clients, blockchain_rpc, flow)
         return [uploader, null]
     }
 
@@ -83,8 +76,7 @@ export class Indexer extends HttpProvider {
         file: AbstractFile,
         segIndex: number = 0,
         blockchain_rpc: string,
-        signer: Signer,
-        flow_contract: string,
+        flow_contract: FixedPriceFlow,
         opts?: UploadOption,
         retryOpts?: RetryOpts
     ): Promise<[string, Error | null]> {
@@ -94,7 +86,6 @@ export class Indexer extends HttpProvider {
         }
         let [uploader, err] = await this.newUploaderFromIndexerNodes(
             blockchain_rpc,
-            signer,
             flow_contract,
             expectedReplica
         )
@@ -112,12 +103,7 @@ export class Indexer extends HttpProvider {
             }
         }
 
-        return await uploader.uploadFile(
-            file,
-            segIndex,
-            opts,
-            retryOpts
-        )
+        return await uploader.uploadFile(file, segIndex, opts, retryOpts)
     }
 
     async download(

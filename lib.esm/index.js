@@ -1,5 +1,6 @@
 export * from './transfer/index.js';
 export * from './indexer/index.js';
+export * from './kv/index.js';
 export * from './node/index.js';
 export * from './file/index.js';
 export * from './contracts/flow/index.js';

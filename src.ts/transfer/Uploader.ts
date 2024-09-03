@@ -5,14 +5,14 @@ import {
 } from '../constant.js'
 import { StorageNode, SegmentWithProof } from '../node/index.js'
 import { FixedPriceFlow } from '../contracts/flow/FixedPriceFlow.js'
-import { getFlowContract, getMarketContract, WaitForReceipt } from '../utils.js'
+import { delay, getMarketContract } from '../utils.js'
 import { RetryOpts } from '../types.js'
 import { MerkleTree } from '../file/index.js'
 import { encodeBase64, ethers } from 'ethers'
 import { calculatePrice, getShardConfigs } from './utils.js'
 import { UploadOption, UploadTask } from './types.js'
 import { AbstractFile } from '../file/AbstractFile.js'
-import { Signer } from 'ethers'
+import { checkReplica } from '../common/index.js'
 
 export class Uploader {
     nodes: StorageNode[]
@@ -24,8 +24,7 @@ export class Uploader {
     constructor(
         nodes: StorageNode[],
         providerRpc: string,
-        signer: Signer,
-        flowContract: string,
+        flow: FixedPriceFlow,
         gasPrice: bigint = BigInt('0'),
         gasLimit: bigint = BigInt('0')
     ) {
@@ -33,10 +32,21 @@ export class Uploader {
 
         this.provider = new ethers.JsonRpcProvider(providerRpc)
 
-        this.flow = getFlowContract(flowContract, signer)
+        this.flow = flow
 
         this.gasPrice = gasPrice
         this.gasLimit = gasLimit
+    }
+
+    async checkExistence(root: string): Promise<boolean> {
+        for (let client of this.nodes) {
+            let info = await client.getFileInfo(root)
+            if (info !== null && info.finalized) {
+                return true
+            }
+        }
+
+        return false
     }
 
     async uploadFile(
@@ -50,15 +60,21 @@ export class Uploader {
             return ['', new Error('Failed to create Merkle tree')]
         }
 
-        const fileInfo = await this.nodes[0].getFileInfo(
-            tree.rootHash() as string
+        console.log(
+            'Data prepared to upload',
+            'root=' + tree.rootHash(),
+            'size=' + file.size(),
+            'numSegments=' + file.numSegments(),
+            'numChunks=' + file.numChunks()
         )
-        if (fileInfo != null) {
-            return ['', new Error('File already exists')]
+
+        const exist = await this.checkExistence(tree.rootHash() as string)
+        if (exist) {
+            return ['', new Error('Data already exists')]
         }
 
         var [submission, err] = await file.createSubmission(opts.tags)
-        if (err != null || submission == null) {
+        if (err !== null || submission === null) {
             return ['', new Error('Failed to create submission')]
         }
 
@@ -84,34 +100,113 @@ export class Uploader {
             txOpts.gasLimit = this.gasLimit
         }
 
-        console.log('Submitting transaction with fee:', fee)
+        console.log('Submitting transaction with storage fee:', fee)
 
         let tx = await this.flow.submit(submission, txOpts)
         await tx.wait()
 
-        let receipt = WaitForReceipt(this.provider, tx.hash, retryOpts)
-        if (receipt == null) {
+        let receipt = await this.waitForReceipt(
+            this.provider,
+            tx.hash,
+            retryOpts
+        )
+        if (receipt === null) {
             return ['', new Error('Failed to get transaction receipt')]
         }
 
-        const tasks = await this.segmentUpload(
-            file,
-            tree,
-            segIndex,
-            opts.taskSize
-        )
-        if (tasks == null) {
+        console.log('Transaction hash:', tx.hash)
+
+        await this.waitForLogEntry(tree.rootHash() as string, false, receipt)
+
+        const tasks = await this.segmentUpload(file, tree, segIndex, opts)
+        if (tasks === null) {
             return ['', new Error('Failed to get upload tasks')]
         }
 
-        await this.processTasksInParallel(file, tree, tasks)
+        console.log(
+            'Processing tasks in parallel with ',
+            tasks.length,
+            ' tasks...'
+        )
+
+        err = await this.processTasksInParallel(file, tree, tasks)
             .then(() => console.log('All tasks processed'))
             .catch((error) => {
                 return error
             })
         // await this.uploadFileHelper(file, tree, segIndex)
 
+        if (err !== null) {
+            return ['', err]
+        }
+
         return [tx.hash, null]
+    }
+
+    async waitForReceipt(
+        provider: ethers.JsonRpcProvider,
+        txHash: string,
+        opts?: RetryOpts
+    ): Promise<ethers.TransactionReceipt | null> {
+        var receipt: ethers.TransactionReceipt | null = null
+
+        if (opts === undefined) {
+            opts = { Retries: 10, Interval: 5 }
+        }
+
+        let nTries = 0
+
+        while (nTries < opts.Retries) {
+            receipt = await provider.getTransactionReceipt(txHash)
+            if (receipt !== null && receipt.status == 1) {
+                return receipt
+            }
+            await delay(opts.Interval * 1000)
+            nTries++
+        }
+
+        return null
+    }
+
+    async waitForLogEntry(
+        root: string,
+        finalityRequired: boolean,
+        receipt?: ethers.TransactionReceipt
+    ): Promise<void> {
+        console.log('Wait for log entry on storage node')
+
+        while (true) {
+            await delay(1000)
+
+            let ok = true
+            for (let client of this.nodes) {
+                let info = await client.getFileInfo(root)
+                if (info === null) {
+                    let logMsg = 'Log entry is unavailable yet'
+                    if (receipt !== undefined) {
+                        let status = await client.getStatus()
+                        if (status !== null) {
+                            const logSyncHeight = status.logSyncHeight
+                            const txBlock = receipt.blockNumber
+                            logMsg = `Log entry is unavailable yet, txBlock=${txBlock}, zgsNodeSyncHeight=${logSyncHeight}`
+                        }
+                    }
+                    console.log(logMsg)
+                    ok = false
+                    break
+                }
+
+                if (finalityRequired && !info.finalized) {
+                    console.log('Log entry is available, but not finalized yet')
+                    ok = false
+                    break
+                }
+            }
+
+            if (ok) {
+                break
+            }
+        }
     }
 
     // Function to process all tasks in parallel
@@ -119,23 +214,30 @@ export class Uploader {
         file: AbstractFile,
         tree: MerkleTree,
         tasks: UploadTask[]
-    ): Promise<void> {
+    ): Promise<(number | Error)[]> {
         const taskPromises = tasks.map((task) =>
             this.uploadTask(file, tree, task)
         )
-        await Promise.all(taskPromises)
+        return await Promise.all(taskPromises)
     }
 
     async segmentUpload(
         file: AbstractFile,
         tree: MerkleTree,
         segIndex: number,
-        taskSize: number
+        opts: UploadOption
     ): Promise<UploadTask[] | null> {
         const shardConfigs = await getShardConfigs(this.nodes)
-        if (shardConfigs == null) {
+        if (shardConfigs === null) {
+            console.log('Failed to get shard configs')
             return null
         }
+
+        if (!checkReplica(shardConfigs, opts.expectedReplica)) {
+            console.log('Not enough replicas')
+            return null
+        }
+
         const numSegments = file.numSegments()
         var uploadTasks: UploadTask[][] = []
 
@@ -148,7 +250,7 @@ export class Uploader {
             const info = await this.nodes[clientIndex].getFileInfo(
                 tree.rootHash() as string
             )
-            if (info !== null && !info.finalized) {
+            if (info !== null && info.finalized) {
                 continue
             }
 
@@ -158,11 +260,11 @@ export class Uploader {
             while (segIndex < numSegments) {
                 tasks.push({
                     clientIndex,
-                    taskSize,
+                    taskSize: opts.taskSize,
                     segIndex,
                     numShard: shardConfig.numShard,
                 })
-                segIndex += shardConfig.numShard * taskSize
+                segIndex += shardConfig.numShard * opts.taskSize
             }
             uploadTasks.push(tasks)
         }
@@ -191,7 +293,7 @@ export class Uploader {
         file: AbstractFile,
         tree: MerkleTree,
         uploadTask: UploadTask
-    ) {
+    ): Promise<number | Error> {
         const numChunks = file.numChunks()
 
         let segIndex = uploadTask.segIndex
@@ -253,77 +355,79 @@ export class Uploader {
             segIndex += uploadTask.numShard
         }
 
-        try {
-            return await this.nodes[uploadTask.clientIndex].uploadSegments(
-                segments
-            )
-        } catch (e) {
-            return e as Error
-        }
-    }
-
-    async uploadFileHelper(
-        file: AbstractFile,
-        tree: MerkleTree,
-        segIndex: number = 0
-    ): Promise<Error | null> {
-        const iter = file.iterateWithOffsetAndBatch(
-            segIndex * DEFAULT_SEGMENT_SIZE,
-            DEFAULT_SEGMENT_SIZE,
-            true
+        let res = await this.nodes[uploadTask.clientIndex].uploadSegments(
+            segments
         )
-        const numChunks = file.numChunks()
-        const fileSize = file.size()
 
-        while (true) {
-            let [ok, err] = await iter.next()
-            if (err) {
-                return new Error('Failed to read segment')
-            }
-
-            if (!ok) {
-                break
-            }
-
-            let segment = iter.current()
-            const proof = tree.proofAt(segIndex)
-
-            const startIndex = segIndex * DEFAULT_SEGMENT_MAX_CHUNKS
-            let allDataUploaded = false
-
-            if (startIndex >= numChunks) {
-                break
-            } else if (
-                startIndex + segment.length / DEFAULT_CHUNK_SIZE >=
-                numChunks
-            ) {
-                const expectedLen =
-                    DEFAULT_CHUNK_SIZE * (numChunks - startIndex)
-                segment = segment.slice(0, expectedLen)
-                allDataUploaded = true
-            }
-
-            const segWithProof: SegmentWithProof = {
-                root: tree.rootHash() as string,
-                data: encodeBase64(segment),
-                index: segIndex,
-                proof: proof,
-                fileSize,
-            }
-
-            try {
-                await this.nodes[0].uploadSegment(segWithProof) // todo check error
-            } catch (e) {
-                return e as Error
-            }
-
-            if (allDataUploaded) {
-                break
-            }
-
-            segIndex++
+        if (res === null) {
+            return new Error('Failed to upload segments')
         }
 
-        return null
+        return res
     }
+
+    // async uploadFileHelper(
+    //     file: AbstractFile,
+    //     tree: MerkleTree,
+    //     segIndex: number = 0
+    // ): Promise<Error | null> {
+    //     const iter = file.iterateWithOffsetAndBatch(
+    //         segIndex * DEFAULT_SEGMENT_SIZE,
+    //         DEFAULT_SEGMENT_SIZE,
+    //         true
+    //     )
+    //     const numChunks = file.numChunks()
+    //     const fileSize = file.size()
+
+    //     while (true) {
+    //         let [ok, err] = await iter.next()
+    //         if (err) {
+    //             return new Error('Failed to read segment')
+    //         }
+
+    //         if (!ok) {
+    //             break
+    //         }
+
+    //         let segment = iter.current()
+    //         const proof = tree.proofAt(segIndex)
+
+    //         const startIndex = segIndex * DEFAULT_SEGMENT_MAX_CHUNKS
+    //         let allDataUploaded = false
+
+    //         if (startIndex >= numChunks) {
+    //             break
+    //         } else if (
+    //             startIndex + segment.length / DEFAULT_CHUNK_SIZE >=
+    //             numChunks
+    //         ) {
+    //             const expectedLen =
+    //                 DEFAULT_CHUNK_SIZE * (numChunks - startIndex)
+    //             segment = segment.slice(0, expectedLen)
+    //             allDataUploaded = true
+    //         }
+
+    //         const segWithProof: SegmentWithProof = {
+    //             root: tree.rootHash() as string,
+    //             data: encodeBase64(segment),
+    //             index: segIndex,
+    //             proof: proof,
+    //             fileSize,
+    //         }
+
+    //         try {
+    //             await this.nodes[0].uploadSegment(segWithProof) // todo check error
+    //         } catch (e) {
+    //             return e as Error
+    //         }
+
+    //         if (allDataUploaded) {
+    //             break
+    //         }
+
+    //         segIndex++
+    //     }
+
+    //     return null
+    // }
 }
