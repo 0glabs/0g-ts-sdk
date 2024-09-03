@@ -30,6 +30,7 @@ export class Batcher {
         // build stream data
         const streamData = this.streamDataBuilder.build()
         const encoded = streamData.encode()
+
         const data = new MemData(encoded)
 
         const uploader = new Uploader(
@@ -42,6 +43,7 @@ export class Batcher {
             opts = defaultUploadOption
         }
         opts.tags = this.streamDataBuilder.buildTags()
+
         return await uploader.uploadFile(data, 0, opts)
     }
 }

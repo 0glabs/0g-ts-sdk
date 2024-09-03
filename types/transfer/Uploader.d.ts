@@ -12,12 +12,12 @@ export declare class Uploader {
     gasPrice: bigint;
     gasLimit: bigint;
     constructor(nodes: StorageNode[], providerRpc: string, flow: FixedPriceFlow, gasPrice?: bigint, gasLimit?: bigint);
+    checkExistence(root: string): Promise<boolean>;
     uploadFile(file: AbstractFile, segIndex: number | undefined, opts: UploadOption, retryOpts?: RetryOpts): Promise<[string, Error | null]>;
     waitForReceipt(provider: ethers.JsonRpcProvider, txHash: string, opts?: RetryOpts): Promise<ethers.TransactionReceipt | null>;
     waitForLogEntry(root: string, finalityRequired: boolean, receipt?: ethers.TransactionReceipt): Promise<void>;
-    processTasksInParallel(file: AbstractFile, tree: MerkleTree, tasks: UploadTask[]): Promise<void>;
-    segmentUpload(file: AbstractFile, tree: MerkleTree, segIndex: number, taskSize: number): Promise<UploadTask[] | null>;
+    processTasksInParallel(file: AbstractFile, tree: MerkleTree, tasks: UploadTask[]): Promise<(number | Error)[]>;
+    segmentUpload(file: AbstractFile, tree: MerkleTree, segIndex: number, opts: UploadOption): Promise<UploadTask[] | null>;
     uploadTask(file: AbstractFile, tree: MerkleTree, uploadTask: UploadTask): Promise<number | Error>;
-    uploadFileHelper(file: AbstractFile, tree: MerkleTree, segIndex?: number): Promise<Error | null>;
 }
 //# sourceMappingURL=Uploader.d.ts.map

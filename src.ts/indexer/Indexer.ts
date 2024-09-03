@@ -44,6 +44,8 @@ export class Indexer extends HttpProvider {
             return [null, err]
         }
 
+        console.log('Selected nodes:', clients)
+
         let uploader: Uploader = new Uploader(clients, blockchain_rpc, flow)
         return [uploader, null]
     }

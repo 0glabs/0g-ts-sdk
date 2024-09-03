@@ -77,7 +77,7 @@ export class StreamData {
         offset += 4;
         for (const v of this.Reads) {
             encoded.set(ethers.getBytes(v.StreamId), offset);
-            offset += 4;
+            offset += 32;
             const keySize = this.encodeSize24(v.Key.length);
             encoded.set(keySize, offset);
             offset += keySize.length;
@@ -88,16 +88,23 @@ export class StreamData {
         encoded.set(this.encodeSize32(this.Writes.length), offset);
         offset += 4;
         for (const v of this.Writes) {
+            // add stream id
             encoded.set(ethers.getBytes(v.StreamId), offset);
-            offset += 4;
+            offset += 32;
             const keySize = this.encodeSize24(v.Key.length);
+            // add key size
             encoded.set(keySize, offset);
             offset += keySize.length;
+            // add key
             encoded.set(v.Key, offset);
             offset += v.Key.length;
+            // add value size, add value later
             const dataSize = this.encodeSize64(v.Data.length);
             encoded.set(dataSize, offset);
             offset += dataSize.length;
+        }
+        // add all values
+        for (const v of this.Writes) {
             encoded.set(v.Data, offset);
             offset += v.Data.length;
         }
@@ -108,7 +115,7 @@ export class StreamData {
             encoded[offset] = v.Type;
             offset += 1;
             encoded.set(ethers.getBytes(v.StreamId), offset);
-            offset += 4;
+            offset += 32;
             if (v.Key !== undefined) {
                 const keySize = this.encodeSize24(v.Key.length);
                 encoded.set(keySize, offset);

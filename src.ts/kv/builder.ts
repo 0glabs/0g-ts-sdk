@@ -136,7 +136,8 @@ export class StreamDataBuilder {
 
     private createTags(streamIds: Hash[]): Uint8Array {
         let result = new Uint8Array((1 + streamIds.length) * 32) // Assuming Hash is 32 bytes
-        result.set(Buffer.from(STREAM_DOMAIN, 'utf-8'), 0)
+
+        result.set(STREAM_DOMAIN, 0)
 
         streamIds.forEach((id, index) => {
             result.set(ethers.getBytes(id), 32 * (index + 1))

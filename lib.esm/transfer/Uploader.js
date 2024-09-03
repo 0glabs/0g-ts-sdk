@@ -2,6 +2,7 @@ import { DEFAULT_SEGMENT_SIZE, DEFAULT_SEGMENT_MAX_CHUNKS, DEFAULT_CHUNK_SIZE, }
 import { delay, getMarketContract } from '../utils.js';
 import { encodeBase64, ethers } from 'ethers';
 import { calculatePrice, getShardConfigs } from './utils.js';
+import { checkReplica } from '../common/index.js';
 export class Uploader {
     nodes;
     provider;
@@ -15,20 +16,29 @@ export class Uploader {
         this.gasPrice = gasPrice;
         this.gasLimit = gasLimit;
     }
+    async checkExistence(root) {
+        for (let client of this.nodes) {
+            let info = await client.getFileInfo(root);
+            if (info !== null && info.finalized) {
+                return true;
+            }
+        }
+        return false;
+    }
     async uploadFile(file, segIndex = 0, opts, retryOpts) {
         var [tree, err] = await file.merkleTree();
         if (err != null || tree == null || tree.rootHash() == null) {
             return ['', new Error('Failed to create Merkle tree')];
         }
-        const fileInfo = await this.nodes[0].getFileInfo(tree.rootHash());
-        if (fileInfo != null) {
-            return ['', new Error('File already exists')];
+        console.log('Data prepared to upload', 'root=' + tree.rootHash(), 'size=' + file.size(), 'numSegments=' + file.numSegments(), 'numChunks=' + file.numChunks());
+        const exist = await this.checkExistence(tree.rootHash());
+        if (exist) {
+            return ['', new Error('Data already exists')];
         }
         var [submission, err] = await file.createSubmission(opts.tags);
-        if (err != null || submission == null) {
+        if (err !== null || submission === null) {
             return ['', new Error('Failed to create submission')];
         }
-        console.log('flow:', this.flow);
         let marketAddr = await this.flow.market();
         let marketContract = getMarketContract(marketAddr, this.provider);
         let pricePerSector = await marketContract.pricePerSector();
@@ -48,29 +58,33 @@ export class Uploader {
         if (this.gasLimit > 0) {
             txOpts.gasLimit = this.gasLimit;
         }
-        console.log('Submitting transaction with fee:', fee);
+        console.log('Submitting transaction with storage fee:', fee);
         let tx = await this.flow.submit(submission, txOpts);
         await tx.wait();
         let receipt = await this.waitForReceipt(this.provider, tx.hash, retryOpts);
         if (receipt === null) {
             return ['', new Error('Failed to get transaction receipt')];
         }
-        await this.waitForLogEntry(tree.rootHash(), opts.finalityRequired, receipt);
-        const tasks = await this.segmentUpload(file, tree, segIndex, opts.taskSize);
+        console.log('Transaction hash:', tx.hash);
+        await this.waitForLogEntry(tree.rootHash(), false, receipt);
+        const tasks = await this.segmentUpload(file, tree, segIndex, opts);
         if (tasks === null) {
             return ['', new Error('Failed to get upload tasks')];
         }
         console.log('Processing tasks in parallel with ', tasks.length, ' tasks...');
-        await this.processTasksInParallel(file, tree, tasks)
+        err = await this.processTasksInParallel(file, tree, tasks)
             .then(() => console.log('All tasks processed'))
             .catch((error) => {
             return error;
         });
         // await this.uploadFileHelper(file, tree, segIndex)
+        if (err !== null) {
+            return ['', err];
+        }
         return [tx.hash, null];
     }
     async waitForReceipt(provider, txHash, opts) {
-        var receipt;
+        var receipt = null;
         if (opts === undefined) {
             opts = { Retries: 10, Interval: 5 };
         }
@@ -120,11 +134,16 @@ export class Uploader {
     // Function to process all tasks in parallel
     async processTasksInParallel(file, tree, tasks) {
         const taskPromises = tasks.map((task) => this.uploadTask(file, tree, task));
-        await Promise.all(taskPromises);
+        return await Promise.all(taskPromises);
     }
-    async segmentUpload(file, tree, segIndex, taskSize) {
+    async segmentUpload(file, tree, segIndex, opts) {
         const shardConfigs = await getShardConfigs(this.nodes);
-        if (shardConfigs == null) {
+        if (shardConfigs === null) {
+            console.log('Failed to get shard configs');
+            return null;
+        }
+        if (!checkReplica(shardConfigs, opts.expectedReplica)) {
+            console.log('Not enough replicas');
             return null;
         }
         const numSegments = file.numSegments();
@@ -132,7 +151,7 @@ export class Uploader {
         for (let clientIndex = 0; clientIndex < shardConfigs.length; clientIndex++) {
             // skip finalized nodes
             const info = await this.nodes[clientIndex].getFileInfo(tree.rootHash());
-            if (info !== null && !info.finalized) {
+            if (info !== null && info.finalized) {
                 continue;
             }
             const shardConfig = shardConfigs[clientIndex];
@@ -141,11 +160,11 @@ export class Uploader {
             while (segIndex < numSegments) {
                 tasks.push({
                     clientIndex,
-                    taskSize,
+                    taskSize: opts.taskSize,
                     segIndex,
                     numShard: shardConfig.numShard,
                 });
-                segIndex += shardConfig.numShard * taskSize;
+                segIndex += shardConfig.numShard * opts.taskSize;
             }
             uploadTasks.push(tasks);
         }
@@ -204,57 +223,11 @@ export class Uploader {
             }
             segIndex += uploadTask.numShard;
         }
-        try {
-            return await this.nodes[uploadTask.clientIndex].uploadSegments(segments);
+        let res = await this.nodes[uploadTask.clientIndex].uploadSegments(segments);
+        if (res === null) {
+            return new Error('Failed to upload segments');
         }
-        catch (e) {
-            return e;
-        }
-    }
-    async uploadFileHelper(file, tree, segIndex = 0) {
-        const iter = file.iterateWithOffsetAndBatch(segIndex * DEFAULT_SEGMENT_SIZE, DEFAULT_SEGMENT_SIZE, true);
-        const numChunks = file.numChunks();
-        const fileSize = file.size();
-        while (true) {
-            let [ok, err] = await iter.next();
-            if (err) {
-                return new Error('Failed to read segment');
-            }
-            if (!ok) {
-                break;
-            }
-            let segment = iter.current();
-            const proof = tree.proofAt(segIndex);
-            const startIndex = segIndex * DEFAULT_SEGMENT_MAX_CHUNKS;
-            let allDataUploaded = false;
-            if (startIndex >= numChunks) {
-                break;
-            }
-            else if (startIndex + segment.length / DEFAULT_CHUNK_SIZE >=
-                numChunks) {
-                const expectedLen = DEFAULT_CHUNK_SIZE * (numChunks - startIndex);
-                segment = segment.slice(0, expectedLen);
-                allDataUploaded = true;
-            }
-            const segWithProof = {
-                root: tree.rootHash(),
-                data: encodeBase64(segment),
-                index: segIndex,
-                proof: proof,
-                fileSize,
-            };
-            try {
-                await this.nodes[0].uploadSegment(segWithProof); // todo check error
-            }
-            catch (e) {
-                return e;
-            }
-            if (allDataUploaded) {
-                break;
-            }
-            segIndex++;
-        }
-        return null;
+        return res;
     }
 }
 //# sourceMappingURL=Uploader.js.map

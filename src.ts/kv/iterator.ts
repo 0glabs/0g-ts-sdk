@@ -29,7 +29,6 @@ export class KvIterator {
     }
 
     async move(kv: KeyValue): Promise<Error | null> {
-        console.log('in move', kv)
         if (kv === null) {
             this.currentPair = undefined
             return null
@@ -77,7 +76,6 @@ export class KvIterator {
 
     async seekToFirst(): Promise<Error | null> {
         let kv = await this.client.getFirst(this.streamId, 0, 0, this.version)
-        console.log(kv)
         return this.move(kv)
     }
 

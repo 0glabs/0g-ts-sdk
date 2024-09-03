@@ -33,6 +33,7 @@ class Indexer extends open_jsonrpc_provider_1.HttpProvider {
         if (err != null) {
             return [null, err];
         }
+        console.log('Selected nodes:', clients);
         let uploader = new index_js_2.Uploader(clients, blockchain_rpc, flow);
         return [uploader, null];
     }

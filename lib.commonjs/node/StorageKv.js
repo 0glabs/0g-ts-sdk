@@ -22,7 +22,6 @@ class StorageKv extends open_jsonrpc_provider_1.HttpProvider {
         if (version !== undefined) {
             params.push(version);
         }
-        console.log(params);
         const res = await super.request({
             method: 'kv_getNext',
             params: params,
