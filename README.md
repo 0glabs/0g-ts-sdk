@@ -25,7 +25,7 @@ npm install @0glabs/0g-ts-sdk ethers
 Use `ZgFile` to create a file object, then call `merkleTree` method to get the merkle tree of the file.
 
 ```js
-import { Indexer, ZgFile }  from '@0glabs/0g-ts-sdk';
+import { Indexer, ZgFile } from '@0glabs/0g-ts-sdk';
 import { ethers } from 'ethers';
 import { exit } from 'process';
 
@@ -42,14 +42,19 @@ await file.close();
 Upload file to 0g-storage:
 
 ```js
-const evmRpc = 'https://rpc-testnet.0g.ai';
+import { getFlowContract } from '@0glabs/0g-ts-sdk';
+const evmRpc = 'https://evmrpc-test-us.0g.ai';
 const privateKey = ''; // with balance to pay for gas
+const flowAddr = "0xbD2C3F0E65eDF5582141C35969d66e34629cC768";
+const indRpc = 'https://rpc-storage-testnet-turbo.0g.ai'; // indexer rpc
 
-const indRpc = ''; // indexer rpc
+const provider = new ethers.JsonRpcProvider(evmRpc);
+const signer = new ethers.Wallet(privateKey, provider);
+const flowContract = getFlowContract(flowAddr, signer);
 
-const indexer = new Indexer(indRpc, evmRpc, privateKey, "0xB7e39604f47c0e4a6Ad092a281c1A8429c2440d3");
+const indexer = new Indexer(indRpc);
 // need to pay fees to store data in storage nodes
-var [tx, err] = await indexer.upload(file, 0);
+var [tx, err] = await indexer.upload(file, 0, evmRpc, flowContract);
 if (err === null) {
   console.log("File uploaded successfully, tx: ", tx);
 } else {
@@ -64,6 +69,44 @@ err = await indexer.download(<root_hash>, <output_file>, <with_proof>);
 if (err !== null) {
   console.log("Error downloading file: ", err);
 }
+```
+
+Upload data to 0g-kv:
+
+```js
+var [nodes, err] = await indexer.selectNodes(1);
+if (err !== null) {
+    console.log("Error selecting nodes: ", err);
+    stop();
+}
+
+const batcher = new Batcher(1, nodes, flowContract, evmRpc);
+
+const key1 = Uint8Array.from(Buffer.from("TESTKEY0", 'utf-8'));
+const val1 = Uint8Array.from(Buffer.from("TESTVALUE0", 'utf-8'));
+const key2 = Uint8Array.from(Buffer.from("TESTKEY1", 'utf-8'));
+const val2 = Uint8Array.from(Buffer.from("TESTVALUE1", 'utf-8'));
+batcher.streamDataBuilder.set("0x...", key1, val1);
+batcher.streamDataBuilder.set("0x...", key2, val2);
+
+var [tx, err] = await batcher.exec();
+
+if (err === null) {
+    console.log("Batcher executed successfully, tx: ", tx);
+} else {
+    console.log("Error executing batcher: ", err);
+}
+```
+
+Download data from 0g-kv
+```js
+const KvClientAddr = "http://3.101.147.150:6789"
+
+const streamId = "0x..."
+const kvClient = new KvClient(KvClientAddr)
+
+let val = await kvClient.getValue(streamId, ethers.encodeBase64(key1));
+console.log(val)
 ```
 
 ### Browser environment example:
