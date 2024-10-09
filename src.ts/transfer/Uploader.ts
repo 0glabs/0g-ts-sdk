@@ -233,7 +233,13 @@ export class Uploader {
             return null
         }
 
-        if (!checkReplica(shardConfigs, opts.expectedReplica)) {
+        if (
+            !checkReplica(
+                file.numSegments(),
+                shardConfigs,
+                opts.expectedReplica
+            )
+        ) {
             console.log('Not enough replicas')
             return null
         }

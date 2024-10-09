@@ -37,9 +37,10 @@ export class Indexer extends HttpProvider {
     async newUploaderFromIndexerNodes(
         blockchain_rpc: string,
         flow: FixedPriceFlow,
+        segNum: number,
         expectedReplica: number
     ): Promise<[Uploader | null, Error | null]> {
-        let [clients, err] = await this.selectNodes(expectedReplica)
+        let [clients, err] = await this.selectNodes(segNum, expectedReplica)
         if (err != null) {
             return [null, err]
         }
@@ -51,10 +52,11 @@ export class Indexer extends HttpProvider {
     }
 
     async selectNodes(
+        segNum: number,
         expectedReplica: number
     ): Promise<[StorageNode[], Error | null]> {
         let nodes: ShardedNodes = await this.getShardedNodes()
-        let [trusted, ok] = selectNodes(nodes.trusted, expectedReplica)
+        let [trusted, ok] = selectNodes(segNum, nodes.trusted, expectedReplica)
         if (!ok) {
             return [
                 [],
@@ -87,6 +89,7 @@ export class Indexer extends HttpProvider {
         let [uploader, err] = await this.newUploaderFromIndexerNodes(
             blockchain_rpc,
             flow_contract,
+            file.numSegments(),
             expectedReplica
         )
         if (err != null || uploader == null) {

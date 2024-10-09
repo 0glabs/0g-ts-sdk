@@ -145,7 +145,7 @@ class Uploader {
             console.log('Failed to get shard configs');
             return null;
         }
-        if (!(0, index_js_1.checkReplica)(shardConfigs, opts.expectedReplica)) {
+        if (!(0, index_js_1.checkReplica)(file.numSegments(), shardConfigs, opts.expectedReplica)) {
             console.log('Not enough replicas');
             return null;
         }

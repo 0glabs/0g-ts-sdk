@@ -5,6 +5,7 @@ export * from './types.js'
 export * from './segment_tree.js'
 
 export function selectNodes(
+    segNum: number,
     nodes: ShardedNode[],
     expectedReplica: number
 ): [ShardedNode[], boolean] {
@@ -24,7 +25,9 @@ export function selectNodes(
         lazyTags: 0,
     }
 
+    let occupied: { [key: number]: number } = {}
     let selectedNodes: ShardedNode[] = []
+    let hit = 0
     for (let i = 0; i < nodes.length; i += 1) {
         let node = nodes[i]
         if (
@@ -40,12 +43,36 @@ export function selectNodes(
         if (root.replica >= expectedReplica) {
             return [selectedNodes, true]
         }
+        if (segNum > 0) {
+            let chosen = false
+            for (
+                let j = node.config.shardId;
+                j < segNum;
+                j += node.config.numShard
+            ) {
+                if (occupied[j] === undefined) {
+                    occupied[j] = 0
+                }
+                if (occupied[j] < expectedReplica) {
+                    hit += 1
+                    occupied[j] += 1
+                    chosen = true
+                }
+            }
+            if (chosen) {
+                selectedNodes.push(node)
+            }
+            if (hit == segNum * expectedReplica) {
+                return [selectedNodes, true]
+            }
+        }
     }
 
     return [[], false]
 }
 
 export function checkReplica(
+    segNum: number,
     shardConfigs: ShardConfig[],
     expectedReplica: number
 ): boolean {
@@ -61,6 +88,6 @@ export function checkReplica(
             since: 0,
         })
     }
-    let [_, ok] = selectNodes(shardedNodes, expectedReplica)
+    let [_, ok] = selectNodes(segNum, shardedNodes, expectedReplica)
     return ok
 }

@@ -25,8 +25,8 @@ export class Indexer extends HttpProvider {
         });
         return res;
     }
-    async newUploaderFromIndexerNodes(blockchain_rpc, flow, expectedReplica) {
-        let [clients, err] = await this.selectNodes(expectedReplica);
+    async newUploaderFromIndexerNodes(blockchain_rpc, flow, segNum, expectedReplica) {
+        let [clients, err] = await this.selectNodes(segNum, expectedReplica);
         if (err != null) {
             return [null, err];
         }
@@ -34,9 +34,9 @@ export class Indexer extends HttpProvider {
         let uploader = new Uploader(clients, blockchain_rpc, flow);
         return [uploader, null];
     }
-    async selectNodes(expectedReplica) {
+    async selectNodes(segNum, expectedReplica) {
         let nodes = await this.getShardedNodes();
-        let [trusted, ok] = selectNodes(nodes.trusted, expectedReplica);
+        let [trusted, ok] = selectNodes(segNum, nodes.trusted, expectedReplica);
         if (!ok) {
             return [
                 [],
@@ -55,7 +55,7 @@ export class Indexer extends HttpProvider {
         if (opts != undefined && opts.expectedReplica != null) {
             expectedReplica = Math.max(1, opts.expectedReplica);
         }
-        let [uploader, err] = await this.newUploaderFromIndexerNodes(blockchain_rpc, flow_contract, expectedReplica);
+        let [uploader, err] = await this.newUploaderFromIndexerNodes(blockchain_rpc, flow_contract, file.numSegments(), expectedReplica);
         if (err != null || uploader == null) {
             return ['', new Error('failed to create uploader')];
         }

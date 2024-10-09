@@ -24196,7 +24196,7 @@ function insert(node, numShard, shardId, expectedReplica) {
     return inserted;
 }
 
-function selectNodes(nodes, expectedReplica) {
+function selectNodes(segNum, nodes, expectedReplica) {
     if (expectedReplica === 0) {
         return [[], false];
     }
@@ -24212,7 +24212,9 @@ function selectNodes(nodes, expectedReplica) {
         replica: 0,
         lazyTags: 0,
     };
+    let occupied = {};
     let selectedNodes = [];
+    let hit = 0;
     for (let i = 0; i < nodes.length; i += 1) {
         let node = nodes[i];
         if (insert(root, node.config.numShard, node.config.shardId, expectedReplica)) {
@@ -24221,10 +24223,29 @@ function selectNodes(nodes, expectedReplica) {
         if (root.replica >= expectedReplica) {
             return [selectedNodes, true];
         }
+        if (segNum > 0) {
+            let chosen = false;
+            for (let j = node.config.shardId; j < segNum; j += node.config.numShard) {
+                if (occupied[j] === undefined) {
+                    occupied[j] = 0;
+                }
+                if (occupied[j] < expectedReplica) {
+                    hit += 1;
+                    occupied[j] += 1;
+                    chosen = true;
+                }
+            }
+            if (chosen) {
+                selectedNodes.push(node);
+            }
+            if (hit == segNum * expectedReplica) {
+                return [selectedNodes, true];
+            }
+        }
     }
     return [[], false];
 }
-function checkReplica(shardConfigs, expectedReplica) {
+function checkReplica(segNum, shardConfigs, expectedReplica) {
     let shardedNodes = [];
     for (let i = 0; i < shardConfigs.length; i += 1) {
         shardedNodes.push({
@@ -24237,7 +24258,7 @@ function checkReplica(shardConfigs, expectedReplica) {
             since: 0,
         });
     }
-    let [_, ok] = selectNodes(shardedNodes, expectedReplica);
+    let [_, ok] = selectNodes(segNum, shardedNodes, expectedReplica);
     return ok;
 }
 
@@ -24380,7 +24401,7 @@ class Uploader {
             console.log('Failed to get shard configs');
             return null;
         }
-        if (!checkReplica(shardConfigs, opts.expectedReplica)) {
+        if (!checkReplica(file.numSegments(), shardConfigs, opts.expectedReplica)) {
             console.log('Not enough replicas');
             return null;
         }
@@ -24501,8 +24522,8 @@ class Indexer extends HttpProvider {
         });
         return res;
     }
-    async newUploaderFromIndexerNodes(blockchain_rpc, flow, expectedReplica) {
-        let [clients, err] = await this.selectNodes(expectedReplica);
+    async newUploaderFromIndexerNodes(blockchain_rpc, flow, segNum, expectedReplica) {
+        let [clients, err] = await this.selectNodes(segNum, expectedReplica);
         if (err != null) {
             return [null, err];
         }
@@ -24510,9 +24531,9 @@ class Indexer extends HttpProvider {
         let uploader = new Uploader(clients, blockchain_rpc, flow);
         return [uploader, null];
     }
-    async selectNodes(expectedReplica) {
+    async selectNodes(segNum, expectedReplica) {
         let nodes = await this.getShardedNodes();
-        let [trusted, ok] = selectNodes(nodes.trusted, expectedReplica);
+        let [trusted, ok] = selectNodes(segNum, nodes.trusted, expectedReplica);
         if (!ok) {
             return [
                 [],
@@ -24531,7 +24552,7 @@ class Indexer extends HttpProvider {
         if (opts != undefined && opts.expectedReplica != null) {
             expectedReplica = Math.max(1, opts.expectedReplica);
         }
-        let [uploader, err] = await this.newUploaderFromIndexerNodes(blockchain_rpc, flow_contract, expectedReplica);
+        let [uploader, err] = await this.newUploaderFromIndexerNodes(blockchain_rpc, flow_contract, file.numSegments(), expectedReplica);
         if (err != null || uploader == null) {
             return ['', new Error('failed to create uploader')];
         }

@@ -142,7 +142,7 @@ export class Uploader {
             console.log('Failed to get shard configs');
             return null;
         }
-        if (!checkReplica(shardConfigs, opts.expectedReplica)) {
+        if (!checkReplica(file.numSegments(), shardConfigs, opts.expectedReplica)) {
             console.log('Not enough replicas');
             return null;
         }

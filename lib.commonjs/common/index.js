@@ -6,7 +6,7 @@ const tslib_1 = require("tslib");
 const segment_tree_js_1 = require("./segment_tree.js");
 tslib_1.__exportStar(require("./types.js"), exports);
 tslib_1.__exportStar(require("./segment_tree.js"), exports);
-function selectNodes(nodes, expectedReplica) {
+function selectNodes(segNum, nodes, expectedReplica) {
     if (expectedReplica === 0) {
         return [[], false];
     }
@@ -22,7 +22,9 @@ function selectNodes(nodes, expectedReplica) {
         replica: 0,
         lazyTags: 0,
     };
+    let occupied = {};
     let selectedNodes = [];
+    let hit = 0;
     for (let i = 0; i < nodes.length; i += 1) {
         let node = nodes[i];
         if ((0, segment_tree_js_1.insert)(root, node.config.numShard, node.config.shardId, expectedReplica)) {
@@ -31,10 +33,29 @@ function selectNodes(nodes, expectedReplica) {
         if (root.replica >= expectedReplica) {
             return [selectedNodes, true];
         }
+        if (segNum > 0) {
+            let chosen = false;
+            for (let j = node.config.shardId; j < segNum; j += node.config.numShard) {
+                if (occupied[j] === undefined) {
+                    occupied[j] = 0;
+                }
+                if (occupied[j] < expectedReplica) {
+                    hit += 1;
+                    occupied[j] += 1;
+                    chosen = true;
+                }
+            }
+            if (chosen) {
+                selectedNodes.push(node);
+            }
+            if (hit == segNum * expectedReplica) {
+                return [selectedNodes, true];
+            }
+        }
     }
     return [[], false];
 }
-function checkReplica(shardConfigs, expectedReplica) {
+function checkReplica(segNum, shardConfigs, expectedReplica) {
     let shardedNodes = [];
     for (let i = 0; i < shardConfigs.length; i += 1) {
         shardedNodes.push({
@@ -47,7 +68,7 @@ function checkReplica(shardConfigs, expectedReplica) {
             since: 0,
         });
     }
-    let [_, ok] = selectNodes(shardedNodes, expectedReplica);
+    let [_, ok] = selectNodes(segNum, shardedNodes, expectedReplica);
     return ok;
 }
 //# sourceMappingURL=index.js.map
