@@ -10,8 +10,40 @@ export class Downloader {
         this.nodes = nodes;
         this.shardConfigs = [];
     }
+    async downloadFile(root, filePath, proof) {
+        var [info, err] = await this.queryFile(root);
+        if (err != null || info === null) {
+            return new Error(err?.message);
+        }
+        if (!info.finalized) {
+            return new Error('File not finalized');
+        }
+        if (checkExist(filePath)) {
+            return new Error('Wrong path, provide a file path which does not exist.');
+        }
+        let shardConfigs = await getShardConfigs(this.nodes);
+        if (shardConfigs === null) {
+            return new Error('Failed to get shard configs');
+        }
+        this.shardConfigs = shardConfigs;
+        err = await this.downloadFileHelper(filePath, info, proof);
+        return err;
+    }
+    async queryFile(root) {
+        let fileInfo = null;
+        for (let node of this.nodes) {
+            const currInfo = await node.getFileInfo(root);
+            if (currInfo === null) {
+                return [null, new Error('File not found on node ' + node.url)];
+            }
+            else if (fileInfo === null) {
+                fileInfo = currInfo;
+            }
+        }
+        return [fileInfo, null];
+    }
     // TODO: add proof check
-    async downloadTask(root, size, segmentOffset, taskInd, numSegments, numChunks, proof) {
+    async downloadTask(txSeq, size, segmentOffset, taskInd, numSegments, numChunks, proof) {
         const segmentIndex = segmentOffset + taskInd;
         const startIndex = segmentIndex * DEFAULT_SEGMENT_MAX_CHUNKS;
         var endIndex = startIndex + DEFAULT_SEGMENT_MAX_CHUNKS;
@@ -26,7 +58,7 @@ export class Downloader {
                 continue;
             }
             // try download from current node
-            segment = await this.nodes[nodeIndex].downloadSegment(root, startIndex, endIndex);
+            segment = await this.nodes[nodeIndex].downloadSegmentByTxSeq(txSeq, startIndex, endIndex);
             if (segment === null) {
                 continue;
             }
@@ -45,55 +77,23 @@ export class Downloader {
             new Error('No storage node holds segment with index ' + segmentIndex),
         ];
     }
-    async downloadFileHelper(root, filePath, size, proof) {
+    async downloadFileHelper(filePath, info, proof) {
         const shardConfigs = await getShardConfigs(this.nodes);
         if (shardConfigs == null) {
             return new Error('Failed to get shard configs');
         }
         const segmentOffset = 0;
-        const numChunks = GetSplitNum(size, DEFAULT_CHUNK_SIZE);
-        const numSegments = GetSplitNum(size, DEFAULT_SEGMENT_SIZE);
+        const numChunks = GetSplitNum(info.tx.size, DEFAULT_CHUNK_SIZE);
+        const numSegments = GetSplitNum(info.tx.size, DEFAULT_SEGMENT_SIZE);
         const numTasks = numSegments - segmentOffset;
         for (let taskInd = 0; taskInd < numTasks; taskInd++) {
-            let [segArray, err] = await this.downloadTask(root, size, segmentOffset, taskInd, numSegments, numChunks, proof);
+            let [segArray, err] = await this.downloadTask(info.tx.seq, info.tx.size, segmentOffset, taskInd, numSegments, numChunks, proof);
             if (err != null) {
                 return err;
             }
             fs.appendFileSync(filePath, segArray);
         }
         return null;
-    }
-    async downloadFile(root, filePath, proof) {
-        var [info, err] = await this.queryFile(root);
-        if (err != null || info === null) {
-            return new Error(err?.message);
-        }
-        if (!info.finalized) {
-            return new Error('File not finalized');
-        }
-        if (checkExist(filePath)) {
-            return new Error('Wrong path, provide a file path which does not exist.');
-        }
-        let shardConfigs = await getShardConfigs(this.nodes);
-        if (shardConfigs === null) {
-            return new Error('Failed to get shard configs');
-        }
-        this.shardConfigs = shardConfigs;
-        err = await this.downloadFileHelper(root, filePath, info.tx.size, proof);
-        return err;
-    }
-    async queryFile(root) {
-        let fileInfo = null;
-        for (let node of this.nodes) {
-            const currInfo = await node.getFileInfo(root);
-            if (currInfo === null) {
-                return [null, new Error('File not found on node ' + node.url)];
-            }
-            else if (fileInfo === null) {
-                fileInfo = currInfo;
-            }
-        }
-        return [fileInfo, null];
     }
 }
 //# sourceMappingURL=Downloader.js.map
