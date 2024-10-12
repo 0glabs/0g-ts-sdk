@@ -52,4 +52,8 @@ export interface KeyValue {
     size: number;
     key: Bytes;
 }
+export interface FlowProof {
+    lemma: Hash[];
+    path: boolean[];
+}
 //# sourceMappingURL=types.d.ts.map

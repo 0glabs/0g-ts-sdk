@@ -103,7 +103,7 @@ export class Indexer extends HttpProvider {
             }
         }
 
-        return await uploader.uploadFile(file, segIndex, opts, retryOpts)
+        return await uploader.uploadFile(file, opts, retryOpts)
     }
 
     async download(

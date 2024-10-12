@@ -63,3 +63,9 @@ export interface KeyValue {
     size: number
     key: Bytes
 }
+
+// FlowProof proof of a sector in flow
+export interface FlowProof {
+    lemma: Hash[]
+    path: boolean[]
+}

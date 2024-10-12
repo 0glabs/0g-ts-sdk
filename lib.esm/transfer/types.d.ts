@@ -4,6 +4,7 @@ export interface UploadTask {
     taskSize: number;
     segIndex: number;
     numShard: number;
+    txSeq: number;
 }
 export interface UploadOption {
     tags: ethers.BytesLike;

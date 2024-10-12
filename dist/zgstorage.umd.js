@@ -1,8 +1,8 @@
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('node:crypto'), require('node:fs/promises')) :
-	typeof define === 'function' && define.amd ? define(['exports', 'node:crypto', 'node:fs/promises'], factory) :
-	(global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.zgstorage = {}, global.node_crypto, global.promises));
-})(this, (function (exports, node_crypto, promises) { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('node:fs/promises'), require('node:crypto')) :
+	typeof define === 'function' && define.amd ? define(['exports', 'node:fs/promises', 'node:crypto'], factory) :
+	(global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.zgstorage = {}, global.promises, global.node_crypto));
+})(this, (function (exports, promises, node_crypto) { 'use strict';
 
 	var fs = {};
 
@@ -24110,6 +24110,22 @@
 	        });
 	        return res;
 	    }
+	    // UploadSegmentByTxSeq Call zgs_uploadSegmentByTxSeq RPC to upload a segment to the node.
+	    async uploadSegmentByTxSeq(seg, txSeq) {
+	        const res = await super.request({
+	            method: 'zgs_uploadSegmentByTxSeq',
+	            params: [seg, txSeq],
+	        });
+	        return res;
+	    }
+	    // UploadSegmentsByTxSeq Call zgs_uploadSegmentsByTxSeq RPC to upload a slice of segments to the node.
+	    async uploadSegmentsByTxSeq(segs, txSeq) {
+	        const res = await super.request({
+	            method: 'zgs_uploadSegmentsByTxSeq',
+	            params: [segs, txSeq],
+	        });
+	        return res;
+	    }
 	    async downloadSegment(root, startIndex, endIndx) {
 	        var seg = await super.request({
 	            method: 'zgs_downloadSegment',
@@ -24121,6 +24137,30 @@
 	        const seg = await super.request({
 	            method: 'zgs_downloadSegmentWithProof',
 	            params: [root, index],
+	        });
+	        return seg;
+	    }
+	    // DownloadSegmentByTxSeq Call zgs_downloadSegmentByTxSeq RPC to download a segment from the node.
+	    async downloadSegmentByTxSeq(txSeq, startIndex, endIndex) {
+	        const seg = await super.request({
+	            method: 'zgs_downloadSegmentByTxSeq',
+	            params: [txSeq, startIndex, endIndex],
+	        });
+	        return seg;
+	    }
+	    // DownloadSegmentWithProofByTxSeq Call zgs_downloadSegmentWithProofByTxSeq RPC to download a segment along with its merkle proof from the node.
+	    async downloadSegmentWithProofByTxSeq(txSeq, index) {
+	        const seg = await super.request({
+	            method: 'zgs_downloadSegmentWithProofByTxSeq',
+	            params: [txSeq, index],
+	        });
+	        return seg;
+	    }
+	    // GetSectorProof Call zgs_getSectorProof RPC to get the proof of a sector.
+	    async getSectorProof(sectorIndex, root) {
+	        const seg = await super.request({
+	            method: 'zgs_getSectorProof',
+	            params: [sectorIndex, root],
 	        });
 	        return seg;
 	    }
@@ -24392,676 +24432,6 @@
 	            }
 	        }
 	        return [fileInfo, null];
-	    }
-	}
-
-	function pushdown(node) {
-	    if (node.childs === null) {
-	        node.childs = [];
-	        for (let i = 0; i < 2; i += 1) {
-	            node.childs.push({
-	                childs: null,
-	                numShard: node.numShard << 1,
-	                replica: 0,
-	                lazyTags: 0,
-	            });
-	        }
-	    }
-	    for (let i = 0; i < 2; i += 1) {
-	        node.childs[i].replica += node.lazyTags;
-	        node.childs[i].lazyTags += node.lazyTags;
-	    }
-	    node.lazyTags = 0;
-	}
-	// insert a shard if it contributes to the replica
-	function insert(node, numShard, shardId, expectedReplica) {
-	    if (node.replica >= expectedReplica) {
-	        return false;
-	    }
-	    if (node.numShard === numShard) {
-	        node.replica += 1;
-	        node.lazyTags += 1;
-	        return true;
-	    }
-	    pushdown(node);
-	    if (node.childs === null) {
-	        throw new Error('node.childs is null');
-	    }
-	    let inserted = insert(node.childs[shardId % 2], numShard, shardId >> 1, expectedReplica);
-	    node.replica = Math.min(node.childs[0].replica, node.childs[1].replica);
-	    return inserted;
-	}
-
-	function selectNodes(nodes, expectedReplica) {
-	    if (expectedReplica === 0) {
-	        return [[], false];
-	    }
-	    nodes.sort((a, b) => {
-	        if (a.config.numShard === b.config.numShard) {
-	            return a.config.shardId - b.config.shardId;
-	        }
-	        return a.config.numShard - b.config.numShard;
-	    });
-	    let root = {
-	        childs: null,
-	        numShard: 1,
-	        replica: 0,
-	        lazyTags: 0,
-	    };
-	    let selectedNodes = [];
-	    for (let i = 0; i < nodes.length; i += 1) {
-	        let node = nodes[i];
-	        if (insert(root, node.config.numShard, node.config.shardId, expectedReplica)) {
-	            selectedNodes.push(node);
-	        }
-	        if (root.replica >= expectedReplica) {
-	            return [selectedNodes, true];
-	        }
-	    }
-	    return [[], false];
-	}
-	function checkReplica(shardConfigs, expectedReplica) {
-	    let shardedNodes = [];
-	    for (let i = 0; i < shardConfigs.length; i += 1) {
-	        shardedNodes.push({
-	            url: '',
-	            config: {
-	                numShard: shardConfigs[i].numShard,
-	                shardId: shardConfigs[i].shardId,
-	            },
-	            latency: 0,
-	            since: 0,
-	        });
-	    }
-	    let [_, ok] = selectNodes(shardedNodes, expectedReplica);
-	    return ok;
-	}
-
-	class Uploader {
-	    nodes;
-	    provider;
-	    flow;
-	    gasPrice;
-	    gasLimit;
-	    constructor(nodes, providerRpc, flow, gasPrice = BigInt('0'), gasLimit = BigInt('0')) {
-	        this.nodes = nodes;
-	        this.provider = new JsonRpcProvider(providerRpc);
-	        this.flow = flow;
-	        this.gasPrice = gasPrice;
-	        this.gasLimit = gasLimit;
-	    }
-	    async checkExistence(root) {
-	        for (let client of this.nodes) {
-	            let info = await client.getFileInfo(root);
-	            if (info !== null && info.finalized) {
-	                return true;
-	            }
-	        }
-	        return false;
-	    }
-	    async uploadFile(file, segIndex = 0, opts, retryOpts) {
-	        var [tree, err] = await file.merkleTree();
-	        if (err != null || tree == null || tree.rootHash() == null) {
-	            return ['', new Error('Failed to create Merkle tree')];
-	        }
-	        console.log('Data prepared to upload', 'root=' + tree.rootHash(), 'size=' + file.size(), 'numSegments=' + file.numSegments(), 'numChunks=' + file.numChunks());
-	        const exist = await this.checkExistence(tree.rootHash());
-	        if (exist) {
-	            return ['', new Error('Data already exists')];
-	        }
-	        var [submission, err] = await file.createSubmission(opts.tags);
-	        if (err !== null || submission === null) {
-	            return ['', new Error('Failed to create submission')];
-	        }
-	        let marketAddr = await this.flow.market();
-	        let marketContract = getMarketContract(marketAddr, this.provider);
-	        let pricePerSector = await marketContract.pricePerSector();
-	        let fee = BigInt('0');
-	        if (opts.fee > 0) {
-	            fee = opts.fee;
-	        }
-	        else {
-	            fee = calculatePrice(submission, pricePerSector);
-	        }
-	        var txOpts = {
-	            value: fee,
-	        };
-	        if (this.gasPrice > 0) {
-	            txOpts.gasPrice = this.gasPrice;
-	        }
-	        if (this.gasLimit > 0) {
-	            txOpts.gasLimit = this.gasLimit;
-	        }
-	        console.log('Submitting transaction with storage fee:', fee);
-	        let tx = await this.flow.submit(submission, txOpts);
-	        await tx.wait();
-	        let receipt = await this.waitForReceipt(this.provider, tx.hash, retryOpts);
-	        if (receipt === null) {
-	            return ['', new Error('Failed to get transaction receipt')];
-	        }
-	        console.log('Transaction hash:', tx.hash);
-	        await this.waitForLogEntry(tree.rootHash(), false, receipt);
-	        const tasks = await this.segmentUpload(file, tree, segIndex, opts);
-	        if (tasks === null) {
-	            return ['', new Error('Failed to get upload tasks')];
-	        }
-	        console.log('Processing tasks in parallel with ', tasks.length, ' tasks...');
-	        err = await this.processTasksInParallel(file, tree, tasks)
-	            .then(() => console.log('All tasks processed'))
-	            .catch((error) => {
-	            return error;
-	        });
-	        // await this.uploadFileHelper(file, tree, segIndex)
-	        if (err !== null) {
-	            return ['', err];
-	        }
-	        return [tx.hash, null];
-	    }
-	    async waitForReceipt(provider, txHash, opts) {
-	        var receipt = null;
-	        if (opts === undefined) {
-	            opts = { Retries: 10, Interval: 5 };
-	        }
-	        let nTries = 0;
-	        while (nTries < opts.Retries) {
-	            receipt = await provider.getTransactionReceipt(txHash);
-	            if (receipt !== null && receipt.status == 1) {
-	                return receipt;
-	            }
-	            await delay(opts.Interval * 1000);
-	            nTries++;
-	        }
-	        return null;
-	    }
-	    async waitForLogEntry(root, finalityRequired, receipt) {
-	        console.log('Wait for log entry on storage node');
-	        while (true) {
-	            await delay(1000);
-	            let ok = true;
-	            for (let client of this.nodes) {
-	                let info = await client.getFileInfo(root);
-	                if (info === null) {
-	                    let logMsg = 'Log entry is unavailable yet';
-	                    if (receipt !== undefined) {
-	                        let status = await client.getStatus();
-	                        if (status !== null) {
-	                            const logSyncHeight = status.logSyncHeight;
-	                            const txBlock = receipt.blockNumber;
-	                            logMsg = `Log entry is unavailable yet, txBlock=${txBlock}, zgsNodeSyncHeight=${logSyncHeight}`;
-	                        }
-	                    }
-	                    console.log(logMsg);
-	                    ok = false;
-	                    break;
-	                }
-	                if (finalityRequired && !info.finalized) {
-	                    console.log('Log entry is available, but not finalized yet');
-	                    ok = false;
-	                    break;
-	                }
-	            }
-	            if (ok) {
-	                break;
-	            }
-	        }
-	    }
-	    // Function to process all tasks in parallel
-	    async processTasksInParallel(file, tree, tasks) {
-	        const taskPromises = tasks.map((task) => this.uploadTask(file, tree, task));
-	        return await Promise.all(taskPromises);
-	    }
-	    async segmentUpload(file, tree, segIndex, opts) {
-	        const shardConfigs = await getShardConfigs(this.nodes);
-	        if (shardConfigs === null) {
-	            console.log('Failed to get shard configs');
-	            return null;
-	        }
-	        if (!checkReplica(shardConfigs, opts.expectedReplica)) {
-	            console.log('Not enough replicas');
-	            return null;
-	        }
-	        const numSegments = file.numSegments();
-	        var uploadTasks = [];
-	        for (let clientIndex = 0; clientIndex < shardConfigs.length; clientIndex++) {
-	            // skip finalized nodes
-	            const info = await this.nodes[clientIndex].getFileInfo(tree.rootHash());
-	            if (info !== null && info.finalized) {
-	                continue;
-	            }
-	            const shardConfig = shardConfigs[clientIndex];
-	            var tasks = [];
-	            var segIndex = shardConfig.shardId;
-	            while (segIndex < numSegments) {
-	                tasks.push({
-	                    clientIndex,
-	                    taskSize: opts.taskSize,
-	                    segIndex,
-	                    numShard: shardConfig.numShard,
-	                });
-	                segIndex += shardConfig.numShard * opts.taskSize;
-	            }
-	            uploadTasks.push(tasks);
-	        }
-	        var tasks = [];
-	        if (uploadTasks.length > 0) {
-	            uploadTasks.sort((a, b) => a.length - b.length);
-	            for (let taskIndex = 0; taskIndex < uploadTasks[0].length; taskIndex += 1) {
-	                for (let i = 0; i < uploadTasks.length && taskIndex < uploadTasks[i].length; i += 1) {
-	                    tasks.push(uploadTasks[i][taskIndex]);
-	                }
-	            }
-	        }
-	        return tasks;
-	    }
-	    async uploadTask(file, tree, uploadTask) {
-	        const numChunks = file.numChunks();
-	        let segIndex = uploadTask.segIndex;
-	        let startSegIndex = segIndex;
-	        let allDataUploaded = false;
-	        var segments = [];
-	        for (let i = 0; i < uploadTask.taskSize; i += 1) {
-	            startSegIndex = segIndex * DEFAULT_SEGMENT_MAX_CHUNKS;
-	            if (startSegIndex >= numChunks) {
-	                break;
-	            }
-	            const iter = file.iterateWithOffsetAndBatch(segIndex * DEFAULT_SEGMENT_SIZE, DEFAULT_SEGMENT_SIZE, true);
-	            let [ok, err] = await iter.next();
-	            if (err) {
-	                return new Error('Failed to read segment');
-	            }
-	            if (!ok) {
-	                break;
-	            }
-	            let segment = iter.current();
-	            const proof = tree.proofAt(segIndex);
-	            const startIndex = segIndex * DEFAULT_SEGMENT_MAX_CHUNKS;
-	            if (startIndex >= numChunks) {
-	                break;
-	            }
-	            else if (startIndex + segment.length / DEFAULT_CHUNK_SIZE >=
-	                numChunks) {
-	                const expectedLen = DEFAULT_CHUNK_SIZE * (numChunks - startIndex);
-	                segment = segment.slice(0, expectedLen);
-	                allDataUploaded = true;
-	            }
-	            const segWithProof = {
-	                root: tree.rootHash(),
-	                data: encodeBase64(segment),
-	                index: segIndex,
-	                proof: proof,
-	                fileSize: file.size(),
-	            };
-	            segments.push(segWithProof);
-	            if (allDataUploaded) {
-	                break;
-	            }
-	            segIndex += uploadTask.numShard;
-	        }
-	        let res = await this.nodes[uploadTask.clientIndex].uploadSegments(segments);
-	        if (res === null) {
-	            return new Error('Failed to upload segments');
-	        }
-	        return res;
-	    }
-	}
-
-	var defaultUploadOption = {
-	    tags: '0x',
-	    finalityRequired: false,
-	    taskSize: 1,
-	    expectedReplica: 1,
-	    skipTx: false,
-	    fee: BigInt(0),
-	};
-
-	class Indexer extends HttpProvider {
-	    constructor(url) {
-	        super({ url });
-	    }
-	    async getShardedNodes() {
-	        const res = await super.request({
-	            method: 'indexer_getShardedNodes',
-	        });
-	        return res;
-	    }
-	    async getNodeLocations() {
-	        const res = await super.request({
-	            method: 'indexer_getNodeLocations',
-	        });
-	        return res;
-	    }
-	    async getFileLocations(rootHash) {
-	        const res = await super.request({
-	            method: 'indexer_getFileLocations',
-	            params: [rootHash],
-	        });
-	        return res;
-	    }
-	    async newUploaderFromIndexerNodes(blockchain_rpc, flow, expectedReplica) {
-	        let [clients, err] = await this.selectNodes(expectedReplica);
-	        if (err != null) {
-	            return [null, err];
-	        }
-	        console.log('Selected nodes:', clients);
-	        let uploader = new Uploader(clients, blockchain_rpc, flow);
-	        return [uploader, null];
-	    }
-	    async selectNodes(expectedReplica) {
-	        let nodes = await this.getShardedNodes();
-	        let [trusted, ok] = selectNodes(nodes.trusted, expectedReplica);
-	        if (!ok) {
-	            return [
-	                [],
-	                new Error('cannot select a subset from the returned nodes that meets the replication requirement'),
-	            ];
-	        }
-	        let clients = [];
-	        trusted.forEach((node) => {
-	            let sn = new StorageNode(node.url);
-	            clients.push(sn);
-	        });
-	        return [clients, null];
-	    }
-	    async upload(file, segIndex = 0, blockchain_rpc, flow_contract, opts, retryOpts) {
-	        var expectedReplica = 1;
-	        if (opts != undefined && opts.expectedReplica != null) {
-	            expectedReplica = Math.max(1, opts.expectedReplica);
-	        }
-	        let [uploader, err] = await this.newUploaderFromIndexerNodes(blockchain_rpc, flow_contract, expectedReplica);
-	        if (err != null || uploader == null) {
-	            return ['', new Error('failed to create uploader')];
-	        }
-	        if (opts === undefined) {
-	            opts = {
-	                tags: '0x',
-	                finalityRequired: true,
-	                taskSize: 10,
-	                expectedReplica: 1,
-	                skipTx: false,
-	                fee: BigInt('0'),
-	            };
-	        }
-	        return await uploader.uploadFile(file, segIndex, opts, retryOpts);
-	    }
-	    async download(rootHash, filePath, proof) {
-	        let locations = await this.getFileLocations(rootHash);
-	        if (locations.length == 0) {
-	            return new Error('failed to get file locations');
-	        }
-	        let clients = [];
-	        locations.forEach((node) => {
-	            let sn = new StorageNode(node.url);
-	            clients.push(sn);
-	        });
-	        let downloader = new Downloader(clients);
-	        return await downloader.downloadFile(rootHash, filePath, proof);
-	    }
-	}
-
-	var AccessControlType;
-	(function (AccessControlType) {
-	    AccessControlType[AccessControlType["GrantAdminRole"] = 0] = "GrantAdminRole";
-	    AccessControlType[AccessControlType["RenounceAdminRole"] = 1] = "RenounceAdminRole";
-	    AccessControlType[AccessControlType["SetKeyToSpecial"] = 16] = "SetKeyToSpecial";
-	    AccessControlType[AccessControlType["SetKeyToNormal"] = 17] = "SetKeyToNormal";
-	    AccessControlType[AccessControlType["GrantWriteRole"] = 32] = "GrantWriteRole";
-	    AccessControlType[AccessControlType["RevokeWriteRole"] = 33] = "RevokeWriteRole";
-	    AccessControlType[AccessControlType["RenounceWriteRole"] = 34] = "RenounceWriteRole";
-	    AccessControlType[AccessControlType["GrantSpecialWriteRole"] = 48] = "GrantSpecialWriteRole";
-	    AccessControlType[AccessControlType["RevokeSpecialWriteRole"] = 49] = "RevokeSpecialWriteRole";
-	    AccessControlType[AccessControlType["RenounceSpecialWriteRole"] = 50] = "RenounceSpecialWriteRole";
-	})(AccessControlType || (AccessControlType = {}));
-	class StreamData {
-	    Version;
-	    Reads = [];
-	    Writes = [];
-	    Controls = [];
-	    constructor(version) {
-	        this.Version = version;
-	    }
-	    size() {
-	        let size = 8; // version size in bytes
-	        size += 4; // Reads size prefix
-	        for (const v of this.Reads) {
-	            size += 32 + 3 + v.Key.length;
-	        }
-	        size += 4; // Writes size prefix
-	        for (const v of this.Writes) {
-	            size += 32 + 3 + v.Key.length + 8 + v.Data.length;
-	        }
-	        size += 4; // Controls size prefix
-	        for (const v of this.Controls) {
-	            size += 1 + 32; // Type + StreamId
-	            if (v.Account) {
-	                size += 20; // Address length
-	            }
-	            if (v.Key) {
-	                size += 3 + v.Key.length;
-	            }
-	        }
-	        return size;
-	    }
-	    encodeSize24(size) {
-	        if (size === 0) {
-	            throw new Error('errKeyIsEmpty');
-	        }
-	        const buf = new Uint8Array(4);
-	        const view = new DataView(buf.buffer);
-	        view.setUint32(0, size, false);
-	        if (buf[0] !== 0) {
-	            throw new Error('errKeyTooLarge');
-	        }
-	        return buf.slice(1);
-	    }
-	    encodeSize32(size) {
-	        const buf = new Uint8Array(4);
-	        const view = new DataView(buf.buffer);
-	        view.setUint32(0, size, false);
-	        return buf;
-	    }
-	    encodeSize64(size) {
-	        const buf = new Uint8Array(8);
-	        const view = new DataView(buf.buffer);
-	        view.setBigUint64(0, BigInt(size), false);
-	        return buf;
-	    }
-	    encode() {
-	        const encoded = new Uint8Array(this.size());
-	        let offset = 0;
-	        // version
-	        encoded.set(this.encodeSize64(this.Version), offset);
-	        offset += 8;
-	        // reads
-	        encoded.set(this.encodeSize32(this.Reads.length), offset);
-	        offset += 4;
-	        for (const v of this.Reads) {
-	            encoded.set(getBytes(v.StreamId), offset);
-	            offset += 32;
-	            const keySize = this.encodeSize24(v.Key.length);
-	            encoded.set(keySize, offset);
-	            offset += keySize.length;
-	            encoded.set(v.Key, offset);
-	            offset += v.Key.length;
-	        }
-	        // writes
-	        encoded.set(this.encodeSize32(this.Writes.length), offset);
-	        offset += 4;
-	        for (const v of this.Writes) {
-	            // add stream id
-	            encoded.set(getBytes(v.StreamId), offset);
-	            offset += 32;
-	            const keySize = this.encodeSize24(v.Key.length);
-	            // add key size
-	            encoded.set(keySize, offset);
-	            offset += keySize.length;
-	            // add key
-	            encoded.set(v.Key, offset);
-	            offset += v.Key.length;
-	            // add value size, add value later
-	            const dataSize = this.encodeSize64(v.Data.length);
-	            encoded.set(dataSize, offset);
-	            offset += dataSize.length;
-	        }
-	        // add all values
-	        for (const v of this.Writes) {
-	            encoded.set(v.Data, offset);
-	            offset += v.Data.length;
-	        }
-	        // controls
-	        encoded.set(this.encodeSize32(this.Controls.length), offset);
-	        offset += 4;
-	        for (const v of this.Controls) {
-	            encoded[offset] = v.Type;
-	            offset += 1;
-	            encoded.set(getBytes(v.StreamId), offset);
-	            offset += 32;
-	            if (v.Key !== undefined) {
-	                const keySize = this.encodeSize24(v.Key.length);
-	                encoded.set(keySize, offset);
-	                offset += keySize.length;
-	                encoded.set(v.Key, offset);
-	                offset += v.Key.length;
-	            }
-	            if (v.Account !== undefined) {
-	                encoded.set(getBytes(v.Account), offset);
-	                offset += 20;
-	            }
-	        }
-	        return encoded;
-	    }
-	}
-
-	const MAX_SET_SIZE = 1 << 16; // 64K
-	const MAX_KEY_SIZE = 1 << 24; // 16.7M
-	const MAX_QUERY_SIZE = 1024 * 256;
-	// df2ff3bb0af36c6384e6206552a4ed807f6f6a26e7d0aa6bff772ddc9d4307aa
-	const STREAM_DOMAIN = node_crypto.createHash('sha256').update('STREAM').digest();
-
-	class StreamDataBuilder {
-	    version;
-	    streamIds;
-	    controls;
-	    reads;
-	    writes;
-	    constructor(version) {
-	        this.version = version;
-	        this.streamIds = new Map();
-	        this.controls = [];
-	        this.reads = new Map();
-	        this.writes = new Map();
-	    }
-	    hexToBytes(hex) {
-	        // Remove '0x' prefix if it exists
-	        if (hex.startsWith('0x')) {
-	            hex = hex.slice(2);
-	        }
-	        return Buffer.from(hex, 'hex');
-	    }
-	    build(sorted = false) {
-	        const data = new StreamData(this.version);
-	        // controls
-	        data.Controls = this.buildAccessControl();
-	        // reads
-	        data.Reads = [];
-	        for (const [streamId, keys] of this.reads.entries()) {
-	            for (const k of keys.keys()) {
-	                const key = this.hexToBytes(k);
-	                if (key.length > MAX_KEY_SIZE) {
-	                    throw new Error('errKeyTooLarge');
-	                }
-	                if (key.length === 0) {
-	                    throw new Error('errKeyIsEmpty');
-	                }
-	                data.Reads.push({
-	                    StreamId: streamId,
-	                    Key: key,
-	                });
-	                if (data.Reads.length > MAX_SET_SIZE) {
-	                    throw new Error('errSizeTooLarge');
-	                }
-	            }
-	        }
-	        // writes
-	        data.Writes = [];
-	        for (const [streamId, keys] of this.writes.entries()) {
-	            for (const [k, d] of keys.entries()) {
-	                const key = this.hexToBytes(k);
-	                if (key.length > MAX_KEY_SIZE) {
-	                    throw new Error('errKeyTooLarge');
-	                }
-	                if (key.length === 0) {
-	                    throw new Error('errKeyIsEmpty');
-	                }
-	                data.Writes.push({
-	                    StreamId: streamId,
-	                    Key: key,
-	                    Data: Uint8Array.from(d),
-	                });
-	                if (data.Writes.length > MAX_SET_SIZE) {
-	                    throw new Error('errSizeTooLarge');
-	                }
-	            }
-	        }
-	        if (sorted) {
-	            data.Reads.sort((a, b) => {
-	                const streamIdI = a.StreamId;
-	                const streamIdJ = b.StreamId;
-	                if (streamIdI === streamIdJ) {
-	                    return hexlify(a.Key) < hexlify(b.Key)
-	                        ? -1
-	                        : 1;
-	                }
-	                else {
-	                    return streamIdI < streamIdJ ? -1 : 1;
-	                }
-	            });
-	            data.Writes.sort((a, b) => {
-	                const streamIdI = a.StreamId;
-	                const streamIdJ = b.StreamId;
-	                if (streamIdI === streamIdJ) {
-	                    return hexlify(a.Key) < hexlify(b.Key)
-	                        ? -1
-	                        : 1;
-	                }
-	                else {
-	                    return streamIdI < streamIdJ ? -1 : 1;
-	                }
-	            });
-	        }
-	        return data;
-	    }
-	    set(streamId, key, data) {
-	        this.addStreamId(streamId);
-	        if (!this.writes.has(streamId)) {
-	            this.writes.set(streamId, new Map());
-	        }
-	        let maps = this.writes.get(streamId);
-	        maps.set(Buffer.from(key).toString('hex'), data);
-	        this.writes.set(streamId, maps);
-	    }
-	    addStreamId(streamId) {
-	        this.streamIds.set(streamId, true);
-	    }
-	    buildTags(sorted = false) {
-	        let ids = Array.from(this.streamIds.keys());
-	        if (sorted) {
-	            ids.sort((a, b) => (a < b ? -1 : 1));
-	        }
-	        return this.createTags(ids);
-	    }
-	    createTags(streamIds) {
-	        let result = new Uint8Array((1 + streamIds.length) * 32); // Assuming Hash is 32 bytes
-	        result.set(STREAM_DOMAIN, 0);
-	        streamIds.forEach((id, index) => {
-	            result.set(getBytes(id), 32 * (index + 1));
-	        });
-	        return result;
-	    }
-	    buildAccessControl() {
-	        if (this.controls.length > MAX_SET_SIZE) {
-	            throw new Error('errSizeTooLarge');
-	        }
-	        return this.controls;
 	    }
 	}
 
@@ -25674,6 +25044,694 @@
 	    }
 	}
 
+	function pushdown(node) {
+	    if (node.childs === null) {
+	        node.childs = [];
+	        for (let i = 0; i < 2; i += 1) {
+	            node.childs.push({
+	                childs: null,
+	                numShard: node.numShard << 1,
+	                replica: 0,
+	                lazyTags: 0,
+	            });
+	        }
+	    }
+	    for (let i = 0; i < 2; i += 1) {
+	        node.childs[i].replica += node.lazyTags;
+	        node.childs[i].lazyTags += node.lazyTags;
+	    }
+	    node.lazyTags = 0;
+	}
+	// insert a shard if it contributes to the replica
+	function insert(node, numShard, shardId, expectedReplica) {
+	    if (node.replica >= expectedReplica) {
+	        return false;
+	    }
+	    if (node.numShard === numShard) {
+	        node.replica += 1;
+	        node.lazyTags += 1;
+	        return true;
+	    }
+	    pushdown(node);
+	    if (node.childs === null) {
+	        throw new Error('node.childs is null');
+	    }
+	    let inserted = insert(node.childs[shardId % 2], numShard, shardId >> 1, expectedReplica);
+	    node.replica = Math.min(node.childs[0].replica, node.childs[1].replica);
+	    return inserted;
+	}
+
+	function selectNodes(nodes, expectedReplica) {
+	    if (expectedReplica === 0) {
+	        return [[], false];
+	    }
+	    nodes.sort((a, b) => {
+	        if (a.config.numShard === b.config.numShard) {
+	            return a.config.shardId - b.config.shardId;
+	        }
+	        return a.config.numShard - b.config.numShard;
+	    });
+	    let root = {
+	        childs: null,
+	        numShard: 1,
+	        replica: 0,
+	        lazyTags: 0,
+	    };
+	    let selectedNodes = [];
+	    for (let i = 0; i < nodes.length; i += 1) {
+	        let node = nodes[i];
+	        if (insert(root, node.config.numShard, node.config.shardId, expectedReplica)) {
+	            selectedNodes.push(node);
+	        }
+	        if (root.replica >= expectedReplica) {
+	            return [selectedNodes, true];
+	        }
+	    }
+	    return [[], false];
+	}
+	function checkReplica(shardConfigs, expectedReplica) {
+	    let shardedNodes = [];
+	    for (let i = 0; i < shardConfigs.length; i += 1) {
+	        shardedNodes.push({
+	            url: '',
+	            config: {
+	                numShard: shardConfigs[i].numShard,
+	                shardId: shardConfigs[i].shardId,
+	            },
+	            latency: 0,
+	            since: 0,
+	        });
+	    }
+	    let [_, ok] = selectNodes(shardedNodes, expectedReplica);
+	    return ok;
+	}
+
+	class Uploader {
+	    nodes;
+	    provider;
+	    flow;
+	    gasPrice;
+	    gasLimit;
+	    constructor(nodes, providerRpc, flow, gasPrice = BigInt('0'), gasLimit = BigInt('0')) {
+	        this.nodes = nodes;
+	        this.provider = new JsonRpcProvider(providerRpc);
+	        this.flow = flow;
+	        this.gasPrice = gasPrice;
+	        this.gasLimit = gasLimit;
+	    }
+	    async checkExistence(root) {
+	        for (let client of this.nodes) {
+	            let info = await client.getFileInfo(root);
+	            if (info !== null && info.finalized) {
+	                return true;
+	            }
+	        }
+	        return false;
+	    }
+	    async uploadFile(file, opts, retryOpts) {
+	        var [tree, err] = await file.merkleTree();
+	        if (err != null || tree == null || tree.rootHash() == null) {
+	            return ['', new Error('Failed to create Merkle tree')];
+	        }
+	        console.log('Data prepared to upload', 'root=' + tree.rootHash(), 'size=' + file.size(), 'numSegments=' + file.numSegments(), 'numChunks=' + file.numChunks());
+	        const exist = await this.checkExistence(tree.rootHash());
+	        if (exist) {
+	            return ['', new Error('Data already exists')];
+	        }
+	        var [submission, err] = await file.createSubmission(opts.tags);
+	        if (err !== null || submission === null) {
+	            return ['', new Error('Failed to create submission')];
+	        }
+	        let marketAddr = await this.flow.market();
+	        let marketContract = getMarketContract(marketAddr, this.provider);
+	        let pricePerSector = await marketContract.pricePerSector();
+	        let fee = BigInt('0');
+	        if (opts.fee > 0) {
+	            fee = opts.fee;
+	        }
+	        else {
+	            fee = calculatePrice(submission, pricePerSector);
+	        }
+	        var txOpts = {
+	            value: fee,
+	        };
+	        if (this.gasPrice > 0) {
+	            txOpts.gasPrice = this.gasPrice;
+	        }
+	        if (this.gasLimit > 0) {
+	            txOpts.gasLimit = this.gasLimit;
+	        }
+	        console.log('Submitting transaction with storage fee:', fee);
+	        let tx = await this.flow.submit(submission, txOpts);
+	        await tx.wait();
+	        let receipt = await this.waitForReceipt(this.provider, tx.hash, retryOpts);
+	        if (receipt === null) {
+	            return ['', new Error('Failed to get transaction receipt')];
+	        }
+	        console.log('Transaction hash:', tx.hash);
+	        let info = await this.waitForLogEntry(tree.rootHash(), false, receipt);
+	        if (info === null) {
+	            return ['', new Error('Failed to get log entry')];
+	        }
+	        const tasks = await this.segmentUpload(info, file, tree, opts);
+	        if (tasks === null) {
+	            return ['', new Error('Failed to get upload tasks')];
+	        }
+	        console.log('Processing tasks in parallel with ', tasks.length, ' tasks...');
+	        err = await this.processTasksInParallel(file, tree, tasks)
+	            .then(() => console.log('All tasks processed'))
+	            .catch((error) => {
+	            return error;
+	        });
+	        // await this.uploadFileHelper(file, tree, segIndex)
+	        if (err !== null) {
+	            return ['', err];
+	        }
+	        return [tx.hash, null];
+	    }
+	    async waitForReceipt(provider, txHash, opts) {
+	        var receipt = null;
+	        if (opts === undefined) {
+	            opts = { Retries: 10, Interval: 5 };
+	        }
+	        let nTries = 0;
+	        while (nTries < opts.Retries) {
+	            receipt = await provider.getTransactionReceipt(txHash);
+	            if (receipt !== null && receipt.status == 1) {
+	                return receipt;
+	            }
+	            await delay(opts.Interval * 1000);
+	            nTries++;
+	        }
+	        return null;
+	    }
+	    async waitForLogEntry(root, finalityRequired, receipt) {
+	        console.log('Wait for log entry on storage node');
+	        let info = null;
+	        while (true) {
+	            await delay(1000);
+	            let ok = true;
+	            for (let client of this.nodes) {
+	                info = await client.getFileInfo(root);
+	                if (info === null) {
+	                    let logMsg = 'Log entry is unavailable yet';
+	                    if (receipt !== undefined) {
+	                        let status = await client.getStatus();
+	                        if (status !== null) {
+	                            const logSyncHeight = status.logSyncHeight;
+	                            const txBlock = receipt.blockNumber;
+	                            logMsg = `Log entry is unavailable yet, txBlock=${txBlock}, zgsNodeSyncHeight=${logSyncHeight}`;
+	                        }
+	                    }
+	                    console.log(logMsg);
+	                    ok = false;
+	                    break;
+	                }
+	                if (finalityRequired && !info.finalized) {
+	                    console.log('Log entry is available, but not finalized yet');
+	                    ok = false;
+	                    break;
+	                }
+	            }
+	            if (ok) {
+	                break;
+	            }
+	        }
+	        return info;
+	    }
+	    // Function to process all tasks in parallel
+	    async processTasksInParallel(file, tree, tasks) {
+	        const taskPromises = tasks.map((task) => this.uploadTask(file, tree, task));
+	        return await Promise.all(taskPromises);
+	    }
+	    async segmentUpload(info, file, tree, opts) {
+	        const shardConfigs = await getShardConfigs(this.nodes);
+	        if (shardConfigs === null) {
+	            console.log('Failed to get shard configs');
+	            return null;
+	        }
+	        if (!checkReplica(shardConfigs, opts.expectedReplica)) {
+	            console.log('Not enough replicas');
+	            return null;
+	        }
+	        let txSeq = info.tx.seq;
+	        let startSegmentIndex = info.tx.startEntryIndex / DEFAULT_SEGMENT_MAX_CHUNKS;
+	        let endSegmentIndex = (info.tx.startEntryIndex +
+	            numSplits(info.tx.size, DEFAULT_CHUNK_SIZE) -
+	            1) /
+	            DEFAULT_SEGMENT_MAX_CHUNKS;
+	        var uploadTasks = [];
+	        for (let clientIndex = 0; clientIndex < shardConfigs.length; clientIndex++) {
+	            // skip finalized nodes
+	            let info = await this.nodes[clientIndex].getFileInfo(tree.rootHash());
+	            if (info !== null && info.finalized) {
+	                continue;
+	            }
+	            const shardConfig = shardConfigs[clientIndex];
+	            var tasks = [];
+	            let segIndex = ((startSegmentIndex +
+	                shardConfig.numShard -
+	                1 -
+	                shardConfig.shardId) /
+	                shardConfig.numShard) *
+	                shardConfig.numShard +
+	                shardConfig.shardId;
+	            while (segIndex <= endSegmentIndex) {
+	                tasks.push({
+	                    clientIndex,
+	                    taskSize: opts.taskSize,
+	                    segIndex: segIndex - startSegmentIndex,
+	                    numShard: shardConfig.numShard,
+	                    txSeq,
+	                });
+	                segIndex += shardConfig.numShard * opts.taskSize;
+	            }
+	            uploadTasks.push(tasks);
+	        }
+	        var tasks = [];
+	        if (uploadTasks.length > 0) {
+	            uploadTasks.sort((a, b) => a.length - b.length);
+	            for (let taskIndex = 0; taskIndex < uploadTasks[0].length; taskIndex += 1) {
+	                for (let i = 0; i < uploadTasks.length && taskIndex < uploadTasks[i].length; i += 1) {
+	                    tasks.push(uploadTasks[i][taskIndex]);
+	                }
+	            }
+	        }
+	        return tasks;
+	    }
+	    async getSegment(file, tree, segIndex) {
+	        let numChunks = file.numChunks();
+	        let startSegIndex = segIndex * DEFAULT_SEGMENT_MAX_CHUNKS;
+	        if (startSegIndex >= numChunks) {
+	            return [true, null, null];
+	        }
+	        const iter = file.iterateWithOffsetAndBatch(segIndex * DEFAULT_SEGMENT_SIZE, DEFAULT_SEGMENT_SIZE, true);
+	        let [ok, err] = await iter.next();
+	        if (!ok) {
+	            return [false, null, err];
+	        }
+	        let segment = iter.current();
+	        const proof = tree.proofAt(segIndex);
+	        const startIndex = segIndex * DEFAULT_SEGMENT_MAX_CHUNKS;
+	        let allDataUploaded = false;
+	        if (startIndex + segment.length / DEFAULT_CHUNK_SIZE >= numChunks) {
+	            const expectedLen = DEFAULT_CHUNK_SIZE * (numChunks - startIndex);
+	            segment = segment.slice(0, expectedLen);
+	            allDataUploaded = true;
+	        }
+	        const segWithProof = {
+	            root: tree.rootHash(),
+	            data: encodeBase64(segment),
+	            index: segIndex,
+	            proof: proof,
+	            fileSize: file.size(),
+	        };
+	        return [allDataUploaded, segWithProof, null];
+	    }
+	    async uploadTask(file, tree, uploadTask) {
+	        let segIndex = uploadTask.segIndex;
+	        var segments = [];
+	        for (let i = 0; i < uploadTask.taskSize; i += 1) {
+	            let [allDataUploaded, segWithProof, err] = await this.getSegment(file, tree, segIndex);
+	            if (err !== null) {
+	                return err;
+	            }
+	            if (segWithProof !== null) {
+	                segments.push(segWithProof);
+	            }
+	            if (allDataUploaded) {
+	                break;
+	            }
+	            segIndex += uploadTask.numShard;
+	        }
+	        let res = await this.nodes[uploadTask.clientIndex].uploadSegmentsByTxSeq(segments, uploadTask.txSeq);
+	        if (res === null) {
+	            return new Error('Failed to upload segments');
+	        }
+	        return res;
+	    }
+	}
+
+	var defaultUploadOption = {
+	    tags: '0x',
+	    finalityRequired: false,
+	    taskSize: 1,
+	    expectedReplica: 1,
+	    skipTx: false,
+	    fee: BigInt(0),
+	};
+
+	class Indexer extends HttpProvider {
+	    constructor(url) {
+	        super({ url });
+	    }
+	    async getShardedNodes() {
+	        const res = await super.request({
+	            method: 'indexer_getShardedNodes',
+	        });
+	        return res;
+	    }
+	    async getNodeLocations() {
+	        const res = await super.request({
+	            method: 'indexer_getNodeLocations',
+	        });
+	        return res;
+	    }
+	    async getFileLocations(rootHash) {
+	        const res = await super.request({
+	            method: 'indexer_getFileLocations',
+	            params: [rootHash],
+	        });
+	        return res;
+	    }
+	    async newUploaderFromIndexerNodes(blockchain_rpc, flow, expectedReplica) {
+	        let [clients, err] = await this.selectNodes(expectedReplica);
+	        if (err != null) {
+	            return [null, err];
+	        }
+	        console.log('Selected nodes:', clients);
+	        let uploader = new Uploader(clients, blockchain_rpc, flow);
+	        return [uploader, null];
+	    }
+	    async selectNodes(expectedReplica) {
+	        let nodes = await this.getShardedNodes();
+	        let [trusted, ok] = selectNodes(nodes.trusted, expectedReplica);
+	        if (!ok) {
+	            return [
+	                [],
+	                new Error('cannot select a subset from the returned nodes that meets the replication requirement'),
+	            ];
+	        }
+	        let clients = [];
+	        trusted.forEach((node) => {
+	            let sn = new StorageNode(node.url);
+	            clients.push(sn);
+	        });
+	        return [clients, null];
+	    }
+	    async upload(file, segIndex = 0, blockchain_rpc, flow_contract, opts, retryOpts) {
+	        var expectedReplica = 1;
+	        if (opts != undefined && opts.expectedReplica != null) {
+	            expectedReplica = Math.max(1, opts.expectedReplica);
+	        }
+	        let [uploader, err] = await this.newUploaderFromIndexerNodes(blockchain_rpc, flow_contract, expectedReplica);
+	        if (err != null || uploader == null) {
+	            return ['', new Error('failed to create uploader')];
+	        }
+	        if (opts === undefined) {
+	            opts = {
+	                tags: '0x',
+	                finalityRequired: true,
+	                taskSize: 10,
+	                expectedReplica: 1,
+	                skipTx: false,
+	                fee: BigInt('0'),
+	            };
+	        }
+	        return await uploader.uploadFile(file, opts, retryOpts);
+	    }
+	    async download(rootHash, filePath, proof) {
+	        let locations = await this.getFileLocations(rootHash);
+	        if (locations.length == 0) {
+	            return new Error('failed to get file locations');
+	        }
+	        let clients = [];
+	        locations.forEach((node) => {
+	            let sn = new StorageNode(node.url);
+	            clients.push(sn);
+	        });
+	        let downloader = new Downloader(clients);
+	        return await downloader.downloadFile(rootHash, filePath, proof);
+	    }
+	}
+
+	var AccessControlType;
+	(function (AccessControlType) {
+	    AccessControlType[AccessControlType["GrantAdminRole"] = 0] = "GrantAdminRole";
+	    AccessControlType[AccessControlType["RenounceAdminRole"] = 1] = "RenounceAdminRole";
+	    AccessControlType[AccessControlType["SetKeyToSpecial"] = 16] = "SetKeyToSpecial";
+	    AccessControlType[AccessControlType["SetKeyToNormal"] = 17] = "SetKeyToNormal";
+	    AccessControlType[AccessControlType["GrantWriteRole"] = 32] = "GrantWriteRole";
+	    AccessControlType[AccessControlType["RevokeWriteRole"] = 33] = "RevokeWriteRole";
+	    AccessControlType[AccessControlType["RenounceWriteRole"] = 34] = "RenounceWriteRole";
+	    AccessControlType[AccessControlType["GrantSpecialWriteRole"] = 48] = "GrantSpecialWriteRole";
+	    AccessControlType[AccessControlType["RevokeSpecialWriteRole"] = 49] = "RevokeSpecialWriteRole";
+	    AccessControlType[AccessControlType["RenounceSpecialWriteRole"] = 50] = "RenounceSpecialWriteRole";
+	})(AccessControlType || (AccessControlType = {}));
+	class StreamData {
+	    Version;
+	    Reads = [];
+	    Writes = [];
+	    Controls = [];
+	    constructor(version) {
+	        this.Version = version;
+	    }
+	    size() {
+	        let size = 8; // version size in bytes
+	        size += 4; // Reads size prefix
+	        for (const v of this.Reads) {
+	            size += 32 + 3 + v.Key.length;
+	        }
+	        size += 4; // Writes size prefix
+	        for (const v of this.Writes) {
+	            size += 32 + 3 + v.Key.length + 8 + v.Data.length;
+	        }
+	        size += 4; // Controls size prefix
+	        for (const v of this.Controls) {
+	            size += 1 + 32; // Type + StreamId
+	            if (v.Account) {
+	                size += 20; // Address length
+	            }
+	            if (v.Key) {
+	                size += 3 + v.Key.length;
+	            }
+	        }
+	        return size;
+	    }
+	    encodeSize24(size) {
+	        if (size === 0) {
+	            throw new Error('errKeyIsEmpty');
+	        }
+	        const buf = new Uint8Array(4);
+	        const view = new DataView(buf.buffer);
+	        view.setUint32(0, size, false);
+	        if (buf[0] !== 0) {
+	            throw new Error('errKeyTooLarge');
+	        }
+	        return buf.slice(1);
+	    }
+	    encodeSize32(size) {
+	        const buf = new Uint8Array(4);
+	        const view = new DataView(buf.buffer);
+	        view.setUint32(0, size, false);
+	        return buf;
+	    }
+	    encodeSize64(size) {
+	        const buf = new Uint8Array(8);
+	        const view = new DataView(buf.buffer);
+	        view.setBigUint64(0, BigInt(size), false);
+	        return buf;
+	    }
+	    encode() {
+	        const encoded = new Uint8Array(this.size());
+	        let offset = 0;
+	        // version
+	        encoded.set(this.encodeSize64(this.Version), offset);
+	        offset += 8;
+	        // reads
+	        encoded.set(this.encodeSize32(this.Reads.length), offset);
+	        offset += 4;
+	        for (const v of this.Reads) {
+	            encoded.set(getBytes(v.StreamId), offset);
+	            offset += 32;
+	            const keySize = this.encodeSize24(v.Key.length);
+	            encoded.set(keySize, offset);
+	            offset += keySize.length;
+	            encoded.set(v.Key, offset);
+	            offset += v.Key.length;
+	        }
+	        // writes
+	        encoded.set(this.encodeSize32(this.Writes.length), offset);
+	        offset += 4;
+	        for (const v of this.Writes) {
+	            // add stream id
+	            encoded.set(getBytes(v.StreamId), offset);
+	            offset += 32;
+	            const keySize = this.encodeSize24(v.Key.length);
+	            // add key size
+	            encoded.set(keySize, offset);
+	            offset += keySize.length;
+	            // add key
+	            encoded.set(v.Key, offset);
+	            offset += v.Key.length;
+	            // add value size, add value later
+	            const dataSize = this.encodeSize64(v.Data.length);
+	            encoded.set(dataSize, offset);
+	            offset += dataSize.length;
+	        }
+	        // add all values
+	        for (const v of this.Writes) {
+	            encoded.set(v.Data, offset);
+	            offset += v.Data.length;
+	        }
+	        // controls
+	        encoded.set(this.encodeSize32(this.Controls.length), offset);
+	        offset += 4;
+	        for (const v of this.Controls) {
+	            encoded[offset] = v.Type;
+	            offset += 1;
+	            encoded.set(getBytes(v.StreamId), offset);
+	            offset += 32;
+	            if (v.Key !== undefined) {
+	                const keySize = this.encodeSize24(v.Key.length);
+	                encoded.set(keySize, offset);
+	                offset += keySize.length;
+	                encoded.set(v.Key, offset);
+	                offset += v.Key.length;
+	            }
+	            if (v.Account !== undefined) {
+	                encoded.set(getBytes(v.Account), offset);
+	                offset += 20;
+	            }
+	        }
+	        return encoded;
+	    }
+	}
+
+	const MAX_SET_SIZE = 1 << 16; // 64K
+	const MAX_KEY_SIZE = 1 << 24; // 16.7M
+	const MAX_QUERY_SIZE = 1024 * 256;
+	// df2ff3bb0af36c6384e6206552a4ed807f6f6a26e7d0aa6bff772ddc9d4307aa
+	const STREAM_DOMAIN = node_crypto.createHash('sha256').update('STREAM').digest();
+
+	class StreamDataBuilder {
+	    version;
+	    streamIds;
+	    controls;
+	    reads;
+	    writes;
+	    constructor(version) {
+	        this.version = version;
+	        this.streamIds = new Map();
+	        this.controls = [];
+	        this.reads = new Map();
+	        this.writes = new Map();
+	    }
+	    hexToBytes(hex) {
+	        // Remove '0x' prefix if it exists
+	        if (hex.startsWith('0x')) {
+	            hex = hex.slice(2);
+	        }
+	        return Buffer.from(hex, 'hex');
+	    }
+	    build(sorted = false) {
+	        const data = new StreamData(this.version);
+	        // controls
+	        data.Controls = this.buildAccessControl();
+	        // reads
+	        data.Reads = [];
+	        for (const [streamId, keys] of this.reads.entries()) {
+	            for (const k of keys.keys()) {
+	                const key = this.hexToBytes(k);
+	                if (key.length > MAX_KEY_SIZE) {
+	                    throw new Error('errKeyTooLarge');
+	                }
+	                if (key.length === 0) {
+	                    throw new Error('errKeyIsEmpty');
+	                }
+	                data.Reads.push({
+	                    StreamId: streamId,
+	                    Key: key,
+	                });
+	                if (data.Reads.length > MAX_SET_SIZE) {
+	                    throw new Error('errSizeTooLarge');
+	                }
+	            }
+	        }
+	        // writes
+	        data.Writes = [];
+	        for (const [streamId, keys] of this.writes.entries()) {
+	            for (const [k, d] of keys.entries()) {
+	                const key = this.hexToBytes(k);
+	                if (key.length > MAX_KEY_SIZE) {
+	                    throw new Error('errKeyTooLarge');
+	                }
+	                if (key.length === 0) {
+	                    throw new Error('errKeyIsEmpty');
+	                }
+	                data.Writes.push({
+	                    StreamId: streamId,
+	                    Key: key,
+	                    Data: Uint8Array.from(d),
+	                });
+	                if (data.Writes.length > MAX_SET_SIZE) {
+	                    throw new Error('errSizeTooLarge');
+	                }
+	            }
+	        }
+	        if (sorted) {
+	            data.Reads.sort((a, b) => {
+	                const streamIdI = a.StreamId;
+	                const streamIdJ = b.StreamId;
+	                if (streamIdI === streamIdJ) {
+	                    return hexlify(a.Key) < hexlify(b.Key)
+	                        ? -1
+	                        : 1;
+	                }
+	                else {
+	                    return streamIdI < streamIdJ ? -1 : 1;
+	                }
+	            });
+	            data.Writes.sort((a, b) => {
+	                const streamIdI = a.StreamId;
+	                const streamIdJ = b.StreamId;
+	                if (streamIdI === streamIdJ) {
+	                    return hexlify(a.Key) < hexlify(b.Key)
+	                        ? -1
+	                        : 1;
+	                }
+	                else {
+	                    return streamIdI < streamIdJ ? -1 : 1;
+	                }
+	            });
+	        }
+	        return data;
+	    }
+	    set(streamId, key, data) {
+	        this.addStreamId(streamId);
+	        if (!this.writes.has(streamId)) {
+	            this.writes.set(streamId, new Map());
+	        }
+	        let maps = this.writes.get(streamId);
+	        maps.set(Buffer.from(key).toString('hex'), data);
+	        this.writes.set(streamId, maps);
+	    }
+	    addStreamId(streamId) {
+	        this.streamIds.set(streamId, true);
+	    }
+	    buildTags(sorted = false) {
+	        let ids = Array.from(this.streamIds.keys());
+	        if (sorted) {
+	            ids.sort((a, b) => (a < b ? -1 : 1));
+	        }
+	        return this.createTags(ids);
+	    }
+	    createTags(streamIds) {
+	        let result = new Uint8Array((1 + streamIds.length) * 32); // Assuming Hash is 32 bytes
+	        result.set(STREAM_DOMAIN, 0);
+	        streamIds.forEach((id, index) => {
+	            result.set(getBytes(id), 32 * (index + 1));
+	        });
+	        return result;
+	    }
+	    buildAccessControl() {
+	        if (this.controls.length > MAX_SET_SIZE) {
+	            throw new Error('errSizeTooLarge');
+	        }
+	        return this.controls;
+	    }
+	}
+
 	class Batcher {
 	    streamDataBuilder;
 	    clients;
@@ -25695,7 +25753,7 @@
 	            opts = defaultUploadOption;
 	        }
 	        opts.tags = this.streamDataBuilder.buildTags();
-	        return await uploader.uploadFile(data, 0, opts);
+	        return await uploader.uploadFile(data, opts);
 	    }
 	}
 

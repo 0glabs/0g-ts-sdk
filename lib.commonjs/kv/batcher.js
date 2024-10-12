@@ -25,7 +25,7 @@ class Batcher {
             opts = index_js_2.defaultUploadOption;
         }
         opts.tags = this.streamDataBuilder.buildTags();
-        return await uploader.uploadFile(data, 0, opts);
+        return await uploader.uploadFile(data, opts);
     }
 }
 exports.Batcher = Batcher;

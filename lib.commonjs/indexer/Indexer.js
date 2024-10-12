@@ -72,7 +72,7 @@ class Indexer extends open_jsonrpc_provider_1.HttpProvider {
                 fee: BigInt('0'),
             };
         }
-        return await uploader.uploadFile(file, segIndex, opts, retryOpts);
+        return await uploader.uploadFile(file, opts, retryOpts);
     }
     async download(rootHash, filePath, proof) {
         let locations = await this.getFileLocations(rootHash);

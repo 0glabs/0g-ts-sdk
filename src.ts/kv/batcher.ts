@@ -44,6 +44,6 @@ export class Batcher {
         }
         opts.tags = this.streamDataBuilder.buildTags()
 
-        return await uploader.uploadFile(data, 0, opts)
+        return await uploader.uploadFile(data, opts)
     }
 }
