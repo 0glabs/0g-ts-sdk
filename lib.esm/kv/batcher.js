@@ -22,7 +22,7 @@ export class Batcher {
             opts = defaultUploadOption;
         }
         opts.tags = this.streamDataBuilder.buildTags();
-        return await uploader.uploadFile(data, 0, opts);
+        return await uploader.uploadFile(data, opts);
     }
 }
 //# sourceMappingURL=batcher.js.map

@@ -2,10 +2,22 @@ import { Bytes } from '@ethersproject/bytes';
 import { Base64, Hash } from '../types';
 export type Segment = Base64;
 export type MerkleNode = [number, Hash];
+interface NetworkProtocolVersion {
+    major: number;
+    minor: number;
+    build: number;
+}
+interface NetworkIdentity {
+    chainId: number;
+    flowAddress: string;
+    p2pProtocolVersion: NetworkProtocolVersion;
+}
 export interface Status {
     connectedPeers: number;
     logSyncHeight: number;
     logSyncBlock: Hash;
+    nextTxSeq: number;
+    networkIdentity: NetworkIdentity;
 }
 export interface FileProof {
     lemma: Hash[];
@@ -52,4 +64,9 @@ export interface KeyValue {
     size: number;
     key: Bytes;
 }
+export interface FlowProof {
+    lemma: Hash[];
+    path: boolean[];
+}
+export {};
 //# sourceMappingURL=types.d.ts.map

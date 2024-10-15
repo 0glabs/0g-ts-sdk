@@ -2,6 +2,7 @@ import { HttpProvider } from 'open-jsonrpc-provider';
 import { selectNodes } from '../common/index.js';
 import { Uploader, Downloader } from '../transfer/index.js';
 import { StorageNode } from '../node/index.js';
+import { getFlowContract } from '../utils.js';
 export class Indexer extends HttpProvider {
     constructor(url) {
         super({ url });
@@ -25,11 +26,20 @@ export class Indexer extends HttpProvider {
         });
         return res;
     }
-    async newUploaderFromIndexerNodes(blockchain_rpc, flow, expectedReplica) {
+    async newUploaderFromIndexerNodes(blockchain_rpc, signer, expectedReplica) {
         let [clients, err] = await this.selectNodes(expectedReplica);
         if (err != null) {
             return [null, err];
         }
+        let status = await clients[0].getStatus();
+        if (status == null) {
+            return [
+                null,
+                new Error('failed to get status from the selected node'),
+            ];
+        }
+        console.log('First selected node status :', status);
+        let flow = getFlowContract(status.networkIdentity.flowAddress, signer);
         console.log('Selected nodes:', clients);
         let uploader = new Uploader(clients, blockchain_rpc, flow);
         return [uploader, null];
@@ -50,12 +60,12 @@ export class Indexer extends HttpProvider {
         });
         return [clients, null];
     }
-    async upload(file, segIndex = 0, blockchain_rpc, flow_contract, opts, retryOpts) {
+    async upload(file, blockchain_rpc, signer, opts, retryOpts) {
         var expectedReplica = 1;
         if (opts != undefined && opts.expectedReplica != null) {
             expectedReplica = Math.max(1, opts.expectedReplica);
         }
-        let [uploader, err] = await this.newUploaderFromIndexerNodes(blockchain_rpc, flow_contract, expectedReplica);
+        let [uploader, err] = await this.newUploaderFromIndexerNodes(blockchain_rpc, signer, expectedReplica);
         if (err != null || uploader == null) {
             return ['', new Error('failed to create uploader')];
         }
@@ -69,7 +79,7 @@ export class Indexer extends HttpProvider {
                 fee: BigInt('0'),
             };
         }
-        return await uploader.uploadFile(file, segIndex, opts, retryOpts);
+        return await uploader.uploadFile(file, opts, retryOpts);
     }
     async download(rootHash, filePath, proof) {
         let locations = await this.getFileLocations(rootHash);

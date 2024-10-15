@@ -5,10 +5,24 @@ export type Segment = Base64
 
 export type MerkleNode = [number, Hash]
 
+interface NetworkProtocolVersion {
+    major: number
+    minor: number
+    build: number
+}
+
+interface NetworkIdentity {
+    chainId: number
+    flowAddress: string
+    p2pProtocolVersion: NetworkProtocolVersion
+}
+
 export interface Status {
     connectedPeers: number
     logSyncHeight: number
     logSyncBlock: Hash
+    nextTxSeq: number
+    networkIdentity: NetworkIdentity
 }
 
 // can direct use NeuraProof
@@ -62,4 +76,10 @@ export interface KeyValue {
     data: Base64
     size: number
     key: Bytes
+}
+
+// FlowProof proof of a sector in flow
+export interface FlowProof {
+    lemma: Hash[]
+    path: boolean[]
 }

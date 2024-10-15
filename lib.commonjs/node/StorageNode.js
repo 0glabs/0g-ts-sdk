@@ -24,6 +24,22 @@ class StorageNode extends open_jsonrpc_provider_1.HttpProvider {
         });
         return res;
     }
+    // UploadSegmentByTxSeq Call zgs_uploadSegmentByTxSeq RPC to upload a segment to the node.
+    async uploadSegmentByTxSeq(seg, txSeq) {
+        const res = await super.request({
+            method: 'zgs_uploadSegmentByTxSeq',
+            params: [seg, txSeq],
+        });
+        return res;
+    }
+    // UploadSegmentsByTxSeq Call zgs_uploadSegmentsByTxSeq RPC to upload a slice of segments to the node.
+    async uploadSegmentsByTxSeq(segs, txSeq) {
+        const res = await super.request({
+            method: 'zgs_uploadSegmentsByTxSeq',
+            params: [segs, txSeq],
+        });
+        return res;
+    }
     async downloadSegment(root, startIndex, endIndx) {
         var seg = await super.request({
             method: 'zgs_downloadSegment',
@@ -35,6 +51,30 @@ class StorageNode extends open_jsonrpc_provider_1.HttpProvider {
         const seg = await super.request({
             method: 'zgs_downloadSegmentWithProof',
             params: [root, index],
+        });
+        return seg;
+    }
+    // DownloadSegmentByTxSeq Call zgs_downloadSegmentByTxSeq RPC to download a segment from the node.
+    async downloadSegmentByTxSeq(txSeq, startIndex, endIndex) {
+        const seg = await super.request({
+            method: 'zgs_downloadSegmentByTxSeq',
+            params: [txSeq, startIndex, endIndex],
+        });
+        return seg;
+    }
+    // DownloadSegmentWithProofByTxSeq Call zgs_downloadSegmentWithProofByTxSeq RPC to download a segment along with its merkle proof from the node.
+    async downloadSegmentWithProofByTxSeq(txSeq, index) {
+        const seg = await super.request({
+            method: 'zgs_downloadSegmentWithProofByTxSeq',
+            params: [txSeq, index],
+        });
+        return seg;
+    }
+    // GetSectorProof Call zgs_getSectorProof RPC to get the proof of a sector.
+    async getSectorProof(sectorIndex, root) {
+        const seg = await super.request({
+            method: 'zgs_getSectorProof',
+            params: [sectorIndex, root],
         });
         return seg;
     }
