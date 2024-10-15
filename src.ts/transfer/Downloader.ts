@@ -66,8 +66,7 @@ export class Downloader {
 
     // TODO: add proof check
     async downloadTask(
-        txSeq: number,
-        size: number,
+        info: FileInfo,
         segmentOffset: number,
         taskInd: number,
         numSegments: number,
@@ -76,6 +75,8 @@ export class Downloader {
     ): Promise<[Uint8Array, Error | null]> {
         const segmentIndex = segmentOffset + taskInd
         const startIndex = segmentIndex * DEFAULT_SEGMENT_MAX_CHUNKS
+        const startSegmentIndex =
+            info.tx.startEntryIndex / DEFAULT_SEGMENT_MAX_CHUNKS
         var endIndex = startIndex + DEFAULT_SEGMENT_MAX_CHUNKS
         if (endIndex > numChunks) {
             endIndex = numChunks
@@ -84,14 +85,15 @@ export class Downloader {
         for (let i = 0; i < this.shardConfigs.length; i++) {
             let nodeIndex = (taskInd + i) % this.shardConfigs.length
             if (
-                segmentIndex % this.shardConfigs[nodeIndex].numShard !=
+                (startSegmentIndex + segmentIndex) %
+                    this.shardConfigs[nodeIndex].numShard !=
                 this.shardConfigs[nodeIndex].shardId
             ) {
                 continue
             }
             // try download from current node
             segment = await this.nodes[nodeIndex].downloadSegmentByTxSeq(
-                txSeq,
+                info.tx.seq,
                 startIndex,
                 endIndex
             )
@@ -103,7 +105,7 @@ export class Downloader {
             var segArray = decodeBase64(segment)
 
             if (segmentIndex == numSegments - 1) {
-                const lastChunkSize = size % DEFAULT_CHUNK_SIZE
+                const lastChunkSize = info.tx.size % DEFAULT_CHUNK_SIZE
                 if (lastChunkSize > 0) {
                     const paddings = DEFAULT_CHUNK_SIZE - lastChunkSize
                     segArray = segArray.slice(0, segArray.length - paddings)
@@ -137,8 +139,7 @@ export class Downloader {
 
         for (let taskInd = 0; taskInd < numTasks; taskInd++) {
             let [segArray, err] = await this.downloadTask(
-                info.tx.seq,
-                info.tx.size,
+                info,
                 segmentOffset,
                 taskInd,
                 numSegments,

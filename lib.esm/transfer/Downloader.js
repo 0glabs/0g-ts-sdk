@@ -43,9 +43,10 @@ export class Downloader {
         return [fileInfo, null];
     }
     // TODO: add proof check
-    async downloadTask(txSeq, size, segmentOffset, taskInd, numSegments, numChunks, proof) {
+    async downloadTask(info, segmentOffset, taskInd, numSegments, numChunks, proof) {
         const segmentIndex = segmentOffset + taskInd;
         const startIndex = segmentIndex * DEFAULT_SEGMENT_MAX_CHUNKS;
+        const startSegmentIndex = info.tx.startEntryIndex / DEFAULT_SEGMENT_MAX_CHUNKS;
         var endIndex = startIndex + DEFAULT_SEGMENT_MAX_CHUNKS;
         if (endIndex > numChunks) {
             endIndex = numChunks;
@@ -53,18 +54,19 @@ export class Downloader {
         let segment = null;
         for (let i = 0; i < this.shardConfigs.length; i++) {
             let nodeIndex = (taskInd + i) % this.shardConfigs.length;
-            if (segmentIndex % this.shardConfigs[nodeIndex].numShard !=
+            if ((startSegmentIndex + segmentIndex) %
+                this.shardConfigs[nodeIndex].numShard !=
                 this.shardConfigs[nodeIndex].shardId) {
                 continue;
             }
             // try download from current node
-            segment = await this.nodes[nodeIndex].downloadSegmentByTxSeq(txSeq, startIndex, endIndex);
+            segment = await this.nodes[nodeIndex].downloadSegmentByTxSeq(info.tx.seq, startIndex, endIndex);
             if (segment === null) {
                 continue;
             }
             var segArray = decodeBase64(segment);
             if (segmentIndex == numSegments - 1) {
-                const lastChunkSize = size % DEFAULT_CHUNK_SIZE;
+                const lastChunkSize = info.tx.size % DEFAULT_CHUNK_SIZE;
                 if (lastChunkSize > 0) {
                     const paddings = DEFAULT_CHUNK_SIZE - lastChunkSize;
                     segArray = segArray.slice(0, segArray.length - paddings);
@@ -87,7 +89,7 @@ export class Downloader {
         const numSegments = GetSplitNum(info.tx.size, DEFAULT_SEGMENT_SIZE);
         const numTasks = numSegments - segmentOffset;
         for (let taskInd = 0; taskInd < numTasks; taskInd++) {
-            let [segArray, err] = await this.downloadTask(info.tx.seq, info.tx.size, segmentOffset, taskInd, numSegments, numChunks, proof);
+            let [segArray, err] = await this.downloadTask(info, segmentOffset, taskInd, numSegments, numChunks, proof);
             if (err != null) {
                 return err;
             }
