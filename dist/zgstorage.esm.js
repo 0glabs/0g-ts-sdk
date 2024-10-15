@@ -24967,8 +24967,7 @@ class Uploader {
             .catch((error) => {
             return error;
         });
-        // await this.uploadFileHelper(file, tree, segIndex)
-        if (err !== null) {
+        if (err !== undefined) {
             return ['', err];
         }
         return [tx.hash, null];
@@ -25168,11 +25167,20 @@ class Indexer extends HttpProvider {
         });
         return res;
     }
-    async newUploaderFromIndexerNodes(blockchain_rpc, flow, expectedReplica) {
+    async newUploaderFromIndexerNodes(blockchain_rpc, signer, expectedReplica) {
         let [clients, err] = await this.selectNodes(expectedReplica);
         if (err != null) {
             return [null, err];
         }
+        let status = await clients[0].getStatus();
+        if (status == null) {
+            return [
+                null,
+                new Error('failed to get status from the selected node'),
+            ];
+        }
+        console.log('First selected node status :', status);
+        let flow = getFlowContract(status.networkIdentity.flowAddress, signer);
         console.log('Selected nodes:', clients);
         let uploader = new Uploader(clients, blockchain_rpc, flow);
         return [uploader, null];
@@ -25193,12 +25201,12 @@ class Indexer extends HttpProvider {
         });
         return [clients, null];
     }
-    async upload(file, segIndex = 0, blockchain_rpc, flow_contract, opts, retryOpts) {
+    async upload(file, blockchain_rpc, signer, opts, retryOpts) {
         var expectedReplica = 1;
         if (opts != undefined && opts.expectedReplica != null) {
             expectedReplica = Math.max(1, opts.expectedReplica);
         }
-        let [uploader, err] = await this.newUploaderFromIndexerNodes(blockchain_rpc, flow_contract, expectedReplica);
+        let [uploader, err] = await this.newUploaderFromIndexerNodes(blockchain_rpc, signer, expectedReplica);
         if (err != null || uploader == null) {
             return ['', new Error('failed to create uploader')];
         }

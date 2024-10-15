@@ -5,7 +5,8 @@ import { UploadOption, Uploader, Downloader } from '../transfer/index.js'
 import { StorageNode } from '../node/index.js'
 import { RetryOpts } from '../types.js'
 import { AbstractFile } from '../file/AbstractFile.js'
-import { FixedPriceFlow } from '../contracts/flow/FixedPriceFlow.js'
+import { ethers } from 'ethers'
+import { getFlowContract } from '../utils.js'
 
 export class Indexer extends HttpProvider {
     constructor(url: string) {
@@ -36,13 +37,25 @@ export class Indexer extends HttpProvider {
 
     async newUploaderFromIndexerNodes(
         blockchain_rpc: string,
-        flow: FixedPriceFlow,
+        signer: ethers.Wallet,
         expectedReplica: number
     ): Promise<[Uploader | null, Error | null]> {
         let [clients, err] = await this.selectNodes(expectedReplica)
         if (err != null) {
             return [null, err]
         }
+
+        let status = await clients[0].getStatus()
+        if (status == null) {
+            return [
+                null,
+                new Error('failed to get status from the selected node'),
+            ]
+        }
+
+        console.log('First selected node status :', status)
+
+        let flow = getFlowContract(status.networkIdentity.flowAddress, signer)
 
         console.log('Selected nodes:', clients)
 
@@ -74,9 +87,8 @@ export class Indexer extends HttpProvider {
 
     async upload(
         file: AbstractFile,
-        segIndex: number = 0,
         blockchain_rpc: string,
-        flow_contract: FixedPriceFlow,
+        signer: ethers.Wallet,
         opts?: UploadOption,
         retryOpts?: RetryOpts
     ): Promise<[string, Error | null]> {
@@ -86,7 +98,7 @@ export class Indexer extends HttpProvider {
         }
         let [uploader, err] = await this.newUploaderFromIndexerNodes(
             blockchain_rpc,
-            flow_contract,
+            signer,
             expectedReplica
         )
         if (err != null || uploader == null) {

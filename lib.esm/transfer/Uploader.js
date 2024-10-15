@@ -81,8 +81,7 @@ export class Uploader {
             .catch((error) => {
             return error;
         });
-        // await this.uploadFileHelper(file, tree, segIndex)
-        if (err !== null) {
+        if (err !== undefined) {
             return ['', err];
         }
         return [tx.hash, null];
