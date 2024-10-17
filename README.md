@@ -45,16 +45,14 @@ Upload file to 0g-storage:
 import { getFlowContract } from '@0glabs/0g-ts-sdk';
 const evmRpc = 'https://evmrpc-test-us.0g.ai';
 const privateKey = ''; // with balance to pay for gas
-const flowAddr = "0xbD2C3F0E65eDF5582141C35969d66e34629cC768";
 const indRpc = 'https://rpc-storage-testnet-turbo.0g.ai'; // indexer rpc
 
 const provider = new ethers.JsonRpcProvider(evmRpc);
 const signer = new ethers.Wallet(privateKey, provider);
-const flowContract = getFlowContract(flowAddr, signer);
 
 const indexer = new Indexer(indRpc);
 // need to pay fees to store data in storage nodes
-var [tx, err] = await indexer.upload(file, 0, evmRpc, flowContract);
+var [tx, err] = await indexer.upload(file, evmRpc, signer);
 if (err === null) {
   console.log("File uploaded successfully, tx: ", tx);
 } else {
