@@ -7,8 +7,9 @@ This is the JavaScript SDK for 0g-storage. Features include:
 - [x] RPC methods support
 - [x] File upload
 - [x] Support browser environment
-- [ ] Tests for different environments
 - [x] File download
+- [ ] Tests for different environments
+
 
 ## Install
 
@@ -43,9 +44,9 @@ Upload file to 0g-storage:
 
 ```js
 import { getFlowContract } from '@0glabs/0g-ts-sdk';
-const evmRpc = 'https://evmrpc-test-us.0g.ai';
+const evmRpc = 'https://evmrpc-testnet.0g.ai';
 const privateKey = ''; // with balance to pay for gas
-const indRpc = 'https://rpc-storage-testnet-turbo.0g.ai'; // indexer rpc
+const indRpc = 'https://indexer-storage-testnet-turbo.0g.ai'; // indexer rpc
 
 const provider = new ethers.JsonRpcProvider(evmRpc);
 const signer = new ethers.Wallet(privateKey, provider);
@@ -72,6 +73,7 @@ if (err !== null) {
 Upload data to 0g-kv:
 
 ```js
+import { Batcher,KvClient } from '@0glabs/0g-ts-sdk';
 var [nodes, err] = await indexer.selectNodes(1);
 if (err !== null) {
     console.log("Error selecting nodes: ", err);
