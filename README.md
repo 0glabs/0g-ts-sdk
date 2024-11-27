@@ -43,9 +43,9 @@ Upload file to 0g-storage:
 
 ```js
 import { getFlowContract } from '@0glabs/0g-ts-sdk';
-const evmRpc = 'https://evmrpc-test-us.0g.ai';
+const evmRpc = 'https://evmrpc-testnet.0g.ai';
 const privateKey = ''; // with balance to pay for gas
-const indRpc = 'https://rpc-storage-testnet-turbo.0g.ai'; // indexer rpc
+const indRpc = 'https://indexer-storage-testnet-turbo.0g.ai'; // indexer rpc
 
 const provider = new ethers.JsonRpcProvider(evmRpc);
 const signer = new ethers.Wallet(privateKey, provider);
