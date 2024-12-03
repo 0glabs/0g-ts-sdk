@@ -24108,9 +24108,13 @@ function calculatePrice(submission, pricePerSector) {
 class Downloader {
     nodes;
     shardConfigs;
+    startSegmentIndex;
+    endSegmentIndex;
     constructor(nodes) {
         this.nodes = nodes;
         this.shardConfigs = [];
+        this.startSegmentIndex = 0;
+        this.endSegmentIndex = 0;
     }
     async downloadFile(root, filePath, proof) {
         var [info, err] = await this.queryFile(root);
@@ -24145,10 +24149,9 @@ class Downloader {
         return [fileInfo, null];
     }
     // TODO: add proof check
-    async downloadTask(info, segmentOffset, taskInd, numSegments, numChunks, proof) {
+    async downloadTask(info, segmentOffset, taskInd, numChunks, proof) {
         const segmentIndex = segmentOffset + taskInd;
         const startIndex = segmentIndex * DEFAULT_SEGMENT_MAX_CHUNKS;
-        const startSegmentIndex = info.tx.startEntryIndex / DEFAULT_SEGMENT_MAX_CHUNKS;
         var endIndex = startIndex + DEFAULT_SEGMENT_MAX_CHUNKS;
         if (endIndex > numChunks) {
             endIndex = numChunks;
@@ -24156,9 +24159,10 @@ class Downloader {
         let segment = null;
         for (let i = 0; i < this.shardConfigs.length; i++) {
             let nodeIndex = (taskInd + i) % this.shardConfigs.length;
-            if ((startSegmentIndex + segmentIndex) %
+            if ((this.startSegmentIndex + segmentIndex) %
                 this.shardConfigs[nodeIndex].numShard !=
                 this.shardConfigs[nodeIndex].shardId) {
+                console.log('skip node', nodeIndex);
                 continue;
             }
             // try download from current node
@@ -24167,7 +24171,7 @@ class Downloader {
                 continue;
             }
             var segArray = decodeBase64(segment);
-            if (segmentIndex == numSegments - 1) {
+            if (this.startSegmentIndex + segmentIndex == this.endSegmentIndex) {
                 const lastChunkSize = info.tx.size % DEFAULT_CHUNK_SIZE;
                 if (lastChunkSize > 0) {
                     const paddings = DEFAULT_CHUNK_SIZE - lastChunkSize;
@@ -24188,10 +24192,14 @@ class Downloader {
         }
         const segmentOffset = 0;
         const numChunks = GetSplitNum(info.tx.size, DEFAULT_CHUNK_SIZE);
-        const numSegments = GetSplitNum(info.tx.size, DEFAULT_SEGMENT_SIZE);
-        const numTasks = numSegments - segmentOffset;
+        this.startSegmentIndex = Math.floor(info.tx.startEntryIndex / DEFAULT_SEGMENT_MAX_CHUNKS);
+        this.endSegmentIndex = Math.floor((info.tx.startEntryIndex +
+            GetSplitNum(info.tx.size, DEFAULT_CHUNK_SIZE) -
+            1) /
+            DEFAULT_SEGMENT_MAX_CHUNKS);
+        const numTasks = this.endSegmentIndex - this.startSegmentIndex + 1;
         for (let taskInd = 0; taskInd < numTasks; taskInd++) {
-            let [segArray, err] = await this.downloadTask(info, segmentOffset, taskInd, numSegments, numChunks, proof);
+            let [segArray, err] = await this.downloadTask(info, segmentOffset, taskInd, numChunks, proof);
             if (err != null) {
                 return err;
             }
