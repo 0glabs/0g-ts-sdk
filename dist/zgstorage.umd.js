@@ -25413,7 +25413,7 @@
 	        });
 	        return res;
 	    }
-	    async newUploaderFromIndexerNodes(blockchain_rpc, signer, expectedReplica) {
+	    async newUploaderFromIndexerNodes(blockchain_rpc, signer, expectedReplica, opts) {
 	        let [clients, err] = await this.selectNodes(expectedReplica);
 	        if (err != null) {
 	            return [null, err];
@@ -25428,7 +25428,7 @@
 	        console.log('First selected node status :', status);
 	        let flow = getFlowContract(status.networkIdentity.flowAddress, signer);
 	        console.log('Selected nodes:', clients);
-	        let uploader = new Uploader(clients, blockchain_rpc, flow);
+	        let uploader = new Uploader(clients, blockchain_rpc, flow, opts?.gasPrice, opts?.gasLimit);
 	        return [uploader, null];
 	    }
 	    async selectNodes(expectedReplica) {
@@ -25447,17 +25447,17 @@
 	        });
 	        return [clients, null];
 	    }
-	    async upload(file, blockchain_rpc, signer, opts, retryOpts) {
+	    async upload(file, blockchain_rpc, signer, uploadOpts, retryOpts, opts) {
 	        var expectedReplica = 1;
-	        if (opts != undefined && opts.expectedReplica != null) {
-	            expectedReplica = Math.max(1, opts.expectedReplica);
+	        if (uploadOpts != undefined && uploadOpts.expectedReplica != null) {
+	            expectedReplica = Math.max(1, uploadOpts.expectedReplica);
 	        }
-	        let [uploader, err] = await this.newUploaderFromIndexerNodes(blockchain_rpc, signer, expectedReplica);
+	        let [uploader, err] = await this.newUploaderFromIndexerNodes(blockchain_rpc, signer, expectedReplica, opts);
 	        if (err != null || uploader == null) {
 	            return ['', new Error('failed to create uploader')];
 	        }
-	        if (opts === undefined) {
-	            opts = {
+	        if (uploadOpts === undefined) {
+	            uploadOpts = {
 	                tags: '0x',
 	                finalityRequired: true,
 	                taskSize: 10,
@@ -25466,7 +25466,7 @@
 	                fee: BigInt('0'),
 	            };
 	        }
-	        return await uploader.uploadFile(file, opts, retryOpts);
+	        return await uploader.uploadFile(file, uploadOpts, retryOpts);
 	    }
 	    async download(rootHash, filePath, proof) {
 	        let locations = await this.getFileLocations(rootHash);
