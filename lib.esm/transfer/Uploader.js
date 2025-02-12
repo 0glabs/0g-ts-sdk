@@ -1,5 +1,5 @@
 import { DEFAULT_SEGMENT_SIZE, DEFAULT_SEGMENT_MAX_CHUNKS, DEFAULT_CHUNK_SIZE, } from '../constant.js';
-import { delay, getMarketContract } from '../utils.js';
+import { delay, getMarketContract, txWithGasAdjustment } from '../utils.js';
 import { numSplits } from '../file/index.js';
 import { encodeBase64, ethers } from 'ethers';
 import { calculatePrice, getShardConfigs } from './utils.js';
@@ -56,17 +56,25 @@ export class Uploader {
         if (this.gasPrice > 0) {
             txOpts.gasPrice = this.gasPrice;
         }
+        else {
+            let suggestedGasPrice = (await this.provider.getFeeData()).gasPrice;
+            if (suggestedGasPrice === null) {
+                return [
+                    '',
+                    new Error('Failed to get suggested gas price, set your own gas price'),
+                ];
+            }
+            txOpts.gasPrice = suggestedGasPrice;
+        }
         if (this.gasLimit > 0) {
             txOpts.gasLimit = this.gasLimit;
         }
         console.log('Submitting transaction with storage fee:', fee);
-        let tx = await this.flow.submit(submission, txOpts);
-        await tx.wait();
-        let receipt = await this.waitForReceipt(this.provider, tx.hash, retryOpts);
+        let receipt = await txWithGasAdjustment(this.flow, this.provider, 'submit', [submission], txOpts, retryOpts);
         if (receipt === null) {
-            return ['', new Error('Failed to get transaction receipt')];
+            return ['', new Error('Failed to submit transaction')];
         }
-        console.log('Transaction hash:', tx.hash);
+        console.log('Transaction hash:', receipt.hash);
         let info = await this.waitForLogEntry(tree.rootHash(), false, receipt);
         if (info === null) {
             return ['', new Error('Failed to get log entry')];
@@ -84,16 +92,16 @@ export class Uploader {
         if (err !== undefined) {
             return ['', err];
         }
-        return [tx.hash, null];
+        return [receipt.hash, null];
     }
-    async waitForReceipt(provider, txHash, opts) {
+    async waitForReceipt(txHash, opts) {
         var receipt = null;
         if (opts === undefined) {
-            opts = { Retries: 10, Interval: 5 };
+            opts = { Retries: 10, Interval: 5, MaxGasPrice: 0 };
         }
         let nTries = 0;
         while (nTries < opts.Retries) {
-            receipt = await provider.getTransactionReceipt(txHash);
+            receipt = await this.provider.getTransactionReceipt(txHash);
             if (receipt !== null && receipt.status == 1) {
                 return receipt;
             }

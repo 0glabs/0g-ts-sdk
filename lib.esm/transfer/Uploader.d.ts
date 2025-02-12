@@ -14,7 +14,7 @@ export declare class Uploader {
     constructor(nodes: StorageNode[], providerRpc: string, flow: FixedPriceFlow, gasPrice?: bigint, gasLimit?: bigint);
     checkExistence(root: string): Promise<boolean>;
     uploadFile(file: AbstractFile, opts: UploadOption, retryOpts?: RetryOpts): Promise<[string, Error | null]>;
-    waitForReceipt(provider: ethers.JsonRpcProvider, txHash: string, opts?: RetryOpts): Promise<ethers.TransactionReceipt | null>;
+    waitForReceipt(txHash: string, opts?: RetryOpts): Promise<ethers.TransactionReceipt | null>;
     waitForLogEntry(root: string, finalityRequired: boolean, receipt?: ethers.TransactionReceipt): Promise<FileInfo | null>;
     processTasksInParallel(file: AbstractFile, tree: MerkleTree, tasks: UploadTask[]): Promise<(number | Error)[]>;
     segmentUpload(info: FileInfo, file: AbstractFile, tree: MerkleTree, opts: UploadOption): Promise<UploadTask[] | null>;
