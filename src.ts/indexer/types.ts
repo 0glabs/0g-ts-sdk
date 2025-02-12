@@ -12,3 +12,8 @@ export interface ShardedNodes {
     trusted: ShardedNode[]
     discovered: ShardedNode[]
 }
+
+export interface TransactionOptions {
+    gasPrice?: bigint
+    gasLimit?: bigint
+}

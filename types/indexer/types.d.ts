@@ -10,4 +10,8 @@ export interface ShardedNodes {
     trusted: ShardedNode[];
     discovered: ShardedNode[];
 }
+export interface TransactionOptions {
+    gasPrice?: bigint;
+    gasLimit?: bigint;
+}
 //# sourceMappingURL=types.d.ts.map

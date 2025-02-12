@@ -1,5 +1,5 @@
 import { HttpProvider } from 'open-jsonrpc-provider'
-import { IpLocation, ShardedNodes } from './types.js'
+import { IpLocation, ShardedNodes, TransactionOptions } from './types.js'
 import { selectNodes, ShardedNode } from '../common/index.js'
 import { UploadOption, Uploader, Downloader } from '../transfer/index.js'
 import { StorageNode } from '../node/index.js'
@@ -38,7 +38,8 @@ export class Indexer extends HttpProvider {
     async newUploaderFromIndexerNodes(
         blockchain_rpc: string,
         signer: ethers.Wallet,
-        expectedReplica: number
+        expectedReplica: number,
+        opts?: TransactionOptions
     ): Promise<[Uploader | null, Error | null]> {
         let [clients, err] = await this.selectNodes(expectedReplica)
         if (err != null) {
@@ -59,7 +60,13 @@ export class Indexer extends HttpProvider {
 
         console.log('Selected nodes:', clients)
 
-        let uploader: Uploader = new Uploader(clients, blockchain_rpc, flow)
+        let uploader: Uploader = new Uploader(
+            clients,
+            blockchain_rpc,
+            flow,
+            opts?.gasPrice,
+            opts?.gasLimit
+        )
         return [uploader, null]
     }
 
@@ -89,23 +96,25 @@ export class Indexer extends HttpProvider {
         file: AbstractFile,
         blockchain_rpc: string,
         signer: ethers.Wallet,
-        opts?: UploadOption,
-        retryOpts?: RetryOpts
+        uploadOpts?: UploadOption,
+        retryOpts?: RetryOpts,
+        opts?: TransactionOptions
     ): Promise<[string, Error | null]> {
         var expectedReplica = 1
-        if (opts != undefined && opts.expectedReplica != null) {
-            expectedReplica = Math.max(1, opts.expectedReplica)
+        if (uploadOpts != undefined && uploadOpts.expectedReplica != null) {
+            expectedReplica = Math.max(1, uploadOpts.expectedReplica)
         }
         let [uploader, err] = await this.newUploaderFromIndexerNodes(
             blockchain_rpc,
             signer,
-            expectedReplica
+            expectedReplica,
+            opts
         )
         if (err != null || uploader == null) {
             return ['', new Error('failed to create uploader')]
         }
-        if (opts === undefined) {
-            opts = {
+        if (uploadOpts === undefined) {
+            uploadOpts = {
                 tags: '0x',
                 finalityRequired: true,
                 taskSize: 10,
@@ -115,7 +124,7 @@ export class Indexer extends HttpProvider {
             }
         }
 
-        return await uploader.uploadFile(file, opts, retryOpts)
+        return await uploader.uploadFile(file, uploadOpts, retryOpts)
     }
 
     async download(
