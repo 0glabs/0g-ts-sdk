@@ -1192,6 +1192,7 @@
 	const EMPTY_CHUNK = new Uint8Array(DEFAULT_CHUNK_SIZE);
 	const EMPTY_CHUNK_HASH = keccak256$1(EMPTY_CHUNK);
 	const SMALL_FILE_SIZE_THRESHOLD = 256 * 1024;
+	const TIMEOUT_MS = 30_000; // 60 seconds
 	const ZERO_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000';
 
 	/* Do NOT modify this file; see /src.ts/_admin/update-version.ts */
@@ -21761,6 +21762,56 @@
 	    return Math.floor((total - 1) / unit + 1);
 	}
 	const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+	async function txWithGasAdjustment(contract, provider, method, params, txOpts, retryOpts) {
+	    let current_gas_price = txOpts.gasPrice; // gas price is required in txOpts
+	    let maxGasPrice = current_gas_price;
+	    if (retryOpts !== undefined && retryOpts.MaxGasPrice > 0) {
+	        maxGasPrice = BigInt(retryOpts.MaxGasPrice);
+	    }
+	    while (current_gas_price <= maxGasPrice) {
+	        console.log(`Sending transaction with gas price ${current_gas_price}`);
+	        txOpts.gasPrice = current_gas_price;
+	        try {
+	            let resp = await contract
+	                .getFunction(method)
+	                .send(...params, txOpts);
+	            const tx = (await Promise.race([
+	                resp.wait(),
+	                new Promise((_, reject) => setTimeout(() => reject(new Error('Transaction timed out')), TIMEOUT_MS)),
+	            ]));
+	            if (tx === null) {
+	                throw new Error('Failed to get transaction receipt');
+	            }
+	            let receipt = await waitForReceipt(provider, tx.hash, retryOpts);
+	            if (receipt === null) {
+	                throw new Error('Failed to get transaction receipt');
+	            }
+	            return receipt;
+	        }
+	        catch (e) {
+	            console.log(`Failed to send transaction with gas price ${current_gas_price}, with error ${e}, retrying with higher gas price`);
+	            current_gas_price =
+	                (BigInt(11) * BigInt(current_gas_price)) / BigInt(10);
+	        }
+	    }
+	    return null;
+	}
+	async function waitForReceipt(provider, txHash, opts) {
+	    var receipt = null;
+	    if (opts === undefined) {
+	        opts = { Retries: 10, Interval: 5, MaxGasPrice: 0 };
+	    }
+	    let nTries = 0;
+	    while (nTries < opts.Retries) {
+	        receipt = await provider.getTransactionReceipt(txHash);
+	        if (receipt !== null && receipt.status == 1) {
+	            return receipt;
+	        }
+	        await delay(opts.Interval * 1000);
+	        nTries++;
+	    }
+	    return null;
+	}
 
 	class JsonRpcError extends Error {
 	    constructor(message, code, data) {
@@ -25188,17 +25239,25 @@
 	        if (this.gasPrice > 0) {
 	            txOpts.gasPrice = this.gasPrice;
 	        }
+	        else {
+	            let suggestedGasPrice = (await this.provider.getFeeData()).gasPrice;
+	            if (suggestedGasPrice === null) {
+	                return [
+	                    '',
+	                    new Error('Failed to get suggested gas price, set your own gas price'),
+	                ];
+	            }
+	            txOpts.gasPrice = suggestedGasPrice;
+	        }
 	        if (this.gasLimit > 0) {
 	            txOpts.gasLimit = this.gasLimit;
 	        }
 	        console.log('Submitting transaction with storage fee:', fee);
-	        let tx = await this.flow.submit(submission, txOpts);
-	        await tx.wait();
-	        let receipt = await this.waitForReceipt(this.provider, tx.hash, retryOpts);
+	        let receipt = await txWithGasAdjustment(this.flow, this.provider, 'submit', [submission], txOpts, retryOpts);
 	        if (receipt === null) {
-	            return ['', new Error('Failed to get transaction receipt')];
+	            return ['', new Error('Failed to submit transaction')];
 	        }
-	        console.log('Transaction hash:', tx.hash);
+	        console.log('Transaction hash:', receipt.hash);
 	        let info = await this.waitForLogEntry(tree.rootHash(), false, receipt);
 	        if (info === null) {
 	            return ['', new Error('Failed to get log entry')];
@@ -25216,16 +25275,16 @@
 	        if (err !== undefined) {
 	            return ['', err];
 	        }
-	        return [tx.hash, null];
+	        return [receipt.hash, null];
 	    }
-	    async waitForReceipt(provider, txHash, opts) {
+	    async waitForReceipt(txHash, opts) {
 	        var receipt = null;
 	        if (opts === undefined) {
-	            opts = { Retries: 10, Interval: 5 };
+	            opts = { Retries: 10, Interval: 5, MaxGasPrice: 0 };
 	        }
 	        let nTries = 0;
 	        while (nTries < opts.Retries) {
-	            receipt = await provider.getTransactionReceipt(txHash);
+	            receipt = await this.provider.getTransactionReceipt(txHash);
 	            if (receipt !== null && receipt.status == 1) {
 	                return receipt;
 	            }
@@ -25946,6 +26005,7 @@
 	exports.StorageNode = StorageNode;
 	exports.StreamData = StreamData;
 	exports.StreamDataBuilder = StreamDataBuilder;
+	exports.TIMEOUT_MS = TIMEOUT_MS;
 	exports.Uploader = Uploader;
 	exports.ZERO_HASH = ZERO_HASH;
 	exports.ZgFile = ZgFile;
@@ -25961,5 +26021,6 @@
 	exports.isValidConfig = isValidConfig;
 	exports.nextPow2 = nextPow2;
 	exports.numSplits = numSplits;
+	exports.txWithGasAdjustment = txWithGasAdjustment;
 
 }));
