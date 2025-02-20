@@ -21780,7 +21780,7 @@
 	                new Promise((_, reject) => setTimeout(() => reject(new Error('Transaction timed out')), TIMEOUT_MS)),
 	            ]));
 	            if (tx === null) {
-	                throw new Error('Failed to get transaction receipt');
+	                throw new Error('Failed to send transaction');
 	            }
 	            let receipt = await waitForReceipt(provider, tx.hash, retryOpts);
 	            if (receipt === null) {
@@ -21800,6 +21800,12 @@
 	    var receipt = null;
 	    if (opts === undefined) {
 	        opts = { Retries: 10, Interval: 5, MaxGasPrice: 0 };
+	    }
+	    if (opts.Retries === undefined || opts.Retries === 0) {
+	        opts.Retries = 10;
+	    }
+	    if (opts.Interval === undefined || opts.Interval === 0) {
+	        opts.Interval = 5;
 	    }
 	    let nTries = 0;
 	    while (nTries < opts.Retries) {
