@@ -102,11 +102,19 @@ async function waitForReceipt(
     if (opts === undefined) {
         opts = { Retries: 10, Interval: 5, MaxGasPrice: 0 }
     }
+    if (opts.Retries === undefined || opts.Retries === 0) {
+        opts.Retries = 10
+    }
+
+    if (opts.Interval === undefined || opts.Interval === 0) {
+        opts.Interval = 5
+    }
 
     let nTries = 0
 
     while (nTries < opts.Retries) {
         receipt = await provider.getTransactionReceipt(txHash)
+
         if (receipt !== null && receipt.status == 1) {
             return receipt
         }
