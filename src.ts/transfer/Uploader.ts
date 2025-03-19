@@ -89,8 +89,14 @@ export class Uploader {
             fee = calculatePrice(submission, pricePerSector)
         }
 
-        var txOpts: { value: bigint; gasPrice?: bigint; gasLimit?: bigint } = {
+        var txOpts: {
+            value: bigint
+            gasPrice?: bigint
+            gasLimit?: bigint
+            nonce?: bigint
+        } = {
             value: fee,
+            nonce: opts.nonce,
         }
         if (this.gasPrice > 0) {
             txOpts.gasPrice = this.gasPrice

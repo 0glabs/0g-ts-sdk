@@ -65,19 +65,19 @@ export async function txWithGasAdjustment(
                 resp.wait(),
                 new Promise((_, reject) =>
                     setTimeout(
-                        () => reject(new Error('Transaction timed out')),
+                        () => reject(new Error('Transaction timeout')),
                         TIMEOUT_MS
                     )
                 ),
             ])) as ContractTransactionReceipt | null
 
             if (tx === null) {
-                throw new Error('Failed to send transaction')
+                throw new Error('Send transaction timeout')
             }
 
             let receipt = await waitForReceipt(provider, tx.hash, retryOpts)
             if (receipt === null) {
-                throw new Error('Failed to get transaction receipt')
+                throw new Error('Get transaction receipt timeout')
             }
 
             return receipt

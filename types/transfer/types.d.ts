@@ -13,6 +13,7 @@ export interface UploadOption {
     expectedReplica: number;
     skipTx: boolean;
     fee: bigint;
+    nonce?: bigint;
 }
 export declare var defaultUploadOption: UploadOption;
 //# sourceMappingURL=types.d.ts.map
