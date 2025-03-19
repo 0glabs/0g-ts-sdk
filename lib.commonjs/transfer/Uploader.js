@@ -55,6 +55,7 @@ class Uploader {
         }
         var txOpts = {
             value: fee,
+            nonce: opts.nonce,
         };
         if (this.gasPrice > 0) {
             txOpts.gasPrice = this.gasPrice;

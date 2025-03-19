@@ -1,6 +1,6 @@
 export var defaultUploadOption = {
     tags: '0x',
-    finalityRequired: false,
+    finalityRequired: true,
     taskSize: 1,
     expectedReplica: 1,
     skipTx: false,

@@ -21541,14 +21541,14 @@ async function txWithGasAdjustment(contract, provider, method, params, txOpts, r
                 .send(...params, txOpts);
             const tx = (await Promise.race([
                 resp.wait(),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Transaction timed out')), TIMEOUT_MS)),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Transaction timeout')), TIMEOUT_MS)),
             ]));
             if (tx === null) {
-                throw new Error('Failed to send transaction');
+                throw new Error('Send transaction timeout');
             }
             let receipt = await waitForReceipt(provider, tx.hash, retryOpts);
             if (receipt === null) {
-                throw new Error('Failed to get transaction receipt');
+                throw new Error('Get transaction receipt timeout');
             }
             return receipt;
         }
@@ -25005,6 +25005,7 @@ class Uploader {
         }
         var txOpts = {
             value: fee,
+            nonce: opts.nonce,
         };
         if (this.gasPrice > 0) {
             txOpts.gasPrice = this.gasPrice;
@@ -25212,7 +25213,7 @@ class Uploader {
 
 var defaultUploadOption = {
     tags: '0x',
-    finalityRequired: false,
+    finalityRequired: true,
     taskSize: 1,
     expectedReplica: 1,
     skipTx: false,
