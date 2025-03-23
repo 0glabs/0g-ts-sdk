@@ -70,7 +70,7 @@ class Indexer extends open_jsonrpc_provider_1.HttpProvider {
         }
         let [uploader, err] = await this.newUploaderFromIndexerNodes(blockchain_rpc, signer, expectedReplica, opts);
         if (err != null || uploader == null) {
-            return ['', new Error('failed to create uploader')];
+            return ['', err];
         }
         if (uploadOpts === undefined) {
             uploadOpts = {

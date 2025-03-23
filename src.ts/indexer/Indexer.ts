@@ -111,7 +111,7 @@ export class Indexer extends HttpProvider {
             opts
         )
         if (err != null || uploader == null) {
-            return ['', new Error('failed to create uploader')]
+            return ['', err]
         }
         if (uploadOpts === undefined) {
             uploadOpts = {
