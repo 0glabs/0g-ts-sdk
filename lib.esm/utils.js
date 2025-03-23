@@ -2,13 +2,14 @@ import { FixedPriceFlow__factory } from './contracts/flow/index.js';
 import { FixedPrice__factory } from './contracts/market/index.js';
 import fs from 'fs';
 import path from 'path';
-import { TIMEOUT_MS } from './constant.js';
+import { DEFAULT_CHUNK_SIZE, DEFAULT_SEGMENT_MAX_CHUNKS, TIMEOUT_MS } from './constant.js';
 export function getFlowContract(address, signer) {
     return FixedPriceFlow__factory.connect(address, signer);
 }
 export function getMarketContract(address, runner) {
     return FixedPrice__factory.connect(address, runner);
 }
+export const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 export function checkExist(inputPath) {
     const dirName = path.dirname(inputPath);
     if (!fs.existsSync(dirName)) {
@@ -26,7 +27,24 @@ export function checkExist(inputPath) {
 export function GetSplitNum(total, unit) {
     return Math.floor((total - 1) / unit + 1);
 }
-export const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+/**
+ * Calculates the start and end segment indices for a file,
+ * given the file's start chunk index and file size.
+ *
+ * @param startChunkIndex - the starting chunk index (integer)
+ * @param fileSize - the file size (number of chunks, as an integer)
+ * @returns a tuple [startSegmentIndex, endSegmentIndex]
+ */
+export function SegmentRange(startChunkIndex, fileSize) {
+    // Calculate total number of chunks for the file
+    const totalChunks = GetSplitNum(fileSize, DEFAULT_CHUNK_SIZE);
+    // Calculate the starting segment index using integer division
+    const startSegmentIndex = Math.floor(startChunkIndex / DEFAULT_SEGMENT_MAX_CHUNKS);
+    // Calculate the ending chunk index and then the segment index
+    const endChunkIndex = startChunkIndex + totalChunks - 1;
+    const endSegmentIndex = Math.floor(endChunkIndex / DEFAULT_SEGMENT_MAX_CHUNKS);
+    return [startSegmentIndex, endSegmentIndex];
+}
 export async function txWithGasAdjustment(contract, provider, method, params, txOpts, retryOpts) {
     let current_gas_price = txOpts.gasPrice; // gas price is required in txOpts
     let maxGasPrice = current_gas_price;

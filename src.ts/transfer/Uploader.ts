@@ -4,15 +4,23 @@ import {
     DEFAULT_CHUNK_SIZE,
 } from '../constant.js'
 import { StorageNode, SegmentWithProof, FileInfo } from '../node/index.js'
-import { FixedPriceFlow } from '../contracts/flow/FixedPriceFlow.js'
-import { delay, getMarketContract, txWithGasAdjustment } from '../utils.js'
+import {
+    FixedPriceFlow,
+    SubmitEvent,
+} from '../contracts/flow/FixedPriceFlow.js'
+import {
+    delay,
+    getMarketContract,
+    SegmentRange,
+    txWithGasAdjustment,
+} from '../utils.js'
 import { RetryOpts } from '../types.js'
-import { MerkleTree, numSplits } from '../file/index.js'
+import { MerkleTree } from '../file/index.js'
 import { encodeBase64, ethers } from 'ethers'
 import { calculatePrice, getShardConfigs } from './utils.js'
 import { UploadOption, UploadTask } from './types.js'
 import { AbstractFile } from '../file/AbstractFile.js'
-import { checkReplica } from '../common/index.js'
+import { checkReplica, ShardConfig } from '../common/index.js'
 
 export class Uploader {
     nodes: StorageNode[]
@@ -132,12 +140,13 @@ export class Uploader {
         }
 
         console.log('Transaction hash:', receipt.hash)
+        const txSeqs = await this.processLogs(receipt)
+        if (txSeqs.length === 0) {
+            return ['', new Error('Failed to get txSeqs')]
+        }
 
-        let info = await this.waitForLogEntry(
-            tree.rootHash() as string,
-            false,
-            receipt
-        )
+        console.log('Transaction sequence number:', txSeqs[0])
+        let info = await this.waitForLogEntry(txSeqs[0], false)
 
         if (info === null) {
             return ['', new Error('Failed to get log entry')]
@@ -164,7 +173,46 @@ export class Uploader {
             return ['', err]
         }
 
+        await this.waitForLogEntry(info.tx.seq, true)
+
         return [receipt.hash, null]
+    }
+
+    async processLogs(receipt: ethers.TransactionReceipt): Promise<number[]> {
+        const contractAddress = (await this.flow.getAddress()).toLowerCase()
+        const signature = this.flow.interface.getEvent('Submit')
+        var txSeqs: number[] = []
+        for (const log of receipt.logs) {
+            // Only process logs that are emitted by this contract.
+            if (log.address.toLowerCase() !== contractAddress) {
+                continue
+            }
+            if (log.topics[0] !== signature.topicHash) {
+                continue
+            }
+
+            try {
+                // Use the contract's interface to parse the log.
+                const parsedLog = this.flow.interface.parseLog(log)
+                if (!parsedLog) {
+                    continue
+                }
+
+                // Check if the event name is "Submit"
+                if (parsedLog.name === 'Submit') {
+                    const event =
+                        parsedLog.args as unknown as SubmitEvent.OutputObject
+                    txSeqs.push(Number(event.submissionIndex))
+                }
+            } catch (error) {
+                // If parseLog fails, this log is not one of our events.
+                // You can log the error if needed.
+                // console.error("Error decoding log:", error);
+                continue
+            }
+        }
+
+        return txSeqs
     }
 
     async waitForReceipt(
@@ -192,36 +240,38 @@ export class Uploader {
     }
 
     async waitForLogEntry(
-        root: string,
-        finalityRequired: boolean,
-        receipt?: ethers.TransactionReceipt
+        txSeq: number,
+        finalityRequired: boolean
     ): Promise<FileInfo | null> {
         console.log('Wait for log entry on storage node')
 
-        let info: any = null
+        let info: FileInfo | null = null
         while (true) {
             await delay(1000)
 
             let ok = true
             for (let client of this.nodes) {
-                info = await client.getFileInfo(root)
+                info = await client.getFileInfoByTxSeq(txSeq)
                 if (info === null) {
                     let logMsg = 'Log entry is unavailable yet'
-                    if (receipt !== undefined) {
-                        let status = await client.getStatus()
-                        if (status !== null) {
-                            const logSyncHeight = status.logSyncHeight
-                            const txBlock = receipt.blockNumber
-                            logMsg = `Log entry is unavailable yet, txBlock=${txBlock}, zgsNodeSyncHeight=${logSyncHeight}`
-                        }
+
+                    let status = await client.getStatus()
+                    if (status !== null) {
+                        const logSyncHeight = status.logSyncHeight
+                        logMsg = `Log entry is unavailable yet, zgsNodeSyncHeight=${logSyncHeight}`
                     }
+
                     console.log(logMsg)
                     ok = false
                     break
                 }
 
                 if (finalityRequired && !info.finalized) {
-                    console.log('Log entry is available, but not finalized yet')
+                    console.log(
+                        'Log entry is available, but not finalized yet, ',
+                        client,
+                        info
+                    )
                     ok = false
                     break
                 }
@@ -247,6 +297,20 @@ export class Uploader {
         return await Promise.all(taskPromises)
     }
 
+    nextSgmentIndex(config: ShardConfig, startIndex: number): number {
+        if (config.numShard > 2) {
+            return startIndex
+        }
+        return (
+            Math.floor(
+                (startIndex + config.numShard - 1 - config.shardId) /
+                    config.numShard
+            ) *
+                config.numShard +
+            config.shardId
+        )
+    }
+
     async segmentUpload(
         info: FileInfo,
         file: AbstractFile,
@@ -266,13 +330,10 @@ export class Uploader {
 
         let txSeq = info.tx.seq
 
-        let startSegmentIndex =
-            info.tx.startEntryIndex / DEFAULT_SEGMENT_MAX_CHUNKS
-        let endSegmentIndex =
-            (info.tx.startEntryIndex +
-                numSplits(info.tx.size, DEFAULT_CHUNK_SIZE) -
-                1) /
-            DEFAULT_SEGMENT_MAX_CHUNKS
+        let [startSegmentIndex, endSegmentIndex] = SegmentRange(
+            info.tx.startEntryIndex,
+            info.tx.size
+        )
         var uploadTasks: UploadTask[][] = []
 
         for (
@@ -280,24 +341,10 @@ export class Uploader {
             clientIndex < shardConfigs.length;
             clientIndex++
         ) {
-            // skip finalized nodes
-            let info = await this.nodes[clientIndex].getFileInfo(
-                tree.rootHash() as string
-            )
-            if (info !== null && info.finalized) {
-                continue
-            }
-
             const shardConfig = shardConfigs[clientIndex]
             var tasks: UploadTask[] = []
-            let segIndex =
-                ((startSegmentIndex +
-                    shardConfig.numShard -
-                    1 -
-                    shardConfig.shardId) /
-                    shardConfig.numShard) *
-                    shardConfig.numShard +
-                shardConfig.shardId
+            let segIndex = this.nextSgmentIndex(shardConfig, startSegmentIndex)
+
             while (segIndex <= endSegmentIndex) {
                 tasks.push({
                     clientIndex,
@@ -308,8 +355,16 @@ export class Uploader {
                 })
                 segIndex += shardConfig.numShard * opts.taskSize
             }
-            uploadTasks.push(tasks)
+
+            if (tasks.length > 0) {
+                uploadTasks.push(tasks)
+            }
         }
+
+        if (uploadTasks.length === 0) {
+            return null
+        }
+        console.log('Tasks created:', uploadTasks)
 
         var tasks: UploadTask[] = []
         if (uploadTasks.length > 0) {

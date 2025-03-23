@@ -8,6 +8,6 @@ exports.DEFAULT_SEGMENT_SIZE = exports.DEFAULT_CHUNK_SIZE * exports.DEFAULT_SEGM
 exports.EMPTY_CHUNK = new Uint8Array(exports.DEFAULT_CHUNK_SIZE);
 exports.EMPTY_CHUNK_HASH = (0, keccak256_1.keccak256)(exports.EMPTY_CHUNK);
 exports.SMALL_FILE_SIZE_THRESHOLD = 256 * 1024;
-exports.TIMEOUT_MS = 30_000; // 60 seconds
+exports.TIMEOUT_MS = 3000_000; // 60 seconds
 exports.ZERO_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000';
 //# sourceMappingURL=constant.js.map

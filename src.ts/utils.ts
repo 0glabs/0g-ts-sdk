@@ -5,7 +5,11 @@ import fs from 'fs'
 import path from 'path'
 import { ContractRunner } from 'ethers'
 import { BaseContract } from 'ethers'
-import { TIMEOUT_MS } from './constant.js'
+import {
+    DEFAULT_CHUNK_SIZE,
+    DEFAULT_SEGMENT_MAX_CHUNKS,
+    TIMEOUT_MS,
+} from './constant.js'
 import { RetryOpts } from './types.js'
 import { TransactionReceipt } from 'ethers'
 
@@ -16,6 +20,8 @@ export function getFlowContract(address: string, signer: Signer) {
 export function getMarketContract(address: string, runner: ContractRunner) {
     return FixedPrice__factory.connect(address, runner)
 }
+
+export const delay = (ms: number) => new Promise((res) => setTimeout(res, ms))
 
 export function checkExist(inputPath: string): boolean {
     const dirName = path.dirname(inputPath)
@@ -38,7 +44,34 @@ export function GetSplitNum(total: number, unit: number): number {
     return Math.floor((total - 1) / unit + 1)
 }
 
-export const delay = (ms: number) => new Promise((res) => setTimeout(res, ms))
+/**
+ * Calculates the start and end segment indices for a file,
+ * given the file's start chunk index and file size.
+ *
+ * @param startChunkIndex - the starting chunk index (integer)
+ * @param fileSize - the file size (number of chunks, as an integer)
+ * @returns a tuple [startSegmentIndex, endSegmentIndex]
+ */
+export function SegmentRange(
+    startChunkIndex: number,
+    fileSize: number
+): [number, number] {
+    // Calculate total number of chunks for the file
+    const totalChunks = GetSplitNum(fileSize, DEFAULT_CHUNK_SIZE)
+
+    // Calculate the starting segment index using integer division
+    const startSegmentIndex = Math.floor(
+        startChunkIndex / DEFAULT_SEGMENT_MAX_CHUNKS
+    )
+
+    // Calculate the ending chunk index and then the segment index
+    const endChunkIndex = startChunkIndex + totalChunks - 1
+    const endSegmentIndex = Math.floor(
+        endChunkIndex / DEFAULT_SEGMENT_MAX_CHUNKS
+    )
+
+    return [startSegmentIndex, endSegmentIndex]
+}
 
 export async function txWithGasAdjustment(
     contract: BaseContract,
