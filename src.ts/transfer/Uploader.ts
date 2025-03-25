@@ -48,7 +48,7 @@ export class Uploader {
 
     async checkExistence(root: string): Promise<boolean> {
         for (let client of this.nodes) {
-            let info = await client.getFileInfo(root)
+            let info = await client.getFileInfo(root, true)
             if (info !== null && info.finalized) {
                 return true
             }

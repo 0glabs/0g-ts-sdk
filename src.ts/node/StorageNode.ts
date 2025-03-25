@@ -116,10 +116,13 @@ export class StorageNode extends HttpProvider {
         return seg as FlowProof
     }
 
-    async getFileInfo(root: Hash): Promise<FileInfo | null> {
+    async getFileInfo(
+        root: Hash,
+        needAvailable: boolean
+    ): Promise<FileInfo | null> {
         const info = await super.request({
             method: 'zgs_getFileInfo',
-            params: [root],
+            params: [root, needAvailable],
         })
         return info as FileInfo | null
     }

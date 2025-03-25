@@ -14,7 +14,7 @@ export declare class StorageNode extends HttpProvider {
     downloadSegmentByTxSeq(txSeq: number, startIndex: number, endIndex: number): Promise<Segment>;
     downloadSegmentWithProofByTxSeq(txSeq: number, index: number): Promise<SegmentWithProof>;
     getSectorProof(sectorIndex: number, root: Hash): Promise<FlowProof>;
-    getFileInfo(root: Hash): Promise<FileInfo | null>;
+    getFileInfo(root: Hash, needAvailable: boolean): Promise<FileInfo | null>;
     getFileInfoByTxSeq(txSeq: number): Promise<FileInfo | null>;
     getShardConfig(): Promise<ShardConfig>;
 }
