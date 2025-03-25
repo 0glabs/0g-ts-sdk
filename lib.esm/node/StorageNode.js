@@ -75,10 +75,10 @@ export class StorageNode extends HttpProvider {
         });
         return seg;
     }
-    async getFileInfo(root) {
+    async getFileInfo(root, needAvailable) {
         const info = await super.request({
             method: 'zgs_getFileInfo',
-            params: [root],
+            params: [root, needAvailable],
         });
         return info;
     }

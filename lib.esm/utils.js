@@ -2,7 +2,7 @@ import { FixedPriceFlow__factory } from './contracts/flow/index.js';
 import { FixedPrice__factory } from './contracts/market/index.js';
 import fs from 'fs';
 import path from 'path';
-import { DEFAULT_CHUNK_SIZE, DEFAULT_SEGMENT_MAX_CHUNKS, TIMEOUT_MS } from './constant.js';
+import { DEFAULT_CHUNK_SIZE, DEFAULT_SEGMENT_MAX_CHUNKS, TIMEOUT_MS, } from './constant.js';
 export function getFlowContract(address, signer) {
     return FixedPriceFlow__factory.connect(address, signer);
 }

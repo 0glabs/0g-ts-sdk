@@ -36,7 +36,7 @@ export class Downloader {
     async queryFile(root) {
         let fileInfo = null;
         for (let node of this.nodes) {
-            const currInfo = await node.getFileInfo(root);
+            const currInfo = await node.getFileInfo(root, true);
             if (currInfo === null) {
                 return [null, new Error('File not found on node ' + node.url)];
             }

@@ -1,5 +1,5 @@
 import { DEFAULT_SEGMENT_SIZE, DEFAULT_SEGMENT_MAX_CHUNKS, DEFAULT_CHUNK_SIZE, } from '../constant.js';
-import { delay, getMarketContract, SegmentRange, txWithGasAdjustment } from '../utils.js';
+import { delay, getMarketContract, SegmentRange, txWithGasAdjustment, } from '../utils.js';
 import { encodeBase64, ethers } from 'ethers';
 import { calculatePrice, getShardConfigs } from './utils.js';
 import { checkReplica } from '../common/index.js';
@@ -18,7 +18,7 @@ export class Uploader {
     }
     async checkExistence(root) {
         for (let client of this.nodes) {
-            let info = await client.getFileInfo(root);
+            let info = await client.getFileInfo(root, true);
             if (info !== null && info.finalized) {
                 return true;
             }
@@ -189,7 +189,8 @@ export class Uploader {
         if (config.numShard > 2) {
             return startIndex;
         }
-        return (Math.floor((startIndex + config.numShard - 1 - config.shardId) / config.numShard) *
+        return (Math.floor((startIndex + config.numShard - 1 - config.shardId) /
+            config.numShard) *
             config.numShard +
             config.shardId);
     }

@@ -24003,10 +24003,10 @@ class StorageNode extends HttpProvider {
         });
         return seg;
     }
-    async getFileInfo(root) {
+    async getFileInfo(root, needAvailable) {
         const info = await super.request({
             method: 'zgs_getFileInfo',
-            params: [root],
+            params: [root, needAvailable],
         });
         return info;
     }
@@ -24213,7 +24213,7 @@ class Downloader {
     async queryFile(root) {
         let fileInfo = null;
         for (let node of this.nodes) {
-            const currInfo = await node.getFileInfo(root);
+            const currInfo = await node.getFileInfo(root, true);
             if (currInfo === null) {
                 return [null, new Error('File not found on node ' + node.url)];
             }
@@ -24381,7 +24381,7 @@ class Uploader {
     }
     async checkExistence(root) {
         for (let client of this.nodes) {
-            let info = await client.getFileInfo(root);
+            let info = await client.getFileInfo(root, true);
             if (info !== null && info.finalized) {
                 return true;
             }
@@ -24552,7 +24552,8 @@ class Uploader {
         if (config.numShard > 2) {
             return startIndex;
         }
-        return (Math.floor((startIndex + config.numShard - 1 - config.shardId) / config.numShard) *
+        return (Math.floor((startIndex + config.numShard - 1 - config.shardId) /
+            config.numShard) *
             config.numShard +
             config.shardId);
     }
