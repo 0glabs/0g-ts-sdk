@@ -24473,7 +24473,6 @@
 	            if ((this.startSegmentIndex + segmentIndex) %
 	                this.shardConfigs[nodeIndex].numShard !=
 	                this.shardConfigs[nodeIndex].shardId) {
-	                console.log('skip node', nodeIndex);
 	                continue;
 	            }
 	            // try download from current node
@@ -24785,7 +24784,7 @@
 	        return await Promise.all(taskPromises);
 	    }
 	    nextSgmentIndex(config, startIndex) {
-	        if (config.numShard > 2) {
+	        if (config.numShard < 2) {
 	            return startIndex;
 	        }
 	        return (Math.floor((startIndex + config.numShard - 1 - config.shardId) /
@@ -24808,6 +24807,11 @@
 	        var uploadTasks = [];
 	        for (let clientIndex = 0; clientIndex < shardConfigs.length; clientIndex++) {
 	            const shardConfig = shardConfigs[clientIndex];
+	            let cInfo = await this.nodes[clientIndex].getFileInfo(tree.rootHash(), true);
+	            if (cInfo !== null && cInfo.finalized) {
+	                console.log('File already exists on node', this.nodes[clientIndex].url, cInfo);
+	                continue;
+	            }
 	            var tasks = [];
 	            let segIndex = this.nextSgmentIndex(shardConfig, startSegmentIndex);
 	            while (segIndex <= endSegmentIndex) {

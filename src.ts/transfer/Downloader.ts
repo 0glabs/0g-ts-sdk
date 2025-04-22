@@ -87,7 +87,6 @@ export class Downloader {
                     this.shardConfigs[nodeIndex].numShard !=
                 this.shardConfigs[nodeIndex].shardId
             ) {
-                console.log('skip node', nodeIndex)
                 continue
             }
             // try download from current node

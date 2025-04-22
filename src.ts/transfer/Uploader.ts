@@ -298,7 +298,7 @@ export class Uploader {
     }
 
     nextSgmentIndex(config: ShardConfig, startIndex: number): number {
-        if (config.numShard > 2) {
+        if (config.numShard < 2) {
             return startIndex
         }
         return (
@@ -342,6 +342,18 @@ export class Uploader {
             clientIndex++
         ) {
             const shardConfig = shardConfigs[clientIndex]
+            let cInfo = await this.nodes[clientIndex].getFileInfo(
+                tree.rootHash()!,
+                true
+            )
+            if (cInfo !== null && cInfo.finalized) {
+                console.log(
+                    'File already exists on node',
+                    this.nodes[clientIndex].url,
+                    cInfo
+                )
+                continue
+            }
             var tasks: UploadTask[] = []
             let segIndex = this.nextSgmentIndex(shardConfig, startSegmentIndex)
 
