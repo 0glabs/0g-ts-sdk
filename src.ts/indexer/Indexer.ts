@@ -15,6 +15,8 @@ import {
 import { StorageNode } from '../node/index.js'
 import { RetryOpts } from '../types.js'
 import { AbstractFile } from '../file/AbstractFile.js'
+import { HotRouterClient } from '../hot/HotRouterClient.js'
+import { HotStatus, HotUploadOption, UploadToHotResult } from '../hot/types.js'
 import { Signer } from 'ethers'
 import { getFlowContract } from '../utils.js'
 import {
@@ -149,7 +151,7 @@ export class Indexer extends HttpProvider {
                 | { txHash: string; rootHash: string; txSeq: number }
                 | { txHashes: string[]; rootHashes: string[]; txSeqs: number[] }
             ),
-            Error | null
+            Error | null,
         ]
     > {
         console.log(`Starting upload for file of size: ${file.size()} bytes`)
@@ -204,6 +206,70 @@ export class Indexer extends HttpProvider {
             )
             return [result, null]
         }
+    }
+
+    /**
+     * Upload a file and prefetch it into hot storage in one step.
+     *
+     * Runs the normal (finality-guarded) `upload`, then calls the hot router's
+     * `POST /prefetch` with the resulting root hash(es). Hot caching is
+     * best-effort: if the prefetch step fails the upload result is still
+     * returned with `hotStatus: 'unknown'` and no error — the upload already
+     * succeeded. Set `hotOpts.waitForCached` to poll `GET /file/status` until
+     * the file is cached (or `timeoutMs` elapses).
+     *
+     * `hotOpts.hotRouterUrl` is supplied by the caller (e.g. a same-origin
+     * proxy) so the SDK stays agnostic of hot-router topology.
+     *
+     * NOTE: keep the default `finalityRequired: true` on `uploadOpts` — firing
+     * prefetch before the file is finalized on the storage network silently
+     * no-ops on the hot node.
+     */
+    async uploadToHot(
+        file: AbstractFile,
+        blockchain_rpc: string,
+        signer: Signer,
+        hotOpts: HotUploadOption,
+        uploadOpts?: UploadOption,
+        retryOpts?: RetryOpts,
+        opts?: TransactionOptions
+    ): Promise<[UploadToHotResult, Error | null]> {
+        const [result, err] = await this.upload(
+            file,
+            blockchain_rpc,
+            signer,
+            uploadOpts,
+            retryOpts,
+            opts
+        )
+        if (err != null) {
+            return [{ prefetched: [], hotStatus: 'unknown' }, err]
+        }
+
+        const rootHashes: string[] =
+            'rootHash' in result ? [result.rootHash] : result.rootHashes
+
+        let hotStatus: HotStatus = 'unknown'
+        try {
+            const hot = new HotRouterClient(hotOpts.hotRouterUrl)
+            hotStatus = await hot.prefetch(rootHashes)
+            if (hotOpts.waitForCached && hotStatus !== 'cached') {
+                hotStatus = await hot.waitForCached(rootHashes, {
+                    timeoutMs: hotOpts.timeoutMs,
+                    pollIntervalMs: hotOpts.pollIntervalMs,
+                })
+            }
+        } catch (e) {
+            // Hot caching is best-effort; the upload already succeeded.
+            console.warn(
+                `uploadToHot: prefetch step failed (upload succeeded): ${
+                    (e as Error)?.message ?? String(e)
+                }`
+            )
+            hotStatus = 'unknown'
+        }
+
+        return [{ ...result, prefetched: rootHashes, hotStatus }, null]
     }
 
     // ─── File-system download (Node.js only) ─────────────────────────────
@@ -342,9 +408,8 @@ export class Indexer extends HttpProvider {
         filePath: string,
         proof: boolean
     ): Promise<Error | null> {
-        const [downloader, err] = await this.newDownloaderFromIndexerNodes(
-            rootHash
-        )
+        const [downloader, err] =
+            await this.newDownloaderFromIndexerNodes(rootHash)
         if (err !== null || downloader === null) {
             return new Error(`Failed to create downloader: ${err?.message}`)
         }
@@ -436,9 +501,8 @@ export class Indexer extends HttpProvider {
         rootHash: string,
         opts: DownloadOption
     ): Promise<[Blob, Error | null]> {
-        const [downloader, err] = await this.newDownloaderFromIndexerNodes(
-            rootHash
-        )
+        const [downloader, err] =
+            await this.newDownloaderFromIndexerNodes(rootHash)
         if (err !== null || downloader === null) {
             return [
                 new Blob(),
@@ -482,9 +546,8 @@ export class Indexer extends HttpProvider {
     async peekHeader(
         rootHash: string
     ): Promise<[EncryptionHeader | null, Error | null]> {
-        const [downloader, err] = await this.newDownloaderFromIndexerNodes(
-            rootHash
-        )
+        const [downloader, err] =
+            await this.newDownloaderFromIndexerNodes(rootHash)
         if (err !== null || downloader === null) {
             return [
                 null,
