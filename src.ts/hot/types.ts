@@ -12,6 +12,55 @@ export interface HotUploadOption {
     pollIntervalMs?: number
 }
 
+// Minimal structural view of an EIP-712-capable signer (ethers v6 Signer
+// satisfies it). Kept structural so the hot client has no hard ethers import.
+export interface TypedDataSignerLike {
+    getAddress(): Promise<string>
+    signTypedData(
+        domain: { name: string; version: string; chainId: number | bigint },
+        types: Record<string, Array<{ name: string; type: string }>>,
+        value: Record<string, unknown>
+    ): Promise<string>
+}
+
+// One per-fragment download authorization issued by the router's POST /download.
+export interface HotDownloadAuth {
+    // Root hash of the fragment this auth covers.
+    fileHash: string
+    // Max fee the router authorized for this fragment (decimal string).
+    maxFee: string
+    // Router-assigned auth nonce. Consumed by the node on ANY billing — an
+    // auth that delivered >0 bytes is dead and must never be reused.
+    nonce: number
+    // Hex-encoded router signature over the routing message.
+    signature: string
+}
+
+// Parsed response of the router's POST /download.
+export interface HotDownloadTicket {
+    // Provider address serving the file.
+    provider: string
+    // Base URL of the provider node to download from.
+    nodeUrl: string
+    // One auth per requested fragment, in request order.
+    auths: HotDownloadAuth[]
+}
+
+export interface HotDownloadOption {
+    // EIP-712 domain chainId for signing HotDownloadAuth. Must match the
+    // chain the router verifies against.
+    chainId: number | bigint
+    // Max fragments downloaded in parallel. Default 4 — matches the node's
+    // default per-user concurrent stream cap.
+    concurrency?: number
+    // Max retries per fragment (same-auth retries and fresh-auth resumes
+    // combined). Default 3.
+    maxRetries?: number
+    // Delay before retrying transient failures (429 backoff, 401 in-flight
+    // settlement, zero-byte failures). Default 500ms.
+    retryDelayMs?: number
+}
+
 export interface UploadToHotResult {
     // Single-file upload result fields.
     txHash?: string
